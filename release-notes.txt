@@ -1,0 +1,7 @@
+Version 0.0.2
+-------------
+Now using 80 columns with 60 lines
+
+Version 0.0.1
+-------------
+Draw the display
