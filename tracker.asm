@@ -174,14 +174,14 @@ SETTEXTCOLOR
 INIT_CURSOR     PHA
                 LDA #$E9      ;The Cursor Character will be a Fully Filled Block
                 STA VKY_TXT_CURSOR_CHAR_REG
-                LDA #$02      ;Set Cursor Enable And Flash Rate @1Hz
+                LDA #$02      ;Set Cursor Disabled And Flash Rate @1Hz
                 STA VKY_TXT_CURSOR_CTRL_REG ;
                 
                 setaxl        ; Set Acc back to 16bits before setting the Cursor Position
                 LDA #$0000;
                 STA VKY_TXT_CURSOR_X_REG_L; // Set the X to Position 1
                 LDA #$0000;
-                STA VKY_TXT_CURSOR_Y_REG_L; // Set the Y to Position 6 (Below)
+                STA VKY_TXT_CURSOR_Y_REG_L; // Set the Y to Position 1 (Below)
                 
                 setas
                 PLA
