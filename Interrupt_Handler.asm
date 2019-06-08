@@ -123,7 +123,6 @@ EXIT_IRQ_HANDLE
 
 KEYBOARD_INTERRUPT
                 ldx #$0000
-                setxs
                 setas
                 ; Clear the Pending Flag
                 LDA @lINT_PENDING_REG1
@@ -133,6 +132,12 @@ KEYBOARD_INTERRUPT
 IRQ_HANDLER_FETCH
                 LDA KBD_INPT_BUF        ; Get Scan Code from KeyBoard
                 STA KEYBOARD_SC_TMP     ; Save Code Immediately
+                
+                LDX SCREENBEGIN
+                setdbr $AF
+                STA 77, b, X
+                setdbr $0
+                
                 ; Check for Shift Press or Unpressed
                 CMP #$2A                ; Left Shift Pressed
                 BNE NOT_KB_SET_SHIFT
@@ -167,6 +172,7 @@ KB_UNPRESSED    AND #$80                ; See if the Scan Code is press or Depre
                 BRL KB_CHECK_B_DONE
 
 KB_NORM_SC      LDA KEYBOARD_SC_TMP       ;
+                setxs
                 TAX
                 LDA KEYBOARD_SC_FLG     ; Check to See if the SHIFT Key is being Pushed
                 AND #$10
@@ -261,7 +267,7 @@ SOF_INTERRUPT
 ; /// Desc: Basically Assigning the 3Bytes Packet to Vicky's Registers
 ; ///       Vicky does the rest
 ; ///////////////////////////////////////////////////////////////////
-MOUSE_INTERRUPT .as
+MOUSE_INTERRUPT 
                 setas
                 LDA @lINT_PENDING_REG0
                 AND #FNX0_INT07_MOUSE
@@ -285,7 +291,19 @@ MOUSE_INTERRUPT .as
                 STA MOUSE_POS_Y_LO
                 LDA @lMOUSE_PTR_Y_POS_H
                 STA MOUSE_POS_Y_HI
-
+                
+                ;copy the buttons to another address
+                LDA MOUSE_PTR_BYTE0
+                AND #7
+                STA MOUSE_BUTTONS_REG
+                ADC #$30
+                
+                setxl
+                LDX SCREENBEGIN
+                setdbr $AF
+                STA 79, b, X
+                setdbr $0
+                
                 setas
                 LDX #$00
 EXIT_FOR_NEXT_VALUE

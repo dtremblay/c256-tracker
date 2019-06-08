@@ -10,6 +10,24 @@
                 SEI   ; ignore interrupts
                 JML TRACKER
 
+* = HIRQ       ; IRQ handler.
+RHIRQ           setaxl
+                PHB
+                PHD
+                PHA
+                PHX
+                PHY
+                ;
+                ; todo: look up IRQ triggered and do stuff
+                ;
+                JSL IRQ_HANDLER
+
+                PLY
+                PLX
+                PLA
+                PLD
+                PLB
+                RTI
 
 ; Interrupt Vectors
 * = VECTORS_BEGIN
@@ -65,10 +83,8 @@ TRACKER
 
                 ; we allow keyboard inputs 
                 JSR INIT_KEYBOARD
-                
-                JSR INITMOUSEPOINTER
-
-                ; enable the mouse pointer
+                JSR INIT_MOUSEPOINTER
+                JSR INIT_CURSOR
                 CLI
           
 ALWAYS          NOP
@@ -110,9 +126,11 @@ DRAW_DISPLAY
                 setal
                 LDA #<>CS_TEXT_MEM_PTR      ; store the initial screen buffer location
                 STA SCREENBEGIN
+                STA CURSORPOS
                 setas
                 LDA #`CS_TEXT_MEM_PTR
                 STA SCREENBEGIN+2
+                STA CURSORPOS+2
 
                 ; copy screen data from TRACKER_SCREEN to CS_TEXT_MEM_PTR
                 setaxl
@@ -144,6 +162,31 @@ SETTEXTCOLOR
                 RTS
           
 
+;
+; IINITCURSOR
+; Author: Stefany
+; Init the Cursor Registers
+; Verify that the Math Block Works
+; Inputs:
+; None
+; Affects:
+;  Vicky's Internal Cursor's Registers
+INIT_CURSOR     PHA
+                LDA #$E9      ;The Cursor Character will be a Fully Filled Block
+                STA VKY_TXT_CURSOR_CHAR_REG
+                LDA #$02      ;Set Cursor Enable And Flash Rate @1Hz
+                STA VKY_TXT_CURSOR_CTRL_REG ;
+                
+                setaxl        ; Set Acc back to 16bits before setting the Cursor Position
+                LDA #$0000;
+                STA VKY_TXT_CURSOR_X_REG_L; // Set the X to Position 1
+                LDA #$0000;
+                STA VKY_TXT_CURSOR_Y_REG_L; // Set the Y to Position 6 (Below)
+                
+                setas
+                PLA
+                RTS
+                
 ;
 ;IPUTC
 ; Print a single character to a channel.
@@ -349,8 +392,8 @@ InitSuccess
                 PLD
                 RTS
           
-;INITMOUSEPOINTER
-INITMOUSEPOINTER
+;INIT_MOUSEPOINTER
+INIT_MOUSEPOINTER
                 setaxl
                 LDX #<>MOUSE_POINTER_PTR
                 LDA #$100

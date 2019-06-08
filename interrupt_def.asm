@@ -17,6 +17,7 @@ INT_EDGE_REG2    = $00014A ;
 INT_MASK_REG0    = $00014C ;
 INT_MASK_REG1    = $00014D ;
 INT_MASK_REG2    = $00014E ;
+MOUSE_BUTTONS_REG= $00014F ; bit 2=middle, bit 1=left, bit 0=right
 
 ; Interrupt Bit Definition
 ; Register Block 0
