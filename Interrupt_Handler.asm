@@ -268,7 +268,7 @@ SOF_INTERRUPT
 ; ///       Vicky does the rest
 ; ///////////////////////////////////////////////////////////////////
 MOUSE_INTERRUPT 
-                setas
+                .as
                 LDA @lINT_PENDING_REG0
                 AND #FNX0_INT07_MOUSE
                 STA @lINT_PENDING_REG0
@@ -294,22 +294,59 @@ MOUSE_INTERRUPT
                 
                 ;copy the buttons to another address
                 LDA MOUSE_PTR_BYTE0
-                AND #7
-                STA MOUSE_BUTTONS_REG
-                ADC #$30
+                AND #%0111
+                STA @lMOUSE_BUTTONS_REG
                 
+                ; print the character on the upper-right of the screen
+                ; this is temporary
+                CLC
+                LDA @lMOUSE_BUTTONS_REG
+                ADC #$30
                 setxl
                 LDX SCREENBEGIN
                 setdbr $AF
                 STA 79, b, X
+                setxs
                 setdbr $0
                 
-                setas
+                JSR MOUSE_BUTTON_HANDLER
+                
                 LDX #$00
 EXIT_FOR_NEXT_VALUE
                 STX MOUSE_PTR
 
                 setxl
+                RTS
+                
+MOUSE_BUTTON_HANDLER
+                setas
+                
+                LDA @lMOUSE_BUTTONS_REG
+                BEQ MOUSE_CLICK_DONE
+                
+                ; set the cursor position ( X/8 and Y/8 ) and enable blinking
+                setal
+                CLC
+                LDA @lMOUSE_PTR_X_POS_L
+                LSR
+                LSR
+                LSR
+                STA CURSORX
+                STA @lVKY_TXT_CURSOR_X_REG_L
+                
+                CLC
+                LDA @lMOUSE_PTR_Y_POS_L
+                LSR
+                LSR
+                LSR
+                STA CURSORY
+                STA @lVKY_TXT_CURSOR_Y_REG_L
+                
+                setas
+                LDA #$03      ;Set Cursor Enabled And Flash Rate @1Hz
+                STA @lVKY_TXT_CURSOR_CTRL_REG
+                
+MOUSE_CLICK_DONE
                 RTS
 ;
 ; ///////////////////////////////////////////////////////////////////

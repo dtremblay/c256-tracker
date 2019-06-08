@@ -4,6 +4,10 @@
 .include "vicky_def.asm"
 .include "interrupt_def.asm"
 
+MOUSE_BUTTONS_REG= $000F00 ; bit 2=middle, bit 1=right, bit 0=left
+
+* = MOUSE_BUTTONS_REG
+                .byte 0
 * = HRESET
                 CLC
                 XCE   ; go into native mode
@@ -174,7 +178,7 @@ SETTEXTCOLOR
 INIT_CURSOR     PHA
                 LDA #$E9      ;The Cursor Character will be a Fully Filled Block
                 STA VKY_TXT_CURSOR_CHAR_REG
-                LDA #$02      ;Set Cursor Disabled And Flash Rate @1Hz
+                LDA #$0       ;Set Cursor Disabled
                 STA VKY_TXT_CURSOR_CTRL_REG ;
                 
                 setaxl        ; Set Acc back to 16bits before setting the Cursor Position
