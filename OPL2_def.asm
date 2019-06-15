@@ -1,32 +1,8 @@
-;assign CS_OPL2L_o 	= (BUS_A_i[23:8] == 22'b0111_1111_1110_0101) & Valid_Address;			// $7F:E500..$7F:E5FF	// OPL2 - Left Side
-;assign CS_OPL2R_o 	= (BUS_A_i[23:8] == 22'b0111_1111_1110_0110) & Valid_Address;			// $7F:E600..$7F:E6FF	// OPL2 - Right Side
-; assign CS_OPL2B_o 	= (BUS_A_i[23:8] == 22'b0111_1111_1110_0111) & Valid_Address;			// $7F:E700..$7F:E7FF	// OPL2 - Both Side (Write Sequence Only)
+; assign CS_OPL2L_o 	= (BUS_A_i[23:8] == 22'b0111_1111_1110_0101) & Valid_Address;			// $AF:E500..$AF:E5FF	// OPL2 - Left Side
+; assign CS_OPL2R_o 	= (BUS_A_i[23:8] == 22'b0111_1111_1110_0110) & Valid_Address;			// $AF:E600..$AF:E6FF	// OPL2 - Right Side
+; assign CS_OPL2B_o 	= (BUS_A_i[23:8] == 22'b0111_1111_1110_0111) & Valid_Address;			// $AF:E700..$AF:E7FF	// OPL2 - Both Side (Write Sequence Only)
 
 
-
-;  1 - Channel c, operator 1, register $20
-;		Tremolo(1) | Vibrato(1) | Sustain(1) | KSR(1) | Frequency multiplier (4)
-;
-;  2 - Channel c, operator 1, register $40
-;		Key scale level(2) | Output level(6)
-;
-;  3 - Channel c, operator 1, register $60
-;		Attack(4) | Decay(4)
-;
-;  4 - Channel c, operator 1, register $80
-;		Sustain(4) | Release(4)
-;
-;  5 - Channel c, register $C0
-;		Undefined(4) | Modulation feedback factor(3) | Synth type(1)
-;
-;  6 - Channel c, operator 1, register $E0
-;		Undefined(5) | Waveform(3)
-;
-;  7 - Channel c, operator 2, register $20
-;  8 - Channel c, operator 2, register $40
-;  9 - Channel c, operator 2, register $60
-; 10 - Channel c, operator 2, register $80
-; 11 - Channel c, operator 2, register $E0
 ; Direct Access to Left Channel
 ; L = Left
 OPL2_L_BASE               = $AFE500
@@ -35,15 +11,16 @@ OPL2_L_TIMER1             = $AFE502 ; TIMER-1
 OPL2_L_TIMER2             = $AFE503 ; TIMER-2
 OPL2_L_IRQ                = $AFE504 ;
 OPL2_L_CSM                = $AFE508 ;
-OPL2_L_AM_VID_EG_KSR_MULT = $AFE520 ; $40..$35 (21 Registers)
+OPL2_L_AM_VID_EG_KSR_MULT = $AFE520 ; $20..$35 (21 Registers)
 OPL2_L_KSL_TL             = $AFEE40;  $40..$55 (21 Registers)
 OPL2_L_AR_DR              = $AFE560;  $60..$75 (21 Registers)
 OPL2_L_SL_RR              = $AFE580;  $80..$95 (21 Registers)
 OPL2_L_FNumber            = $AFE5A0;  $A0..$A8
 OPL2_L_KON_BLOCK_FNumber  = $AFE5B0;  $B0..$B9
-OPL2_L_DPTH_RHYTM         = $AFE5BD;  $BD
+OPL2_L_DPTH_RYTHM         = $AFE5BD;  $BD
 OPL2_L_FEEDBACK           = $AFE5C0;  $C0..$C9
 OPL2_L_WAVE_SELECT        = $AFE5E0;  $E0..$F5
+
 ; Direct Access to Right Channel
 ; R = Right
 OPL2_R_BASE               = $AFE600
@@ -58,9 +35,10 @@ OPL2_R_AR_DR              = $AFE660;  $60..$75 (21 Registers)
 OPL2_R_SL_RR              = $AFE680;  $80..$95 (21 Registers)
 OPL2_R_FNumber            = $AFE6A0;  $A0..$A8
 OPL2_R_KON_BLOCK_FNumber  = $AFE6B0;  $B0..$B9
-OPL2_R_DPTH_RHYTM         = $AFE6BD;  $BD
+OPL2_R_DPTH_RYTHM         = $AFE6BD;  $BD
 OPL2_R_FEEDBACK           = $AFE6C0;  $C0..$C9
 OPL2_R_WAVE_SELECT        = $AFE6E0;  $E0..$F5
+
 ; Direct Access to Both at the same time (Write Only of course)
 ; S = Stereo
 OPL2_S_BASE_LL            = $E700
@@ -76,11 +54,9 @@ OPL2_S_AR_DR              = $AFE760;  $60..$75 (21 Registers)
 OPL2_S_SL_RR              = $AFE780;  $80..$95 (21 Registers)
 OPL2_S_FNumber            = $AFE7A0;  $A0..$A8
 OPL2_S_KON_BLOCK_FNumber  = $AFE7B0;  $B0..$B9
-OPL2_S_DPTH_RHYTM         = $AFE7BD;  $BD
+OPL2_S_DPTH_RYTHM         = $AFE7BD;  $BD
 OPL2_S_FEEDBACK           = $AFE7C0;  $C0..$C9
 OPL2_S_WAVE_SELECT        = $AFE7E0;  $E0..$F5
-
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1,10 +1,9 @@
-
 .cpu "65816"
 .include "OPL2_def.asm"
-;.include "OPL2_Instruments.asm"
-;.include "OPL2_Midi_Drums.asm"
-;.include "OPL2_Midi_Instruments.asm"
-;.include "OPL2_Midi_Instruments_Win31.asm"
+.include "OPL2_Instruments.asm"
+.include "OPL2_Midi_Drums.asm"
+.include "OPL2_Midi_Instruments.asm"
+.include "OPL2_Midi_Instruments_Win31.asm"
 
 ;In some assemblers, BGE (Branch if Greater than or Equal) and BLT (Branch if Less Than) are synonyms for BCS and BCC, respectively.
 ; BCS ( A > = DATA )
@@ -141,7 +140,7 @@ OPL2_Get_WaveForm         ; Return Byte, Param: (byte channel, byte operatorNum)
 
                 RTL
 
-OPL2_PLAYNOTE           ;Return void, Param: (byte channel, byte octave, byte note);
+OPL2_PLAYNOTE   ;Return void, Param: (byte channel, byte octave, byte note);
                 setas
                 LDA #$00
                 STA OPL2_PARAMETER0 ; Set Keyon False
