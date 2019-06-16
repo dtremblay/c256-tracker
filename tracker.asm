@@ -4,10 +4,15 @@
 .include "vicky_def.asm"
 .include "interrupt_def.asm"
 
-MOUSE_BUTTONS_REG= $000F00 ; bit 2=middle, bit 1=right, bit 0=left
+MOUSE_BUTTONS_REG= $180F00 ; bit 2=middle, bit 1=right, bit 0=left
 
 * = MOUSE_BUTTONS_REG
                 .byte 0
+TEMP_STORAGE    .byte 0,0
+LOW_NIBBLE     .byte 0
+HIGH_NIBBLE      .byte 0
+HEX_MAP         .text '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'
+
 * = HRESET
                 CLC
                 XCE   ; go into native mode
@@ -191,30 +196,43 @@ INIT_CURSOR     PHA
                 PLA
                 RTS
                 
-;
-;IPUTC
-; Print a single character to a channel.
-; Handles terminal sequences, based on the selected text mode
-; Modifies: none
-;
-IPUTC           PHD
-                PHP             ; stash the flags (we'll be changing M)
-                setdp 0
+WRITE_HEX
                 setas
-                CMP #$0D        ; handle CR
-                BNE iputc_bs
-                JSR IPRINTCR
-                bra iputc_done
-iputc_bs        CMP #$08        ; backspace
-                BNE iputc_print
-                JSR IPRINTBS
-                BRA iputc_done
-iputc_print     STA [CURSORPOS] ; Save the character on the screen
-                JSR ICSRRIGHT
-iputc_done      
-                PLP
-                PLD
-                RTL
+                PHA
+                PHB
+                STA @lTEMP_STORAGE
+                AND #$F0
+                lsr A
+                lsr A
+                lsr A
+                lsr A
+                TAX
+                LDA HEX_MAP,X
+                STA @lLOW_NIBBLE
+                
+                LDA @lTEMP_STORAGE
+                AND #$0F
+                TAX
+                LDA HEX_MAP,X
+                STA @lHIGH_NIBBLE
+                
+                CLC
+                setal
+                TYA
+                ADC SCREENBEGIN
+                TAX
+                setdbr $AF
+                setal
+                LDA @lLOW_NIBBLE
+                STA 0, b, X  ; display the scan code upper-right
+                LDA #0
+                .databank 0
+                
+                setas
+                PLB
+                PLA
+                RTS
+                
                 
 ;
 ; IPRINTCR

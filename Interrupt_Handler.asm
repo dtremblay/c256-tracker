@@ -5,138 +5,74 @@
 ;////////////////////////////////////////////////////////////////////////////
 ;////////////////////////////////////////////////////////////////////////////
 ;////////////////////////////////////////////////////////////////////////////
+
+check_irq_bit  .macro
+                LDA @l\1
+                AND #\2
+                CMP #\2
+                BNE END_CHECK
+                STA @l\1
+                JSR \3
+                
+END_CHECK
+                .endm
+                
 IRQ_HANDLER
-;                LDX #<>irq_Msg
-;                JSL IPRINT       ; print the Init
-                setas 					; Set 8bits
-                ; Go Service the Start of Frame Interrupt Interrupt
-                ; IRQ0
-                ; Start of Frame Interrupt
+; First Block of 8 Interrupts
+                setas
                 LDA @lINT_PENDING_REG0
-                CMP #$00
                 BEQ CHECK_PENDING_REG1
-
-                LDA @lINT_PENDING_REG0
-                AND #FNX0_INT00_SOF
-                CMP #FNX0_INT00_SOF
-                BNE SERVICE_NEXT_IRQ6
-                STA @lINT_PENDING_REG0
-                ; Start of Frame Interrupt
-                JSR SOF_INTERRUPT
-                ;BRA EXIT_IRQ_HANDLE
-
-                ;IRQ1 - Not Implemented Yet
-                ;IRQ2 - Not Implemented Yet
-                ;IRQ3 - Not Implemented Yet
-                ;IRQ4 - Not Implemented Yet
-                ;IRQ5 - Not Tested Yet
-                ;IRQ6
-                setas
-SERVICE_NEXT_IRQ6 ; FDC Interrupt
-                LDA @lINT_PENDING_REG0
-                AND #FNX0_INT06_FDC
-                CMP #FNX0_INT06_FDC
-                BNE SERVICE_NEXT_IRQ7
-                STA @lINT_PENDING_REG0
-                ; Floppy Disk Controller
-                JSR FDC_INTERRUPT
-;                BRA EXIT_IRQ_HANDLE
-                ;IRQ7
-                setas
-SERVICE_NEXT_IRQ7 ; Mouse IRQ
-                LDA @lINT_PENDING_REG0
-                AND #FNX0_INT07_MOUSE
-                CMP #FNX0_INT07_MOUSE
-                BNE CHECK_PENDING_REG1
-                STA @lINT_PENDING_REG0
-                ; Mouse Interrupt
-                JSR MOUSE_INTERRUPT
-                ;BRA EXIT_IRQ_HANDLE
+; Start of Frame
+                check_irq_bit INT_PENDING_REG0, FNX0_INT00_SOF, SOF_INTERRUPT
+; Timer 0
+                check_irq_bit INT_PENDING_REG0, FNX0_INT02_TMR0, TIMER0_INTERRUPT
+; FDC Interrupt
+                check_irq_bit INT_PENDING_REG0, FNX0_INT06_FDC, FDC_INTERRUPT
+; Mouse IRQ
+                check_irq_bit INT_PENDING_REG0, FNX0_INT07_MOUSE, MOUSE_INTERRUPT
 
 ; Second Block of 8 Interrupts
-                ;IRQ8
 CHECK_PENDING_REG1
                 setas
                 LDA @lINT_PENDING_REG1
-                CMP #$00
+                BEQ CHECK_PENDING_REG2   ; BEQ EXIT_IRQ_HANDLE
+; Keyboard Interrupt
+                check_irq_bit INT_PENDING_REG1, FNX1_INT00_KBD, KEYBOARD_INTERRUPT
+; COM2 Interrupt
+                check_irq_bit INT_PENDING_REG1, FNX1_INT03_COM2, COM2_INTERRUPT
+; COM1 Interrupt
+                check_irq_bit INT_PENDING_REG1, FNX1_INT04_COM1, COM1_INTERRUPT
+; MPU401 - MIDI Interrupt
+                check_irq_bit INT_PENDING_REG1, FNX1_INT05_MPU401, MPU401_INTERRUPT
+; LPT Interrupt
+                check_irq_bit INT_PENDING_REG1, FNX1_INT06_LPT, LPT1_INTERRUPT
+
+; Third Block of 8 Interrupts
+CHECK_PENDING_REG2
+                setas
+                LDA @lINT_PENDING_REG2
                 BEQ EXIT_IRQ_HANDLE
-
-
-SERVICE_NEXT_IRQ8 ; Keyboard Interrupt
-                LDA @lINT_PENDING_REG1
-                AND #FNX1_INT00_KBD
-                CMP #FNX1_INT00_KBD
-                BNE SERVICE_NEXT_IRQ11
-                STA @lINT_PENDING_REG1
-                ; Keyboard Interrupt
-                JSR KEYBOARD_INTERRUPT
-                ;BRA EXIT_IRQ_HANDLE
-                ;IRQ9 - Not Implemented Yet
-                ;IRQ10 - Not Implemented Yet
-                ;IRQ11
-                setas
-SERVICE_NEXT_IRQ11
-                LDA @lINT_PENDING_REG1
-                AND #FNX1_INT03_COM2
-                CMP #FNX1_INT03_COM2
-                BNE SERVICE_NEXT_IRQ12
-                STA @lINT_PENDING_REG1
-                ; Serial Port Com2 Interrupt
-                JSR COM2_INTERRUPT
-                ;BRA EXIT_IRQ_HANDLE
-                ;IRQ12
-                setas
-SERVICE_NEXT_IRQ12
-                LDA @lINT_PENDING_REG1
-                AND #FNX1_INT04_COM1
-                CMP #FNX1_INT04_COM1
-                BNE SERVICE_NEXT_IRQ13
-                STA @lINT_PENDING_REG1
-                ; Serial Port Com1 Interrupt
-                JSR COM1_INTERRUPT
-                ;BRA EXIT_IRQ_HANDLE
-                ;IRQ13
-                setas
-SERVICE_NEXT_IRQ13
-                LDA @lINT_PENDING_REG1
-                AND #FNX1_INT05_MPU401
-                CMP #FNX1_INT05_MPU401
-                BNE SERVICE_NEXT_IRQ14
-                STA @lINT_PENDING_REG1
-                ; Serial Port Com1 Interrupt
-                JSR MPU401_INTERRUPT
-                ;BRA EXIT_IRQ_HANDLE
-                ;IRQ14
-                setas
-SERVICE_NEXT_IRQ14
-                LDA @lINT_PENDING_REG1
-                AND #FNX1_INT06_LPT
-                CMP #FNX1_INT06_LPT
-                BNE EXIT_IRQ_HANDLE
-                STA @lINT_PENDING_REG1
-                ; Serial Port Com1 Interrupt
-                JSR LPT1_INTERRUPT
+                
+; OPL2 Right Interrupt
+                check_irq_bit INT_PENDING_REG2, FNX2_INT00_OPL2R, OPL2R_INTERRUPT
+; OPL2 Left Interrupt
+                check_irq_bit INT_PENDING_REG2, FNX2_INT01_OPL2L, OPL2L_INTERRUPT
+                
 EXIT_IRQ_HANDLE
                 ; Exit Interrupt Handler
                 setaxl
                 RTL
 
 KEYBOARD_INTERRUPT
+                .as
                 ldx #$0000
-                setas
-                ; Clear the Pending Flag
-                LDA @lINT_PENDING_REG1
-                AND #FNX1_INT00_KBD
-                STA @lINT_PENDING_REG1
 
 IRQ_HANDLER_FETCH
                 LDA KBD_INPT_BUF        ; Get Scan Code from KeyBoard
                 STA KEYBOARD_SC_TMP     ; Save Code Immediately
                 
-                LDX SCREENBEGIN
-                setdbr $AF
-                STA 77, b, X
-                setdbr $0
+                LDY #70
+                JSR WRITE_HEX
                 
                 ; Check for Shift Press or Unpressed
                 CMP #$2A                ; Left Shift Pressed
@@ -199,12 +135,10 @@ ALT_KEY_ON      LDA @lScanCode_Alt_Set1, x
 
                 ; Write Character to Screen (Later in the buffer)
 KB_WR_2_SCREEN
-                PHA
                 setxl
-                ; JSL SAVECHAR2CMDLINE ; we're not parsing commands
-                setas
-                PLA
-                JSL IPUTC
+                LDY #74
+                JSR WRITE_HEX
+                
                 JMP KB_CHECK_B_DONE
 
 KB_SET_SHIFT    LDA KEYBOARD_SC_FLG
@@ -217,12 +151,12 @@ KB_CLR_SHIFT    LDA KEYBOARD_SC_FLG
                 STA KEYBOARD_SC_FLG
                 JMP KB_CHECK_B_DONE
 
-KB_SET_CTRL    LDA KEYBOARD_SC_FLG
+KB_SET_CTRL     LDA KEYBOARD_SC_FLG
                 ORA #$20
                 STA KEYBOARD_SC_FLG
                 JMP KB_CHECK_B_DONE
 
-KB_CLR_CTRL    LDA KEYBOARD_SC_FLG
+KB_CLR_CTRL     LDA KEYBOARD_SC_FLG
                 AND #$DF
                 STA KEYBOARD_SC_FLG
                 JMP KB_CHECK_B_DONE
@@ -232,7 +166,7 @@ KB_SET_ALT      LDA KEYBOARD_SC_FLG
                 STA KEYBOARD_SC_FLG
                 JMP KB_CHECK_B_DONE
 
-KB_CLR_ALT     LDA KEYBOARD_SC_FLG
+KB_CLR_ALT      LDA KEYBOARD_SC_FLG
                 AND #$BF
                 STA KEYBOARD_SC_FLG
 
@@ -244,7 +178,6 @@ KB_CHECK_B_DONE .as
                 JMP IRQ_HANDLER_FETCH
 
 KB_DONE
-                setaxl
                 RTS
 ;
 ; ///////////////////////////////////////////////////////////////////
@@ -255,11 +188,13 @@ KB_DONE
 ; ///////////////////////////////////////////////////////////////////
 SOF_INTERRUPT
                 .as
-                LDA @lINT_PENDING_REG0
-                AND #FNX0_INT00_SOF
-                STA @lINT_PENDING_REG0
 ;; PUT YOUR CODE HERE
                 RTS
+                
+TIMER0_INTERRUPT
+                .as
+;; PUT YOUR CODE HERE
+                 RTS
 ;
 ; ///////////////////////////////////////////////////////////////////
 ; ///
@@ -356,9 +291,7 @@ MOUSE_CLICK_DONE
 ; ///
 ; ///////////////////////////////////////////////////////////////////
 FDC_INTERRUPT   .as
-                LDA @lINT_PENDING_REG0
-                AND #FNX0_INT06_FDC
-                STA @lINT_PENDING_REG0
+
 ;; PUT YOUR CODE HERE
                 RTS
 ;
@@ -370,9 +303,7 @@ FDC_INTERRUPT   .as
 ; ///
 ; ///////////////////////////////////////////////////////////////////
 COM2_INTERRUPT  .as
-                LDA @lINT_PENDING_REG1
-                AND #FNX1_INT03_COM2
-                STA @lINT_PENDING_REG1
+
 ;; PUT YOUR CODE HERE
                 RTS
 ;
@@ -383,9 +314,7 @@ COM2_INTERRUPT  .as
 ; ///
 ; ///////////////////////////////////////////////////////////////////
 COM1_INTERRUPT  .as
-                LDA @lINT_PENDING_REG1
-                AND #FNX1_INT04_COM1
-                STA @lINT_PENDING_REG1
+
 ;; PUT YOUR CODE HERE
                 RTS
 ;
@@ -396,9 +325,7 @@ COM1_INTERRUPT  .as
 ; ///
 ; ///////////////////////////////////////////////////////////////////
 MPU401_INTERRUPT  .as
-                LDA @lINT_PENDING_REG1
-                AND #FNX1_INT05_MPU401
-                STA @lINT_PENDING_REG1
+
 ;; PUT YOUR CODE HERE
                 RTS
 ;
@@ -409,11 +336,16 @@ MPU401_INTERRUPT  .as
 ; ///
 ; ///////////////////////////////////////////////////////////////////
 LPT1_INTERRUPT  .as
-                LDA @lINT_PENDING_REG1
-                AND #FNX1_INT06_LPT
-                STA @lINT_PENDING_REG1
+
 ;; PUT YOUR CODE HERE
+                RTS
+
+OPL2R_INTERRUPT .as
+                RTS
+
+OPL2L_INTERRUPT .as
                 RTS
 
 NMI_HANDLER
                 RTL
+                

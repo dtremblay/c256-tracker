@@ -58,6 +58,7 @@ CMD_VALID        = $00005D ;
 ; Bitmap Clear Routine
 BM_CLEAR_SCRN_X  = $000040
 BM_CLEAR_SCRN_Y  = $000042
+
 ; RAD File Player
 RAD_STARTLINE    = $000040 ; 1 Byte
 RAD_PATTERN_IDX  = $000041 ; 1 Byte
