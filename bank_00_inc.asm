@@ -4,7 +4,7 @@
 ;* Addresses are the byte AFTER the block. Use this to confirm block locations and check for overlaps
 BANK0_BEGIN      = $000000 ;Start of bank 0 and Direct page
 unused_0000      = $000000 ;12 Bytes unused
-OPL2_ADDY_PTR_LO = $000008  ; THis Points towards the Instruments Database
+OPL2_ADDY_PTR_LO = $000008 ; This Points towards the Instruments Database
 OPL2_ADDY_PTR_MD = $000009
 OPL2_ADDY_PTR_HI = $00000A
 SCREENBEGIN      = $00000C ;3 Bytes Start of screen in video RAM. This is the upper-left corrner of the current video page being written to. This may not be what's being displayed by VICKY. Update this if you change VICKY's display page.
@@ -19,8 +19,9 @@ CURCOLOR         = $00001E ;2 Bytes Color of next character to be printed to the
 CURATTR          = $000020 ;2 Bytes Attribute of next character to be printed to the screen.
 STACKBOT         = $000022 ;2 Bytes Lowest location the stack should be allowed to write to. If SP falls below this value, the runtime should generate STACK OVERFLOW error and abort.
 STACKTOP         = $000024 ;2 Bytes Highest location the stack can occupy. If SP goes above this value, the runtime should generate STACK OVERFLOW error and abort.
+
 ; OPL2 Library Variable (Can be shared if Library is not used)
-; THis will need to move eventually
+; This will need to move eventually
 OPL2_OPERATOR    = $000026 ;
 OPL2_CHANNEL     = $000027 ;
 OPL2_REG_REGION  = $000028 ; Offset to the Group of Registers
@@ -34,7 +35,8 @@ OPL2_PARAMETER1  = $000033 ; 1 Byte
 OPL2_PARAMETER2  = $000034 ; 1 Byte
 OPL2_PARAMETER3  = $000035 ; 1 Byte
 OPL2_LOOP        = $000036 ;
-OPL2_BLOCK       = $000036
+OPL2_BLOCK       = $000036 ;
+
 ; SD Card (CH376S) Variables
 SDCARD_FILE_PTR  = $000038 ; 3 Bytes Pointer to Filename to open
 SDCARD_BYTE_NUM  = $00003C ; 2Bytes

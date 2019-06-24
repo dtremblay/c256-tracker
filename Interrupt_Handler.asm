@@ -188,7 +188,26 @@ KB_DONE
 ; ///////////////////////////////////////////////////////////////////
 SOF_INTERRUPT
                 .as
-;; PUT YOUR CODE HERE
+                LDA @lTICK
+                INC A
+                CMP @lBPM
+                BNE TICK_DONE
+                
+                ; we now have to increment the line count
+                CLC
+                SED
+                LDA @lLINE_NUM
+                ADC #1
+                CMP #$65  ; this is the maximum number of lines
+                BNE INCR_DONE
+                LDA #1
+INCR_DONE
+                CLD
+                STA @lLINE_NUM
+                JSR DISPLAY_LINE
+                LDA #0  ; reset the tick to 0
+TICK_DONE
+                STA @lTICK
                 RTS
                 
 TIMER0_INTERRUPT

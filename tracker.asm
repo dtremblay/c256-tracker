@@ -9,9 +9,14 @@ MOUSE_BUTTONS_REG= $180F00 ; bit 2=middle, bit 1=right, bit 0=left
 * = MOUSE_BUTTONS_REG
                 .byte 0
 TEMP_STORAGE    .byte 0,0
-LOW_NIBBLE     .byte 0
-HIGH_NIBBLE      .byte 0
+LOW_NIBBLE      .byte 0
+HIGH_NIBBLE     .byte 0
 HEX_MAP         .text '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'
+STATE_MACHINE   .byte 0  ; 0 is live mode, 1 is play mode
+TICK            .byte 0  ; this is used to count the number of 1/60 intervals
+BPM             .byte 30 ; how fast should the lines change - 
+PATTERN_NUM     .byte 1
+LINE_NUM        .byte 1
 
 * = HRESET
                 CLC
@@ -79,6 +84,7 @@ TRACKER
                 STA @lINT_EDGE_REG2
                 
                 ; Mask all Interrupt @ This Point
+                LDA #$FF
                 STA @lINT_MASK_REG0
                 STA @lINT_MASK_REG1
                 STA @lINT_MASK_REG2
@@ -94,9 +100,14 @@ TRACKER
                 JSR INIT_KEYBOARD
                 JSR INIT_MOUSEPOINTER
                 JSR INIT_CURSOR
+                JSR RESET_STATE_MACHINE
+                JSL IOPL2_TONE_TEST
+                
+                JSR ENABLE_IRQS
                 CLI
           
 ALWAYS          NOP
+                NOP
                 BRA ALWAYS
           
 
@@ -196,6 +207,25 @@ INIT_CURSOR     PHA
                 PLA
                 RTS
                 
+ENABLE_IRQS
+                ; Clear Any Pending Interrupt
+                LDA @lINT_PENDING_REG0
+                AND #FNX0_INT07_MOUSE | FNX0_INT00_SOF
+                STA @lINT_PENDING_REG0  ; Writing it back will clear the Active Bit
+                LDA @lINT_PENDING_REG1
+                AND #FNX1_INT00_KBD
+                STA @lINT_PENDING_REG1  ; Writing it back will clear the Active Bit
+                
+                ; Enable Mouse and SOF
+                LDA #~(FNX0_INT07_MOUSE | FNX0_INT00_SOF)
+                STA @lINT_MASK_REG0
+                
+                ; Enable Keyboard
+                LDA #~FNX1_INT00_KBD
+                STA @lINT_MASK_REG1
+                RTS
+                
+                
 WRITE_HEX
                 setas
                 PHA
@@ -233,68 +263,31 @@ WRITE_HEX
                 PLA
                 RTS
                 
+RESET_STATE_MACHINE
+                LDA #0
+                STA STATE_MACHINE
                 
-;
-; IPRINTCR
-; Prints a carriage return.
-; This moves the cursor to the beginning of the next line of text on the screen
-; Modifies: Flags
-IPRINTCR        PHX
-                PHY
-                PHP
-                LDX #0
-                LDY CURSORY
-                INY
-                ; JSL ILOCATE
-                PLP
-                PLY
-                PLX
+                LDA #1
+                STA LINE_NUM
+                STA PATTERN_NUM
+                
+                JSR DISPLAY_LINE
+                JSR DISPLAY_PATTERN
+                
                 RTS
-;
-; IPRINTBS
-; Prints a carriage return.
-; This moves the cursor to the beginning of the next line of text on the screen
-; Modifies: Flags
-IPRINTBS        PHX
-                PHY
-                PHP
-                LDX CURSORX
-                LDY CURSORY
-                DEX
-                ; JSL ILOCATE
-                PLP
-                PLY
-                PLX
+                
+DISPLAY_LINE
+                LDA LINE_NUM
+                ; display the line number
+                LDY #22*128 + 7
+                JSR WRITE_HEX
                 RTS
-;
-;ICSRRIGHT
-; Move the cursor right one space
-; Modifies: none
-;
-ICSRRIGHT ; move the cursor right one space
-                PHX
-                PHB
-                setal
-                setxl
-                setdp $0
-                INC CURSORPOS
-                LDX CURSORX
-                INX
-                CPX COLS_VISIBLE
-                BCC icsr_nowrap  ; wrap if the cursor is at or past column 80
-                LDX #0
-                PHY
-                LDY CURSORY
-                INY
-                ;JSL ILOCATE
-                PLY
-icsr_nowrap     STX CURSORX
-                PHA
-                TXA
-                STA @lVKY_TXT_CURSOR_X_REG_L  ;Store in Vicky's register
-                PLA
-                PLB
-                PLX
+                
+DISPLAY_PATTERN
+                LDA PATTERN_NUM
+                ; display the pattern number
+                LDY #22*128 + 19
+                JSR WRITE_HEX
                 RTS
 
 LOAD_INSTRUMENTS
@@ -397,14 +390,6 @@ DO_CMD_F4_AGAIN
                 LDA @lINT_PENDING_REG1  ; Read the Pending Register &
                 AND #FNX1_INT00_KBD
                 STA @lINT_PENDING_REG1  ; Writing it back will clear the Active Bit
-                ; Disable the Mask
-                LDA @lINT_MASK_REG1
-                AND #~FNX1_INT00_KBD
-                STA @lINT_MASK_REG1
-
-                LDA @lINT_MASK_REG0
-                AND #~FNX0_INT07_MOUSE
-                STA @lINT_MASK_REG0
 
 initkb_loop_out 
 InitSuccess     

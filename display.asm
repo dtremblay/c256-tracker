@@ -81,13 +81,13 @@ line22    .byte $ab
 
 line23
           .byte $c2
-          .text 'Line: 01'   ; 8 chars
+          .text 'Line: NA'   ; 8 chars
           .byte $c2
-          .text 'Pattern: 01';11 chars
+          .text 'Pattern: NA';11 chars
           .byte $c2
-          .text 'Octave:  3' ;10 chars
+          .text 'Octave:  N' ;10 chars
           .byte $c2
-          .text 'Speed:  4'  ; 9 chars
+          .text 'Speed:  N'  ; 9 chars
           .byte $c2
           .fill 2, 0
           .text '    TEST.TRK' ; 12 chars
