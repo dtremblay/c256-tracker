@@ -45,7 +45,7 @@ OPL2_TONE_TESTING_L0
                 LDA #$0A
                 STA OPL2_PARAMETER0
                 JSL OPL2_SET_ATTACK
-              LDA #$04
+                LDA #$04
                 STA OPL2_PARAMETER0
                 JSL OPL2_SET_DECAY
                 
@@ -1368,23 +1368,23 @@ OPL2_Set_DeepVibrato_Exit
 ; OPL2_REG_OFFSET  @ $00002A ;
 ; C = Enable (1 = Enable, 0 = Disable)
 OPL2_SET_PERCUSSION         ;Return Byte, Param: (bool enable);
-              setal
-              LDA #<>OPL2_S_BASE + $00BD
-              STA OPL2_IND_ADDY_LL
-              LDA #`OPL2_S_BASE
-              STA OPL2_IND_ADDY_HL
-              setas
-              BCS OPL2_Set_Percussion_Set;
-              ; Clear the Bit
-              LDA [OPL2_IND_ADDY_LL]
-              AND #$DF
-              STA [OPL2_IND_ADDY_LL]
-              BRA OPL2_Set_Percussion_Exit
-              ; Set the Bit
+                setal
+                LDA #<>OPL2_S_BASE + $00BD
+                STA OPL2_IND_ADDY_LL
+                LDA #`OPL2_S_BASE
+                STA OPL2_IND_ADDY_HL
+                setas
+                BCS OPL2_Set_Percussion_Set;
+                ; Clear the Bit
+                LDA [OPL2_IND_ADDY_LL]
+                AND #$DF
+                STA [OPL2_IND_ADDY_LL]
+                BRA OPL2_Set_Percussion_Exit
+                ; Set the Bit
 OPL2_Set_Percussion_Set
-              LDA [OPL2_IND_ADDY_LL]
-              ORA #$20
-              STA [OPL2_IND_ADDY_LL]
+                LDA [OPL2_IND_ADDY_LL]
+                ORA #$20
+                STA [OPL2_IND_ADDY_LL]
 OPL2_Set_Percussion_Exit
                 RTL
 
@@ -1400,22 +1400,23 @@ OPL2_Set_Percussion_Exit
 ; OPL2_PARAMETER0[0] = DRUM_HI_HAT 0x01
 ; Changes OPL2_PARAMETER1
 OPL2_SET_DRUMS              ;Return Byte, Param: (bool bass, bool snare, bool tom, bool cymbal, bool hihat);
-              setal
-              LDA #<>OPL2_S_BASE + $00BD
-              STA OPL2_IND_ADDY_LL
-              LDA #`OPL2_S_BASE
-              STA OPL2_IND_ADDY_HL
-              setas
-              LDA OPL2_PARAMETER0
-              AND #$1F
-              STA OPL2_PARAMETER0
-              EOR #$FF
-              STA OPL2_PARAMETER1
-              LDA [OPL2_IND_ADDY_LL]
-              AND OPL2_PARAMETER1
-              ORA OPL2_PARAMETER0
-              STA [OPL2_IND_ADDY_LL]
+                setal
+                LDA #<>OPL2_S_BASE + $00BD
+                STA OPL2_IND_ADDY_LL
+                LDA #`OPL2_S_BASE
+                STA OPL2_IND_ADDY_HL
+                setas
+                LDA OPL2_PARAMETER0
+                AND #$1F
+                STA OPL2_PARAMETER0
+                EOR #$FF
+                STA OPL2_PARAMETER1
+                LDA [OPL2_IND_ADDY_LL]
+                AND OPL2_PARAMETER1
+                ORA OPL2_PARAMETER0
+                STA [OPL2_IND_ADDY_LL]
                 RTL
+              
 ;OPL2_SET_WAVEFORM
 ; Inputs
 ; OPL2_OPERATOR    @ $000026 ;
@@ -1423,18 +1424,18 @@ OPL2_SET_DRUMS              ;Return Byte, Param: (bool bass, bool snare, bool to
 ; OPL2_REG_OFFSET  @ $00002A ;
 ; OPL2_PARAMETER1 = waveForm
 OPL2_SET_WAVEFORM           ;Return Byte, Param: (byte channel, byte operatorNum, byte waveForm);
-              setal
-              LDA #$00E0;
-              STA OPL2_REG_REGION
-              JSR OPL2_GET_REG_OFFSET
-              setas
-              LDA OPL2_PARAMETER0
-              AND #$03
-              STA OPL2_PARAMETER0
-              LDA [OPL2_IND_ADDY_LL]
-              AND #$FC
-              ORA OPL2_PARAMETER0
-              STA [OPL2_IND_ADDY_LL]
+                setal
+                LDA #$00E0;
+                STA OPL2_REG_REGION
+                JSR OPL2_GET_REG_OFFSET
+                setas
+                LDA OPL2_PARAMETER0
+                AND #$03
+                STA OPL2_PARAMETER0
+                LDA [OPL2_IND_ADDY_LL]
+                AND #$FC
+                ORA OPL2_PARAMETER0
+                STA [OPL2_IND_ADDY_LL]
                 RTL
 
                 ; Local Routine (Can't be Called by Exterior Code)

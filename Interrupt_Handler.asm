@@ -71,8 +71,11 @@ IRQ_HANDLER_FETCH
                 LDA KBD_INPT_BUF        ; Get Scan Code from KeyBoard
                 STA KEYBOARD_SC_TMP     ; Save Code Immediately
                 
+                setxl
                 LDY #70
-                JSR WRITE_HEX
+                JSR WRITE_HEX  ; print the HEX key code at column 70 on the top line
+                
+                JSR PLAY_TRACKER_NOTE
                 
                 ; Check for Shift Press or Unpressed
                 CMP #$2A                ; Left Shift Pressed
@@ -105,6 +108,12 @@ NOT_KB_SET_ALT
 KB_UNPRESSED    AND #$80                ; See if the Scan Code is press or Depressed
                 CMP #$80                ; Depress Status - We will not do anything at this point
                 BNE KB_NORM_SC
+                
+                ; send note off signal
+                LDA #$00
+                STA OPL2_PARAMETER0 ; Set Keyon False
+                JSR OPL2_SET_KEYON
+                
                 BRL KB_CHECK_B_DONE
 
 KB_NORM_SC      LDA KEYBOARD_SC_TMP       ;

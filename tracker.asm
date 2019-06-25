@@ -102,7 +102,7 @@ TRACKER
                 JSR INIT_CURSOR
                 JSR RESET_STATE_MACHINE
                 JSL IOPL2_TONE_TEST
-                
+
                 JSR ENABLE_IRQS
                 CLI
           
@@ -535,6 +535,42 @@ SETUP_VDMA_FOR_TESTING_1D
                 LDA @lVDMA_STATUS_REG
                 RTS
                 
+; Find the matching note for the key pressed
+; A = Scan code
+PLAY_TRACKER_NOTE
+                PHA
+                setxs
+                TAX
+                BMI NONOTE
+                
+                LDA @lSCAN_TO_NOTE, X
+                
+                setxl
+                LDY #128 + 70
+                JSR WRITE_HEX
+                
+                STA OPL2_NOTE
+                AND #$70
+                LSR
+                LSR
+                LSR
+                LSR
+                STA OPL2_OCTAVE
+                LDA OPL2_NOTE
+                AND #$0F
+                STA OPL2_NOTE
+                LDA #1
+                STA OPL2_CHANNEL
+                setal
+                JSR OPL2_GET_REG_OFFSET
+                JSL OPL2_PLAYNOTE
+                setas
+                
+NONOTE          
+                setxl
+                PLA
+                RTS
+
 SETUP_VDMA_FOR_TESTING_2D
         setas
 
@@ -577,3 +613,9 @@ VDMA_WAIT_TF
                 STA @lVDMA_CONTROL_REG
                 LDA @lVDMA_STATUS_REG
                 RTS
+                
+                ;      00,  01,  02,  03,  04,  05,  06,  07,  08,  09,  0A,  0B,  0C,  0D,  0E,  0F
+SCAN_TO_NOTE    .text $80, $80, $80, $31, $33, $80, $36, $38, $3A, $80, $80, $80, $80, $80, $80, $80
+                .text $30, $32, $34, $35, $37, $39, $3B, $40, $80, $80, $80, $80, $80, $80, $80, $21
+                .text $23, $80, $26, $28, $2A, $80, $80, $80, $80, $80, $80, $80, $20, $22, $24, $25
+                .text $27, $29, $2B, $30, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80
