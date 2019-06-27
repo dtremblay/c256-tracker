@@ -68,7 +68,7 @@ OPL2_TONE_TESTING_L0
 
 OPL2_TONE_TESTING_L1
                 STA OPL2_NOTE
-                AND #$03        ; replace modulo 3
+                AND #$01        ; replace modulo 3
                 STA OPL2_CHANNEL
                 LDA #$03
                 STA OPL2_OCTAVE

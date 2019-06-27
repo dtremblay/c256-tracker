@@ -1,10 +1,23 @@
 .cpu "65816"
 .include "macros_inc.asm"
 .include "bank_00_inc.asm"
+.include "super_io_def.asm"
 .include "vicky_def.asm"
 .include "interrupt_def.asm"
 
+* = $60
+MIDI_COUNTER    .byte 0
+MIDI_REG        .byte 0
+MIDI_CTRL       .byte 0
+MIDI_DATA1      .byte 0
+MIDI_DATA2      .byte 0
+TIMING_CNTR     .byte 0
+
 MOUSE_BUTTONS_REG= $180F00 ; bit 2=middle, bit 1=right, bit 0=left
+MIDI_DATA_REG    = $AF1330 ; read/write MIDI data
+MIDI_STATUS_REG  = $AF1331 ; read - status, write control
+MIDI_ADDRESS_HI  = $AF1160
+MIDI_ADDRESS_LO  = $AF1161
 
 * = MOUSE_BUTTONS_REG
                 .byte 0
@@ -92,10 +105,7 @@ TRACKER
                 JSR DRAW_DISPLAY
 
                 JSR LOAD_INSTRUMENTS
-
-                ; we allow input of data via MIDI
-                JSR INIT_MIDI
-
+                
                 ; we allow keyboard inputs 
                 JSR INIT_KEYBOARD
                 JSR INIT_MOUSEPOINTER
@@ -105,6 +115,9 @@ TRACKER
 
                 JSR ENABLE_IRQS
                 CLI
+                
+                ; we allow input of data via MIDI
+                JSR INIT_MIDI
           
 ALWAYS          NOP
                 NOP
@@ -212,8 +225,9 @@ ENABLE_IRQS
                 LDA @lINT_PENDING_REG0
                 AND #FNX0_INT07_MOUSE | FNX0_INT00_SOF
                 STA @lINT_PENDING_REG0  ; Writing it back will clear the Active Bit
+                
                 LDA @lINT_PENDING_REG1
-                AND #FNX1_INT00_KBD
+                AND #FNX1_INT00_KBD | FNX1_INT05_MPU401
                 STA @lINT_PENDING_REG1  ; Writing it back will clear the Active Bit
                 
                 ; Enable Mouse and SOF
@@ -221,7 +235,7 @@ ENABLE_IRQS
                 STA @lINT_MASK_REG0
                 
                 ; Enable Keyboard
-                LDA #~FNX1_INT00_KBD
+                LDA #~(FNX1_INT00_KBD | FNX1_INT05_MPU401)
                 STA @lINT_MASK_REG1
                 RTS
                 
@@ -294,6 +308,32 @@ LOAD_INSTRUMENTS
                 RTS
 
 INIT_MIDI
+                PHA
+                setas
+                STZ MIDI_COUNTER
+                STZ TIMING_CNTR
+                
+                LDA #5    ; (C256 - MIDI IN) Bit[0] = 1, Bit[2] = 1 (Page 132 Manual)
+                STA @lGP25_REG
+                ; LDA #0
+                ; STA @lGP26_REG ; disable MIDI out
+                
+                LDA #$3F
+                STA @lMIDI_STATUS_REG
+                
+                LDY #3 * 128
+MORE_DATA       LDA @lMIDI_DATA_REG
+                JSR WRITE_HEX
+                INY
+                INY
+                
+                LDA @lMIDI_STATUS_REG
+                AND #$80
+                CMP #$80
+                BNE MORE_DATA
+                
+INIT_MIDI_DONE
+                PLA
                 RTS
 
 INIT_KEYBOARD
@@ -541,15 +581,17 @@ PLAY_TRACKER_NOTE
                 PHA
                 setxs
                 TAX
-                BMI NONOTE
-                
-                LDA @lSCAN_TO_NOTE, X
+                BMI NONOTE ; key release should not play a note
+
+                LDA @lSCAN_TO_NOTE, X  
                 
                 setxl
                 LDY #128 + 70
                 JSR WRITE_HEX
-                
                 STA OPL2_NOTE
+                
+                BMI NONOTE  ; if the lookup table returns $80, then don't play the note
+                
                 AND #$70
                 LSR
                 LSR
@@ -569,6 +611,174 @@ PLAY_TRACKER_NOTE
 NONOTE          
                 setxl
                 PLA
+                RTS
+
+; databank is set to $18
+; xl and as
+; A contains the MIDI DATA
+RECEIVE_MIDI_DATA
+                .as
+                setxl
+                PHA
+                
+                BPL RECEIVED_DATA_MSG
+                
+                PHA
+                AND #$F ; channel - store it somewhere when you care
+                
+                PLA
+                AND #$70
+                LSR 
+                LSR 
+                LSR 
+                
+                STA MIDI_CTRL
+                CMP #$E
+                BNE RECEIVE_MIDI_DATA_DONE
+                
+                JSR SYSTEM_COMMAND
+                BRA RECEIVE_MIDI_DATA_DONE 
+                
+RECEIVED_DATA_MSG
+                PHA
+                setxs
+                LDA MIDI_CTRL
+                TAX
+                PLA
+                JSR (MIDI_COMMAND_TABLE,X)
+                setxl
+                
+RECEIVE_MIDI_DATA_DONE
+                PLA
+                RTS
+                
+; /// A contains the last byte received from MIDI
+NOTE_OFF
+NOTE_ON         ; we need two data bytes: the note and the velocity
+                .as
+                .xs
+                LDX MIDI_COUNTER
+                STA MIDI_DATA1,X
+                
+                TXA
+                INC A
+                STA MIDI_COUNTER
+                CMP #2
+                BNE MORE_NOTE_DATA_NEEDED
+                
+                STZ MIDI_COUNTER
+                LDA #1
+                STA OPL2_CHANNEL
+                
+                
+                setxl
+                LDA MIDI_CTRL
+                LDY #7*128
+                JSR WRITE_HEX
+                
+                ; NOTE VALUE
+                LDA MIDI_DATA1
+                STA @lD0_OPERAND_B
+                LDY #7*128+2
+                JSR WRITE_HEX
+                
+                LDA #0
+                STA @lD0_OPERAND_A + 1
+                STA @lD0_OPERAND_B + 1
+                LDA #12
+                STA @lD0_OPERAND_A
+                
+                SEC
+                LDA @lD0_RESULT
+                SBC #2
+                STA OPL2_OCTAVE
+                LDY #7*128+10
+                JSR WRITE_HEX
+                
+                LDA @lD0_REMAINDER
+                STA OPL2_NOTE
+                LDY #7*128+12
+                JSR WRITE_HEX
+                
+                
+                
+                ; VELOCITY VALUE
+                LDA MIDI_DATA2
+                LDY #7*128+4
+                JSR WRITE_HEX
+                
+                ; /// Turn note off
+                ; CMP #0
+                ; BEQ PLAY_NOTE_ON
+                ; STA OPL2_PARAMETER0
+                ; LDA #$FF
+                ; LDY #7*128+20
+                ; JSR WRITE_HEX
+                
+                ;JSR OPL2_SET_KEYON
+                ;BRA MORE_NOTE_DATA_NEEDED
+                
+PLAY_NOTE_ON
+                LDA #1
+                STA OPL2_PARAMETER0
+                
+                setal
+                JSR OPL2_GET_REG_OFFSET
+                JSL OPL2_PLAYNOTE
+                setas
+                
+MORE_NOTE_DATA_NEEDED
+                setxs
+                RTS
+
+
+POLY_PRESSURE
+CONTROL_CHANGE
+CHANNEL_PRESSURE
+PITCH_BEND
+                .xs
+                LDX MIDI_COUNTER
+                STA MIDI_DATA1,X
+                
+                TXA
+                INC A
+                STA MIDI_COUNTER
+                CMP #2
+                BNE MORE_CTRL_DATA_NEEDED
+                
+                STZ MIDI_COUNTER
+                
+                setxl
+                LDA MIDI_CTRL
+                LDY #9*128
+                JSR WRITE_HEX
+                
+                LDA MIDI_DATA1
+                LDY #9*128+2
+                JSR WRITE_HEX
+                
+                LDA MIDI_DATA2
+                LDY #9*128+4
+                JSR WRITE_HEX
+                
+                ;JSR CTRL_TRACKER_NOTE
+                
+MORE_CTRL_DATA_NEEDED
+                RTS
+                
+SYSTEM_COMMAND
+                .as
+                setxl
+                LDA @lTIMING_CNTR
+                INC A
+                CMP #3
+                BNE DISPLAY_COUNTER
+                LDA #0
+                
+DISPLAY_COUNTER
+                LDY #8*128
+                JSR WRITE_HEX
+                STA @lTIMING_CNTR
                 RTS
 
 SETUP_VDMA_FOR_TESTING_2D
@@ -619,3 +829,7 @@ SCAN_TO_NOTE    .text $80, $80, $80, $31, $33, $80, $36, $38, $3A, $80, $80, $80
                 .text $30, $32, $34, $35, $37, $39, $3B, $40, $80, $80, $80, $80, $80, $80, $80, $21
                 .text $23, $80, $26, $28, $2A, $80, $80, $80, $80, $80, $80, $80, $20, $22, $24, $25
                 .text $27, $29, $2B, $30, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80
+                .text $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80
+                
+MIDI_COMMAND_TABLE
+                 .word <>NOTE_OFF, <>NOTE_ON, <>POLY_PRESSURE, <>CONTROL_CHANGE, <>CHANNEL_PRESSURE, <>PITCH_BEND, <>SYSTEM_COMMAND

@@ -219,6 +219,34 @@ TICK_DONE
                 STA @lTICK
                 RTS
                 
+; ///////////////////////////////////////////////////////////////////
+; ///
+; /// MPU-401 (MIDI)
+; /// Desc: Interrupt for Data Rx/Tx
+; /// We get a single interrupt per byte
+; /// MIDI command have a command byte then one or two data bytes
+; ///
+; ///////////////////////////////////////////////////////////////////
+MPU401_INTERRUPT  .as
+                PHA
+                setxl
+                
+MORE_MIDI_DATA  LDA @lMIDI_STATUS_REG ; if bit D7 is low, there is more data to read
+                STA MIDI_REG
+                AND #$80
+                CMP #$80
+                BEQ MIDI_DONE
+                
+                LDA @lMIDI_DATA_REG
+                JSR RECEIVE_MIDI_DATA
+                
+                LDA MIDI_REG
+                CMP #$80
+                BNE MORE_MIDI_DATA
+MIDI_DONE
+                PLA
+                RTS
+                
 TIMER0_INTERRUPT
                 .as
 ;; PUT YOUR CODE HERE
@@ -346,16 +374,6 @@ COM1_INTERRUPT  .as
 ;; PUT YOUR CODE HERE
                 RTS
 ;
-; ///////////////////////////////////////////////////////////////////
-; ///
-; /// MPU-401 (MIDI)
-; /// Desc: Interrupt for Data Rx/Tx
-; ///
-; ///////////////////////////////////////////////////////////////////
-MPU401_INTERRUPT  .as
-
-;; PUT YOUR CODE HERE
-                RTS
 ;
 ; ///////////////////////////////////////////////////////////////////
 ; ///
