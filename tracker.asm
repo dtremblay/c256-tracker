@@ -9,6 +9,7 @@
 MIDI_COUNTER    .byte 0
 MIDI_REG        .byte 0
 MIDI_CTRL       .byte 0
+MIDI_CHANNEL    .byte 0
 MIDI_DATA1      .byte 0
 MIDI_DATA2      .byte 0
 TIMING_CNTR     .byte 0
@@ -625,6 +626,7 @@ RECEIVE_MIDI_DATA
                 
                 PHA
                 AND #$F ; channel - store it somewhere when you care
+                STA MIDI_CHANNEL
                 
                 PLA
                 AND #$70
@@ -666,7 +668,7 @@ NOTE_ON         ; we need two data bytes: the note and the velocity
                 CMP #2
                 BNE MORE_NOTE_DATA_NEEDED
                 
-                STZ MIDI_COUNTER
+                STZ MIDI_COUNTER  ; reset the counter
                 LDA #1
                 STA OPL2_CHANNEL
                 
@@ -700,23 +702,22 @@ NOTE_ON         ; we need two data bytes: the note and the velocity
                 LDY #7*128+12
                 JSR WRITE_HEX
                 
-                
-                
                 ; VELOCITY VALUE
                 LDA MIDI_DATA2
                 LDY #7*128+4
                 JSR WRITE_HEX
                 
-                ; /// Turn note off
-                ; CMP #0
-                ; BEQ PLAY_NOTE_ON
-                ; STA OPL2_PARAMETER0
-                ; LDA #$FF
-                ; LDY #7*128+20
-                ; JSR WRITE_HEX
+                ; /// if velocity is zero, turn note off
+                CMP #0
+                BNE PLAY_NOTE_ON  ; otherwise, turn note on
+                STA OPL2_PARAMETER0
+                LDA #$FF
+                LDY #7*128+20
+                JSR WRITE_HEX
                 
-                ;JSR OPL2_SET_KEYON
-                ;BRA MORE_NOTE_DATA_NEEDED
+                JSR OPL2_SET_KEYON
+                
+                BRA MORE_NOTE_DATA_NEEDED
                 
 PLAY_NOTE_ON
                 LDA #1
@@ -734,7 +735,6 @@ MORE_NOTE_DATA_NEEDED
 
 POLY_PRESSURE
 CONTROL_CHANGE
-CHANNEL_PRESSURE
 PITCH_BEND
                 .xs
                 LDX MIDI_COUNTER
@@ -745,8 +745,6 @@ PITCH_BEND
                 STA MIDI_COUNTER
                 CMP #2
                 BNE MORE_CTRL_DATA_NEEDED
-                
-                STZ MIDI_COUNTER
                 
                 setxl
                 LDA MIDI_CTRL
@@ -761,9 +759,18 @@ PITCH_BEND
                 LDY #9*128+4
                 JSR WRITE_HEX
                 
+                STZ MIDI_COUNTER
+                
                 ;JSR CTRL_TRACKER_NOTE
                 
 MORE_CTRL_DATA_NEEDED
+                RTS
+                
+PROGRAM_CHANGE
+CHANNEL_PRESSURE
+                .as
+                LDA #16
+                STA MIDI_CTRL
                 RTS
                 
 SYSTEM_COMMAND
@@ -779,6 +786,10 @@ DISPLAY_COUNTER
                 LDY #8*128
                 JSR WRITE_HEX
                 STA @lTIMING_CNTR
+                RTS
+                
+INVALID_COMMAND .as
+                ; 
                 RTS
 
 SETUP_VDMA_FOR_TESTING_2D
@@ -832,4 +843,8 @@ SCAN_TO_NOTE    .text $80, $80, $80, $31, $33, $80, $36, $38, $3A, $80, $80, $80
                 .text $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80
                 
 MIDI_COMMAND_TABLE
-                 .word <>NOTE_OFF, <>NOTE_ON, <>POLY_PRESSURE, <>CONTROL_CHANGE, <>CHANNEL_PRESSURE, <>PITCH_BEND, <>SYSTEM_COMMAND
+                 .word <>NOTE_OFF, <>NOTE_ON
+                 .word <>POLY_PRESSURE, <>CONTROL_CHANGE
+                 .word <>PROGRAM_CHANGE, <>CHANNEL_PRESSURE  ; these two command expect 1 datat byte only - no running status
+                 .word <>PITCH_BEND, <>SYSTEM_COMMAND
+                 .word <>INVALID_COMMAND
