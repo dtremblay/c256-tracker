@@ -104,15 +104,54 @@ TRACKER
                 STA @lINT_MASK_REG2
                 
                 JSR DRAW_DISPLAY
-
-                JSR LOAD_INSTRUMENTS
                 
                 ; we allow keyboard inputs 
                 JSR INIT_KEYBOARD
                 JSR INIT_MOUSEPOINTER
                 JSR INIT_CURSOR
                 JSR RESET_STATE_MACHINE
+                
+                LDX #0 ; setup channel 1
+                LDY #(INSTRUMENT_ELCLAV1-INSTRUMENT_ACCORDN) / 12 ; load accordion
+                JSR LOAD_INSTRUMENT
+                
+                LDX #1 ; setup channel 2
+                LDY #(INSTRUMENT_ELCLAV1-INSTRUMENT_ACCORDN) / 12 ; load bass1
+                JSR LOAD_INSTRUMENT
+                
+                LDX #2 ; setup channel 3
+                LDY #(INSTRUMENT_ELCLAV1-INSTRUMENT_ACCORDN) / 12 ; load brass
+                JSR LOAD_INSTRUMENT
+                
+                LDA #$88
+                LDY #128*10 + 10
+                JSR WRITE_HEX
+                
+                LDA #$AA
+                LDY #128*10 + 14
+                JSR WRITE_HEX
+                
                 JSL IOPL2_TONE_TEST
+                
+                ;all channels off
+                LDA @lOPL2_S_BASE + $B0
+                AND #~$20
+                NOP
+                STA @lOPL2_S_BASE + $B0
+                
+                LDA @lOPL2_S_BASE + $B1
+                AND #~$20
+                NOP
+                STA @lOPL2_S_BASE + $B1
+                
+                LDA @lOPL2_S_BASE + $B2
+                AND #~$20
+                NOP
+                STA @lOPL2_S_BASE + $B2
+                
+                LDA #$99
+                LDY #128*10 + 12
+                JSR WRITE_HEX
 
                 JSR ENABLE_IRQS
                 CLI
@@ -240,17 +279,19 @@ ENABLE_IRQS
                 STA @lINT_MASK_REG1
                 RTS
                 
-                
+; Y contains the screen position
+; A contains the value to display
 WRITE_HEX
-                setas
+                .as
                 PHA
-                PHB
+                PHY
                 STA @lTEMP_STORAGE
                 AND #$F0
                 lsr A
                 lsr A
                 lsr A
                 lsr A
+                setxs
                 TAX
                 LDA HEX_MAP,X
                 STA @lLOW_NIBBLE
@@ -261,20 +302,11 @@ WRITE_HEX
                 LDA HEX_MAP,X
                 STA @lHIGH_NIBBLE
                 
-                CLC
-                setal
-                TYA
-                ADC SCREENBEGIN
-                TAX
-                setdbr $AF
-                setal
+                setaxl
+                PLY
                 LDA @lLOW_NIBBLE
-                STA 0, b, X  ; display the scan code upper-right
-                LDA #0
-                .databank 0
-                
+                STA [SCREENBEGIN], Y
                 setas
-                PLB
                 PLA
                 RTS
                 
@@ -305,12 +337,71 @@ DISPLAY_PATTERN
                 JSR WRITE_HEX
                 RTS
 
-LOAD_INSTRUMENTS
+; X contains the channel
+; Y contains the instrument number
+LOAD_INSTRUMENT
+                setaxl
+                ; calculate the memory offset to the instrument bank
+                TYA
+                STA @lM0_OPERAND_A
+                LDA #12
+                STA @lM0_OPERAND_B
+                LDA @lM0_RESULT
+                PHA
+                setas
+
+                setdbr `INSTRUMENT_ACCORDN
+                PLY
+                LDA INSTRUMENT_ACCORDN,Y
+                BNE DRUM_SET
+                
+                ; $20 Amp Mod, Vibrator, EG Type, Key Scaling, F Mult
+                INY
+                LDA INSTRUMENT_ACCORDN,Y
+                STA @lOPL2_S_AM_VID_EG_KSR_MULT,X
+                LDA INSTRUMENT_ACCORDN+6,Y
+                STA @lOPL2_S_AM_VID_EG_KSR_MULT + 3,X
+                
+                ; $40 Key Scaling Lvl, Operator Lvl
+                INY
+                LDA INSTRUMENT_ACCORDN,Y
+                STA @lOPL2_S_KSL_TL,X
+                LDA INSTRUMENT_ACCORDN+6,Y
+                STA @lOPL2_S_KSL_TL + 3,X
+                ; $60 Attack Rate, Decay Rate
+                INY
+                LDA INSTRUMENT_ACCORDN,Y
+                STA @lOPL2_S_AR_DR,X
+                LDA INSTRUMENT_ACCORDN+6,Y
+                STA @lOPL2_S_AR_DR + 3,X
+                ; $80 Sustain Level, Release Rate
+                INY
+                LDA INSTRUMENT_ACCORDN,Y
+                STA @lOPL2_S_SL_RR,X
+                LDA INSTRUMENT_ACCORDN+6,Y
+                STA @lOPL2_S_SL_RR + 3,X
+                ; $C0 Feedback, Connection Type
+                INY
+                LDA INSTRUMENT_ACCORDN,Y
+                STA @lOPL2_S_FEEDBACK,X
+                ; $E0 Waveform Selection
+                INY
+                LDA INSTRUMENT_ACCORDN,Y
+                STA @lOPL2_S_WAVE_SELECT,X
+                LDA INSTRUMENT_ACCORDN+5,Y
+                STA @lOPL2_S_WAVE_SELECT+3,X
+                
+                
+DRUM_SET
+                
+                
+                setdbr 0
                 RTS
 
 INIT_MIDI
                 PHA
                 setas
+                .xl
                 STZ MIDI_COUNTER
                 STZ TIMING_CNTR
                 
@@ -769,6 +860,16 @@ MORE_CTRL_DATA_NEEDED
 PROGRAM_CHANGE
 CHANNEL_PRESSURE
                 .as
+                PHA
+                setxl
+                LDA MIDI_CTRL
+                LDY #10*128
+                JSR WRITE_HEX
+                
+                PLA
+                LDY #10*128 + 2
+                JSR WRITE_HEX
+                
                 LDA #16
                 STA MIDI_CTRL
                 RTS

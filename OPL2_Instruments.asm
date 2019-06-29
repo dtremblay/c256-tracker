@@ -57,6 +57,8 @@
 ;  9 - Channel c, operator 2, register $60
 ; 10 - Channel c, operator 2, register $80
 ; 11 - Channel c, operator 2, register $E0
+
+                      ;     DR   $20  $40  $60  $80  $C0  $E0  $20  $40  $60  $80  $E0
 INSTRUMENT_ACCORDN    .text $00, $24, $4F, $F2, $0B, $00, $0E, $31, $00, $52, $0B, $00
 INSTRUMENT_BAGPIPE1   .text $00, $31, $43, $6E, $17, $01, $02, $22, $05, $8B, $0C, $02
 INSTRUMENT_BAGPIPE2   .text $00, $30, $00, $FF, $A0, $03, $00, $A3, $00, $65, $0B, $02

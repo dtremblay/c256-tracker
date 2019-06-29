@@ -15,67 +15,19 @@
 ;
 
 IOPL2_TONE_TEST
-
-                setaxl
-                JSL OPL2_INIT
                 setas
-                LDA #$01
-                STA OPL2_OPERATOR
-                LDA #$00
-                STA OPL2_LOOP
-
-;Setup channels 0, 1 and 2 to produce a bell sound.
-OPL2_TONE_TESTING_L0
-
-                setas
-                LDA OPL2_LOOP
-                STA OPL2_CHANNEL
-                
-                ; set the AM/Vibrato/Env/KSR/ModFreqMult - offset $20
-                SEC
-                JSL OPL2_SET_TREMOLO 
-                SEC
-                JSL OPL2_SET_VIBRATO
-                ; Set Multiplier
-                LDA #$04
-                STA OPL2_PARAMETER0
-                JSL OPL2_SET_MODFREQMULTIPLE
-                
-                ; set attack / decay - offset $60
-                LDA #$0A
-                STA OPL2_PARAMETER0
-                JSL OPL2_SET_ATTACK
-                LDA #$04
-                STA OPL2_PARAMETER0
-                JSL OPL2_SET_DECAY
-                
-                ; set sustain / release - offset $80
-                LDA #$0F
-                STA OPL2_PARAMETER0
-                JSL OPL2_SET_SUSTAIN
-                LDA #$0F
-                STA OPL2_PARAMETER0
-                JSL OPL2_SET_RELEASE
-                
-                setas
-                INC OPL2_LOOP
-                LDA OPL2_LOOP
-                CMP #$03
-                BNE OPL2_TONE_TESTING_L0
-
+                setxl
                 LDA #$00
                 STA OPL2_LOOP
 
 OPL2_TONE_TESTING_L1
-                STA OPL2_NOTE
-                AND #$01        ; replace modulo 3
+                STA OPL2_NOTE ; start at C
+                AND #$01        ; replace modulo 3 -  play each note on a different channel
                 STA OPL2_CHANNEL
                 LDA #$03
                 STA OPL2_OCTAVE
                 JSL OPL2_PLAYNOTE
 
-                setas
-                setxl
                 LDX #$0000
                 
 ; Delay around 30ms
@@ -109,6 +61,7 @@ OPL2_INIT
                 STA OPL2_NOTE
                 STA OPL2_PARAMETER0
                 STA OPL2_PARAMETER2
+                setas
                 RTL
 
 
@@ -339,6 +292,7 @@ OPL2_PLAYNOTE   ;Return void, Param: (byte channel, byte octave, byte note);
                 LDA #$01
                 STA OPL2_PARAMETER0 ; Set Keyon False
                 JSR OPL2_SET_KEYON
+                setxl
                 RTL
 
 OPL2_PLAYDRUM             ;Return void, Param: (byte drum, byte octave, byte note);
@@ -634,6 +588,7 @@ OPL2_Set_WaveFormSelect_set
 OPL2_SET_TREMOLO            ;Return Byte, Param: (byte channel, byte operatorNum, bool enable);
                 PHP ; Push the Carry
                 setal
+                CLC
                 LDA #$0020 ; 
                 STA OPL2_REG_REGION
                 JSR OPL2_GET_REG_OFFSET
@@ -668,6 +623,7 @@ OPL2_GET_TREMOLO          ; Return Bool, Param: (byte channel, byte operatorNum)
                 LDA #$0020;
                 STA OPL2_REG_REGION
                 JSR OPL2_GET_REG_OFFSET
+                setas
                 LDA [OPL2_IND_ADDY_LL]
                 AND #$80
                 RTL
@@ -683,6 +639,7 @@ OPL2_GET_TREMOLO          ; Return Bool, Param: (byte channel, byte operatorNum)
 OPL2_SET_VIBRATO            ;Return Byte, Param: (byte channel, byte operatorNum, bool enable);
                 PHP ; Push the Carry
                 setal
+                CLC
                 LDA #$0020;
                 STA OPL2_REG_REGION
                 JSR OPL2_GET_REG_OFFSET
