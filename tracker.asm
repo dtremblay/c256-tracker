@@ -423,10 +423,10 @@ DISPLAY_PATTERN
 LOAD_INSTRUMENT
                 
                 setaxl
-                LDA INSTR_NUMBER
-                TAY
+                LDA @lINSTR_NUMBER
+
                 ; calculate the memory offset to the instrument bank
-                STY M0_OPERAND_A
+                STA @lM0_OPERAND_A
                 LDA #INSTR_REC_LEN
                 STA @lM0_OPERAND_B
                 LDA @lM0_RESULT
@@ -437,7 +437,7 @@ LOAD_INSTRUMENT
                 
                 setas
                 ; Y still contains the instrument number
-                TYA
+                LDA @lINSTR_NUMBER
                 LDY #5 * 128 + 19
                 JSR WRITE_HEX
 
@@ -959,7 +959,7 @@ PLAY_TRACKER_NOTE
                 TAX
                 BMI NONOTE ; key release should not play a note
 
-                LDA @lSCAN_TO_NOTE, X  
+                LDA @lSCAN_TO_NOTE, X
                 
                 setxl
                 LDY #128 + 70

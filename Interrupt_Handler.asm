@@ -77,6 +77,20 @@ IRQ_HANDLER_FETCH
                 
                 JSR PLAY_TRACKER_NOTE
                 
+                CMP #$1A
+                BNE NOT_LEFT_BRACKET
+                DEC INSTR_NUMBER
+                LDX #0
+                JSR LOAD_INSTRUMENT
+                
+NOT_LEFT_BRACKET
+                CMP #$1B
+                BNE NOT_RIGHT_BRACKET
+                INC INSTR_NUMBER
+                LDX #0
+                JSR LOAD_INSTRUMENT
+                
+NOT_RIGHT_BRACKET
                 ; Check for Shift Press or Unpressed
                 CMP #$2A                ; Left Shift Pressed
                 BNE NOT_KB_SET_SHIFT
