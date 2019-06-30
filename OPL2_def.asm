@@ -57,6 +57,22 @@ OPL2_S_SL_RR              = $AFE780;  $80..$95 (21 Registers)
 OPL2_S_FEEDBACK           = $AFE7C0;  $C0..$C9
 OPL2_S_WAVE_SELECT        = $AFE7E0;  $E0..$F5
 
+TREMOLO    = $80
+VIBRATO    = $40
+SUSTAINING = $20
+KSR        = $10
+MULTIPLIER = $0F
+
+KEY_SCALE  = $C0
+OP_LEVEL   = $3F
+ATTACK_RT  = $F0
+DECAY_RT   = $0F
+SUSTAIN_RT = $F0
+RELEASE_RT = $0F
+
+FEEDBACK   = $0E
+ALGORITHM  = $01
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; All the code for the C256 Foenix support is coming from
