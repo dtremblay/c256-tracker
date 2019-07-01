@@ -7,11 +7,11 @@
 ;////////////////////////////////////////////////////////////////////////////
 
 check_irq_bit  .macro
-                LDA @l\1
+                LDA \1
                 AND #\2
                 CMP #\2
                 BNE END_CHECK
-                STA @l\1
+                STA \1
                 JSR \3
                 
 END_CHECK
@@ -19,8 +19,14 @@ END_CHECK
                 
 IRQ_HANDLER
 ; First Block of 8 Interrupts
+                setdp 0
+                
                 setas
-                LDA @lINT_PENDING_REG0
+                LDA #0
+                PHA
+                PLB
+                
+                LDA INT_PENDING_REG0
                 BEQ CHECK_PENDING_REG1
 ; Start of Frame
                 check_irq_bit INT_PENDING_REG0, FNX0_INT00_SOF, SOF_INTERRUPT
@@ -34,7 +40,7 @@ IRQ_HANDLER
 ; Second Block of 8 Interrupts
 CHECK_PENDING_REG1
                 setas
-                LDA @lINT_PENDING_REG1
+                LDA INT_PENDING_REG1
                 BEQ CHECK_PENDING_REG2   ; BEQ EXIT_IRQ_HANDLE
 ; Keyboard Interrupt
                 check_irq_bit INT_PENDING_REG1, FNX1_INT00_KBD, KEYBOARD_INTERRUPT
@@ -50,7 +56,7 @@ CHECK_PENDING_REG1
 ; Third Block of 8 Interrupts
 CHECK_PENDING_REG2
                 setas
-                LDA @lINT_PENDING_REG2
+                LDA INT_PENDING_REG2
                 BEQ EXIT_IRQ_HANDLE
                 
 ; OPL2 Right Interrupt
@@ -70,7 +76,7 @@ KEYBOARD_INTERRUPT
 IRQ_HANDLER_FETCH
                 LDA KBD_INPT_BUF        ; Get Scan Code from KeyBoard
                 STA KEYBOARD_SC_TMP     ; Save Code Immediately
-                
+
                 setxl
                 LDY #70
                 JSR WRITE_HEX  ; print the HEX key code at column 70 on the top line
@@ -80,17 +86,16 @@ IRQ_HANDLER_FETCH
                 CMP #$1A
                 BNE NOT_LEFT_BRACKET
                 DEC INSTR_NUMBER
-                LDX #0
-                JSR LOAD_INSTRUMENT
+                JSR LOAD_INSTRUMENT  ; X is already set to 0
                 
 NOT_LEFT_BRACKET
                 CMP #$1B
                 BNE NOT_RIGHT_BRACKET
                 INC INSTR_NUMBER
-                LDX #0
-                JSR LOAD_INSTRUMENT
+                JSR LOAD_INSTRUMENT  ; X is already set to 0
                 
 NOT_RIGHT_BRACKET
+
                 ; Check for Shift Press or Unpressed
                 CMP #$2A                ; Left Shift Pressed
                 BNE NOT_KB_SET_SHIFT
@@ -130,7 +135,9 @@ KB_UNPRESSED    AND #$80                ; See if the Scan Code is press or Depre
                 
                 BRL KB_CHECK_B_DONE
 
-KB_NORM_SC      LDA KEYBOARD_SC_TMP       ;
+KB_NORM_SC      
+
+                LDA KEYBOARD_SC_TMP
                 setxs
                 TAX
                 LDA KEYBOARD_SC_FLG     ; Check to See if the SHIFT Key is being Pushed
@@ -272,15 +279,21 @@ TIMER0_INTERRUPT
 ; /// Desc: Basically Assigning the 3Bytes Packet to Vicky's Registers
 ; ///       Vicky does the rest
 ; ///////////////////////////////////////////////////////////////////
-MOUSE_INTERRUPT 
+MOUSE_INTERRUPT
                 .as
-                LDA @lINT_PENDING_REG0
-                AND #FNX0_INT07_MOUSE
-                STA @lINT_PENDING_REG0
                 LDA KBD_INPT_BUF
+                PHA
                 LDX #$0000
                 setxs
                 LDX MOUSE_PTR
+                BNE MOUSE_BYTE_GT1
+                
+                ; copy the buttons to another address
+                AND #%0111
+                STA MOUSE_BUTTONS_REG
+                
+    MOUSE_BYTE_GT1
+                PLA
                 STA @lMOUSE_PTR_BYTE0, X
                 INX
                 CPX #$03
@@ -297,22 +310,15 @@ MOUSE_INTERRUPT
                 LDA @lMOUSE_PTR_Y_POS_H
                 STA MOUSE_POS_Y_HI
                 
-                ;copy the buttons to another address
-                LDA MOUSE_PTR_BYTE0
-                AND #%0111
-                STA @lMOUSE_BUTTONS_REG
                 
                 ; print the character on the upper-right of the screen
                 ; this is temporary
                 CLC
-                LDA @lMOUSE_BUTTONS_REG
-                ADC #$30
+                LDA MOUSE_BUTTONS_REG
                 setxl
-                LDX SCREENBEGIN
-                setdbr $AF
-                STA 79, b, X
+                LDY #60
+                JSR WRITE_HEX
                 setxs
-                setdbr $0
                 
                 JSR MOUSE_BUTTON_HANDLER
                 
@@ -333,6 +339,7 @@ MOUSE_BUTTON_HANDLER
                 setal
                 CLC
                 LDA @lMOUSE_PTR_X_POS_L
+                LSR
                 LSR
                 LSR
                 LSR

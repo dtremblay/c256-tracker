@@ -17,7 +17,7 @@ line3     .byte $c2
           .fill (SCREEN_WIDTH - 40) / 2, 0
           .text 'C256 Foenix Tracker' ; 19 characters
           .fill 4, 0
-          .text '[Version 0.0.2]' ; 15 characters
+          .text '[Version 0.0.3]' ; 15 characters
           .fill (SCREEN_WIDTH - 40) / 2, 0
           .byte $c2
           .fill UNUSED_SCR, 0
@@ -151,13 +151,13 @@ lines12
           .byte $c2
           .text 'Multiplier '
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 9, 0
           .byte $9a
           .text 'Multiplier '
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 8, 0
           .byte $c2
@@ -169,13 +169,13 @@ lines13
           .byte $c2
           .text 'Scale Level'
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 9, 0
           .byte $9a
           .text 'Scale Level'
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 8, 0
           .byte $c2
@@ -187,13 +187,13 @@ lines14
           .byte $c2
           .text 'Volume     '
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 9, 0
           .byte $9a
           .text 'Volume     '
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 8, 0
           .byte $c2
@@ -205,13 +205,13 @@ lines15
           .byte $c2
           .text 'Attack     '
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 9, 0
           .byte $9a
           .text 'Attack     '
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 8, 0
           .byte $c2
@@ -223,13 +223,13 @@ lines16
           .byte $c2
           .text 'Decay      '
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 9, 0
           .byte $9a
           .text 'Decay      '
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 8, 0
           .byte $c2
@@ -241,13 +241,13 @@ lines17
           .byte $c2
           .text 'Sustain    '
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 9, 0
           .byte $9a
           .text 'Sustain    '
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 8, 0
           .byte $c2
@@ -259,13 +259,13 @@ lines18
           .byte $c2
           .text 'Release    '
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 9, 0
           .byte $9a
           .text 'Release    '
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 8, 0
           .byte $c2
@@ -277,13 +277,13 @@ lines19
           .byte $c2
           .text 'Wave Type  '
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 9, 0
           .byte $9a
           .text 'Wave Type  '
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 8, 0
           .byte $c2
@@ -312,13 +312,13 @@ line21
           .byte $c2
           .text 'Panning    '
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 9, 0
           .byte $9a
           .text ' Feedback  '
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 8, 0
           .byte $c2
@@ -330,13 +330,13 @@ line22
           .byte $c2
           .text 'Riff Speed '
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 9, 0
           .byte $9a
           .text ' Algorithm '
           .byte $c2
-          .text '000'
+          .text ' 00'
           .byte $c2
           .fill 8, 0
           .byte $c2
@@ -354,7 +354,7 @@ line23    .byte $ab
           .fill 4, $C3
           .byte $b2
           .fill 4, $C3 ; octave
-          .byte $b1
+          .byte $9c
           .fill 5, $C3
           .byte $b2
           .fill 5, $C3 ; speed
