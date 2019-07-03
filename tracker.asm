@@ -29,7 +29,7 @@ TEMP_STORAGE    .byte 0,0
 LOW_NIBBLE      .byte 0
 HIGH_NIBBLE     .byte 0
 HEX_MAP         .text '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'
-STATE_MACHINE   .byte 0  ; 0 is live mode, 1 is play mode
+STATE_MACHINE   .byte 0  ; 0 is record mode, 1 is play mode
 TICK            .byte 0  ; this is used to count the number of 1/60 intervals
 BPM             .byte 30 ; how fast should the lines change - 
 PATTERN_NUM     .byte 1
@@ -1243,7 +1243,8 @@ VDMA_WAIT_TF
 SCAN_TO_NOTE    .text $80, $80, $80, $31, $33, $80, $36, $38, $3A, $80, $80, $80, $80, $80, $80, $80
                 .text $30, $32, $34, $35, $37, $39, $3B, $40, $80, $80, $80, $80, $80, $80, $80, $21
                 .text $23, $80, $26, $28, $2A, $80, $80, $80, $80, $80, $80, $80, $20, $22, $24, $25
-                .text $27, $29, $2B, $30, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80
+                .text $27, $29, $2B, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80
+                .text $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80
                 .text $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80
                 
 MIDI_COMMAND_TABLE

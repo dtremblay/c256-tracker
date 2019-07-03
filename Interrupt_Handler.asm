@@ -22,7 +22,7 @@ IRQ_HANDLER
                 setdp 0
                 
                 setas
-                LDA #0
+                LDA #0  ; set the data bank register to 0
                 PHA
                 PLB
                 
@@ -69,6 +69,13 @@ EXIT_IRQ_HANDLE
                 setaxl
                 RTL
 
+; ****************************************************************
+; ****************************************************************
+;
+;  KEYBOARD_INTERRUPT
+;
+; ****************************************************************
+; ****************************************************************
 KEYBOARD_INTERRUPT
                 .as
                 ldx #$0000
@@ -339,7 +346,6 @@ MOUSE_BUTTON_HANDLER
                 setal
                 CLC
                 LDA @lMOUSE_PTR_X_POS_L
-                LSR
                 LSR
                 LSR
                 LSR
