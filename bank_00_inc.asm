@@ -41,6 +41,7 @@ OPL2_BLOCK       = $000036 ;
 SDCARD_FILE_PTR  = $000038 ; 3 Bytes Pointer to Filename to open
 SDCARD_BYTE_NUM  = $00003C ; 2Bytes
 SDCARD_PRSNT_MNT = $00003F ; 1 Byte, Indicate that the SDCard is Present and that it is Mounted
+
 ; Command Line Parser Variables
 CMD_PARSER_TMPX  = $000040 ; <<< Command Parser 2Bytes
 CMD_PARSER_TMPY  = $000042 ; <<< Command Parser 2Bytes

@@ -15,6 +15,8 @@ MIDI_DATA2      .byte 0
 TIMING_CNTR     .byte 0
 INSTR_ADDR      .fill 3,0
 INSTR_NUMBER    .byte $17, 0
+LINE_NUM_HEX    .byte 1
+TAB_COUNTER     .byte 2
 
 MOUSE_BUTTONS_REG= $180F00 ; bit 2=middle, bit 1=right, bit 0=left
 MIDI_DATA_REG    = $AF1330 ; read/write MIDI data
@@ -33,7 +35,7 @@ STATE_MACHINE   .byte 0  ; 0 is record mode, 1 is play mode
 TICK            .byte 0  ; this is used to count the number of 1/60 intervals
 BPM             .byte 30 ; how fast should the lines change - 
 PATTERN_NUM     .byte 1
-LINE_NUM        .byte 1
+LINE_NUM_DEC    .byte 1
 
 * = HRESET
                 CLC
@@ -187,10 +189,55 @@ DRAW_DISPLAY
 
                 ; copy screen data from TRACKER_SCREEN to CS_TEXT_MEM_PTR
                 setaxl
-                LDA #128*64-1
+                LDA #128*28-1
                 LDX #<>TRACKER_SCREEN
                 LDY #<>CS_TEXT_MEM_PTR
                 MVN #`TRACKER_SCREEN,#$AF
+                
+DRAW_BLANK_LINES
+                LDA #9
+                STA TAB_COUNTER
+                LDY #<>CS_TEXT_MEM_PTR + 128 * 28
+                
+BLANKS_LOOP
+                LDA #127
+                LDX #<>blank_line
+                MVN #`blank_line,#$AF
+                DEC TAB_COUNTER
+                BNE BLANKS_LOOP
+                
+DRAW_TOP_LINE
+                LDA #127
+                LDX #<>top_line
+                MVN #`top_line,#$AF
+                
+                CLC
+                LDA #1
+                STA TAB_COUNTER
+TRIPLET
+                LDA TAB_COUNTER
+                AND #3
+                BEQ draw_tick_line
+                
+                LDA #127
+                LDX #<>untick_line
+                MVN #`untick_line,#$AF
+                JMP next_line
+                
+draw_tick_line
+                LDA #127
+                LDX #<>tick_line
+                MVN #`tick_line,#$AF
+                
+next_line 
+                INC TAB_COUNTER
+                LDA TAB_COUNTER
+                CMP #22
+                BNE TRIPLET
+                
+                
+DRAW_PATTERN_LINES
+                
 
 COPYFONT        LDA #256 * 8
                 LDX #<>FNXFONT
@@ -211,6 +258,13 @@ COPYFONT        LDA #256 * 8
                 LDA #$0010
                 STA FG_CHAR_LUT_PTR + 14;
                 STA BG_CHAR_LUT_PTR + 14;
+                
+                LDA #$CCCC
+                STA FG_CHAR_LUT_PTR + 16;
+                STA BG_CHAR_LUT_PTR + 16;
+                LDA #$00CC
+                STA FG_CHAR_LUT_PTR + 18;
+                STA BG_CHAR_LUT_PTR + 18;
 
                 ; set the character bg and fg color
                 LDX #128*64
@@ -220,6 +274,9 @@ SETTEXTCOLOR
                 STA CS_COLOR_MEM_PTR-1,X
                 DEX
                 BNE SETTEXTCOLOR
+                
+                LDY #38 * 128  
+                JSR REVERSE_LUT
 
                 RTS
           
@@ -392,8 +449,10 @@ RESET_STATE_MACHINE
                 LDA #0
                 STA STATE_MACHINE
                 
+                STZ LINE_NUM_HEX
+                
                 LDA #1
-                STA LINE_NUM
+                STA LINE_NUM_DEC
                 STA PATTERN_NUM
                 
                 JSR DISPLAY_LINE
@@ -403,10 +462,66 @@ RESET_STATE_MACHINE
                 
 DISPLAY_LINE
                 .as
-                LDA LINE_NUM
+                PHB
+                LDA LINE_NUM_DEC
                 ; display the line number
                 LDY #23*128 + 7
                 JSR WRITE_HEX
+                
+                ; Display the pattern on screen, with the correct line highlighted
+                ;set the direct page to point to the correct line
+                
+                LDA #`PATTERNS
+                PHA
+                PLB
+                .databank `PATTERNS
+                
+                LDX #1
+                LDA PATTERNS,X ; line number
+                INX
+                JSR DRAW_CHANNEL
+                
+                LDA #0
+                PHA
+                PLB
+                
+                .databank 0
+                PLB
+                RTS
+                
+DRAW_CHANNEL
+                .as
+                CLC
+                LDA PATTERNS,X
+                ADC #$30
+                
+                STA [SCREENBEGIN], Y
+                
+                RTS
+                
+REVERSE_LUT     ; write 2 to reverse the characters
+                .as
+                LDA #`CS_COLOR_MEM_PTR
+                PHA
+                PLB
+                .databank `CS_COLOR_MEM_PTR
+                LDA #9
+                STA TAB_COUNTER
+
+                LDA #2
+REVERSE_LUT_TABS
+                LDX #8
+REVERSE_LUT_LOOP
+                STA CS_COLOR_MEM_PTR, Y
+                INY
+                DEX
+                BNE REVERSE_LUT_LOOP
+                
+                INY
+                DEC TAB_COUNTER
+                BNE REVERSE_LUT_TABS
+                
+                .databank 0
                 RTS
                 
 DISPLAY_PATTERN
@@ -1253,3 +1368,18 @@ MIDI_COMMAND_TABLE
                  .word <>PROGRAM_CHANGE, <>CHANNEL_PRESSURE  ; these two command expect 1 datat byte only - no running status
                  .word <>PITCH_BEND, <>SYSTEM_COMMAND
                  .word <>INVALID_COMMAND
+                 
+* = $190000 ; pattern memory - reserving memory is kind of inefficient, but it's easier right now
+PATTERNS .for pattern=1, pattern <= 30, pattern += 1 ; 71070 bytes total
+    ; one pattern is 64 lines, each line is 9 channels - 2369 bytes per pattern
+    .byte pattern
+    .for line = 1, line <= 64, line += 1  ; 37 bytes per line
+        .byte line     ; line number
+        .rept 9
+            ; we could compress the notes/octave to reduce
+            .byte 0, 0, 0, 0 ; note, octave, instrument, effect
+        .next
+    .next
+.next
+
+ORDERS    .fill 120, 0

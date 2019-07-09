@@ -413,35 +413,33 @@ line27    .for col = '1', col <= '9', col += 1
 
 line28    .rept 9
           .fill 8,$c3
+          .byte $b1
+          .next
+          .fill UNUSED_SCR-1, 0
+
+blank_line
+          .fill 80, $20
+          .fill 48, 0
+          
+top_line  .rept 9
+          .fill 8, $c3
+          .byte $b2
+          .next
+          .fill UNUSED_SCR-1, 0
+          
+tick_line
+          .rept 9
+          .text '--- ----'
           .byte $db
           .next
           .fill UNUSED_SCR-1, 0
-
-lines29to56
-  .rept 7
-      .rept 3
+      
+untick_line
           .rept 9
           .text '--- ----'
           .byte $c2
           .next
           .fill UNUSED_SCR-1, 0
-      .next
-
-      .rept 9
-      .text '--- ----'
-      .byte $db
-      .next
-      .fill UNUSED_SCR-1, 0
-  .next
-
-lines57to59
-      .rept 3
-          .rept 9
-          .text '--- ----'
-          .byte $c2
-          .next
-          .fill UNUSED_SCR-1, 0
-      .next
       
 line60    .rept 9
           .fill 8,$c3
@@ -470,3 +468,7 @@ MOUSE_POINTER_PTR     .text $00,$01,$01,$00,$00,$00,$00,$00,$01,$01,$01,$00,$00,
                       .text $00,$00,$00,$00,$00,$00,$00,$00,$01,$55,$55,$01,$00,$00,$00,$00
                       .text $00,$00,$00,$00,$00,$00,$00,$00,$00,$01,$01,$00,$00,$00,$00,$00
                       .text $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+
+; when the arrow keys are used to navigate on screen
+FIELD_ORDER     .word 6 * 128 + 8
+HIGHLIGHT_ORDER .word 6 * 128 + 2

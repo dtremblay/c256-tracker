@@ -208,7 +208,7 @@ KB_CLR_ALT      LDA KEYBOARD_SC_FLG
                 STA KEYBOARD_SC_FLG
 
 KB_CHECK_B_DONE .as
-                LDA STATUS_PORT
+                LDA STATUS_PORT  ; the address should have $AF
                 AND #OUT_BUF_FULL ; Test bit $01 (if 1, Full)
                 CMP #OUT_BUF_FULL ; if Still Byte in the Buffer, fetch it out
                 BNE KB_DONE
@@ -233,16 +233,18 @@ SOF_INTERRUPT
                 ; we now have to increment the line count
                 CLC
                 SED
-                LDA @lLINE_NUM
+                INC LINE_NUM_HEX
+                LDA @lLINE_NUM_DEC
                 ADC #1
                 CMP #$65  ; this is the maximum number of lines
                 BNE INCR_DONE
                 LDA #1
 INCR_DONE
                 CLD
-                STA @lLINE_NUM
+                STA @lLINE_NUM_DEC
                 JSR DISPLAY_LINE
                 LDA #0  ; reset the tick to 0
+                STZ LINE_NUM_HEX
 TICK_DONE
                 STA @lTICK
                 RTS
