@@ -232,7 +232,7 @@ draw_tick_line
 next_line 
                 INC TAB_COUNTER
                 LDA TAB_COUNTER
-                CMP #22
+                CMP #23
                 BNE TRIPLET
                 
                 
@@ -463,22 +463,31 @@ RESET_STATE_MACHINE
 DISPLAY_LINE
                 .as
                 PHB
+                
                 LDA LINE_NUM_DEC
-                ; display the line number
+                ; display the line number at the 'Line:' field
                 LDY #23*128 + 7
                 JSR WRITE_HEX
                 
-                ; Display the pattern on screen, with the correct line highlighted
-                ;set the direct page to point to the correct line
+                ; compute the start of line address
+                LDA #37
+                STA M0_OPERAND_A
+                STZ M0_OPERAND_A + 1
+                STZ M0_OPERAND_B + 1
+                LDA LINE_NUM_HEX
+                STA M0_OPERAND_B
+                LDX M0_RESULT
+                INX
                 
+                ; now draw the pattern screen
                 LDA #`PATTERNS
                 PHA
                 PLB
                 .databank `PATTERNS
                 
-                LDX #1
                 LDA PATTERNS,X ; line number
                 INX
+                LDY #38*128
                 JSR DRAW_CHANNEL
                 
                 LDA #0
@@ -489,12 +498,13 @@ DISPLAY_LINE
                 PLB
                 RTS
                 
+                
+; A contains the value to display
+; Y contains the screen location
 DRAW_CHANNEL
                 .as
                 CLC
-                LDA PATTERNS,X
                 ADC #$30
-                
                 STA [SCREENBEGIN], Y
                 
                 RTS

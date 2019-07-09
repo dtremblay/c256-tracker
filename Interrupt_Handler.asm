@@ -239,12 +239,13 @@ SOF_INTERRUPT
                 CMP #$65  ; this is the maximum number of lines
                 BNE INCR_DONE
                 LDA #1
+                STZ LINE_NUM_HEX
 INCR_DONE
                 CLD
                 STA @lLINE_NUM_DEC
                 JSR DISPLAY_LINE
                 LDA #0  ; reset the tick to 0
-                STZ LINE_NUM_HEX
+
 TICK_DONE
                 STA @lTICK
                 RTS
