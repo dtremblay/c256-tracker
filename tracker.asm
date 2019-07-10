@@ -16,7 +16,9 @@ TIMING_CNTR     .byte 0
 INSTR_ADDR      .fill 3,0
 INSTR_NUMBER    .byte $17, 0
 LINE_NUM_HEX    .byte 1
-TAB_COUNTER     .byte 2
+TAB_COUNTER     .byte 1
+REM_LINES       .byte 1
+BLNK_BTM        .byte 1
 
 MOUSE_BUTTONS_REG= $180F00 ; bit 2=middle, bit 1=right, bit 0=left
 MIDI_DATA_REG    = $AF1330 ; read/write MIDI data
@@ -145,7 +147,6 @@ ALWAYS          NOP
                 NOP
                 BRA ALWAYS
           
-
 DRAW_DISPLAY
                 ; set the display size - 128 x 64
                 LDA #128
@@ -193,53 +194,8 @@ DRAW_DISPLAY
                 LDX #<>TRACKER_SCREEN
                 LDY #<>CS_TEXT_MEM_PTR
                 MVN #`TRACKER_SCREEN,#$AF
-                
-DRAW_BLANK_LINES
-                LDA #9
-                STA TAB_COUNTER
-                LDY #<>CS_TEXT_MEM_PTR + 128 * 28
-                
-BLANKS_LOOP
-                LDA #127
-                LDX #<>blank_line
-                MVN #`blank_line,#$AF
-                DEC TAB_COUNTER
-                BNE BLANKS_LOOP
-                
-DRAW_TOP_LINE
-                LDA #127
-                LDX #<>top_line
-                MVN #`top_line,#$AF
-                
-                CLC
-                LDA #1
-                STA TAB_COUNTER
-TRIPLET
-                LDA TAB_COUNTER
-                AND #3
-                BEQ draw_tick_line
-                
-                LDA #127
-                LDX #<>untick_line
-                MVN #`untick_line,#$AF
-                JMP next_line
-                
-draw_tick_line
-                LDA #127
-                LDX #<>tick_line
-                MVN #`tick_line,#$AF
-                
-next_line 
-                INC TAB_COUNTER
-                LDA TAB_COUNTER
-                CMP #23
-                BNE TRIPLET
-                
-                
-DRAW_PATTERN_LINES
-                
 
-COPYFONT        LDA #256 * 8
+                LDA #256 * 8
                 LDX #<>FNXFONT
                 LDY #<>FONT_MEMORY_BANK0
                 MVN #`FNXFONT,#$AF
@@ -460,6 +416,18 @@ RESET_STATE_MACHINE
                 
                 RTS
                 
+PATTERN_SEQ     .byte 9,23,0  ; 33 lines per page
+                .byte 8,24,0
+                .byte 7,25,0
+                .byte 6,26,0
+                .byte 5,27,0
+                .byte 4,28,0
+                .byte 3,29,0
+                .byte 2,30,0
+                .byte 1,31,0
+                .byte 0,32,0
+                
+                
 DISPLAY_LINE
                 .as
                 PHB
@@ -469,7 +437,104 @@ DISPLAY_LINE
                 LDY #23*128 + 7
                 JSR WRITE_HEX
                 
+                LDA #32
+                STA REM_LINES
+                
+                LDY #<>CS_TEXT_MEM_PTR + 128 * 28 ; top of the pattern display
+                LDA LINE_NUM_HEX
+                CMP #10
+                BCS DRAW_DATA ; if line# is greater than 10, skip blank lines and topline
+                BEQ BLANKS_LOOP
+                
+DRAW_BLANK_LINES
+                
+                SEC
+                LDA #9
+                SBC LINE_NUM_HEX
+                
+                STA TAB_COUNTER
+                BEQ DRAW_TOP_LINE
+                
+BLANKS_LOOP
+                setal
+                LDA #127
+                LDX #<>blank_line
+                MVN #`blank_line,#$AF
+                setas
+                DEC REM_LINES
+                DEC TAB_COUNTER
+                BNE BLANKS_LOOP
+                
+DRAW_TOP_LINE
+                setal
+                LDA #127
+                LDX #<>top_line
+                MVN #`top_line,#$AF
+                setas
+                DEC REM_LINES
+                
+DRAW_DATA
+                SEC
+                LDA LINE_NUM_HEX
+                SBC #9
+                BPL MOD_TOP_LINE
+TOP_LINE_1
+                LDA #0
+                STA BLNK_BTM
+                LDA #1
+MOD_TOP_LINE
+                BEQ TOP_LINE_1
+                STA TAB_COUNTER
+TRIPLET
+                LDA TAB_COUNTER
+                AND #3
+                BEQ draw_tick_line
+                
+                setal
+                LDA #127
+                LDX #<>untick_line
+                MVN #`untick_line,#$AF
+                setas
+                DEC REM_LINES
+                JMP next_line
+                
+draw_tick_line
+                setal
+                LDA #127
+                LDX #<>tick_line
+                MVN #`tick_line,#$AF
+                setas
+                DEC REM_LINES
+                
+next_line 
+                INC TAB_COUNTER
+                LDA TAB_COUNTER
+                CMP #64
+                BEQ DRAW_BOTTOM_BAR
+                LDA REM_LINES
+                BNE TRIPLET
+                BEQ DRAW_LINE_DONE
+                
+DRAW_BOTTOM_BAR
+                setal
+                LDA #127
+                LDX #<>btm_line
+                MVN #`btm_line,#$AF
+                setas
+                DEC REM_LINES
+                BEQ DRAW_LINE_DONE
+                
+BLANKS_BTM_LOOP
+                setal
+                LDA #127
+                LDX #<>blank_line
+                MVN #`blank_line,#$AF
+                setas
+                DEC REM_LINES
+                BNE BLANKS_BTM_LOOP
+                
                 ; compute the start of line address
+DRAW_LINE_DONE
                 LDA #37
                 STA M0_OPERAND_A
                 STZ M0_OPERAND_A + 1
@@ -496,6 +561,7 @@ DISPLAY_LINE
                 
                 .databank 0
                 PLB
+                setas
                 RTS
                 
                 

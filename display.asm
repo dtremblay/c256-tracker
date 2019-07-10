@@ -398,7 +398,7 @@ line25    .byte $ca
           .byte $cb
           .fill UNUSED_SCR, 0
 
-line26    .rept 8 ; 8 * 9
+top_line  .rept 8 ; 8 * 9
           .fill 8,$c3
           .byte $b2
           .next
@@ -411,7 +411,7 @@ line27    .for col = '1', col <= '9', col += 1
           .next
           .fill UNUSED_SCR-1, 0
 
-line28    .rept 9
+btm_line  .rept 9
           .fill 8,$c3
           .byte $b1
           .next
@@ -420,12 +420,6 @@ line28    .rept 9
 blank_line
           .fill 80, $20
           .fill 48, 0
-          
-top_line  .rept 9
-          .fill 8, $c3
-          .byte $b2
-          .next
-          .fill UNUSED_SCR-1, 0
           
 tick_line
           .rept 9
