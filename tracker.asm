@@ -509,7 +509,7 @@ draw_tick_line
 next_line 
                 INC TAB_COUNTER
                 LDA TAB_COUNTER
-                CMP #64
+                CMP #65
                 BEQ DRAW_BOTTOM_BAR
                 LDA REM_LINES
                 BNE TRIPLET
@@ -521,7 +521,7 @@ DRAW_BOTTOM_BAR
                 LDX #<>btm_line
                 MVN #`btm_line,#$AF
                 setas
-                DEC REM_LINES
+                LDA REM_LINES
                 BEQ DRAW_LINE_DONE
                 
 BLANKS_BTM_LOOP
