@@ -87,22 +87,50 @@ IRQ_HANDLER_FETCH
                 setxl
                 LDY #70
                 JSR WRITE_HEX  ; print the HEX key code at column 70 on the top line
-                
+
                 JSR PLAY_TRACKER_NOTE
-                
-                CMP #$1A
+
+                CMP #$1A        ; left bracket
                 BNE NOT_LEFT_BRACKET
                 DEC INSTR_NUMBER
                 JSR LOAD_INSTRUMENT  ; X is already set to 0
+                JMP KB_WR_2_SCREEN
                 
 NOT_LEFT_BRACKET
-                CMP #$1B
+                CMP #$1B        ; right bracket
                 BNE NOT_RIGHT_BRACKET
                 INC INSTR_NUMBER
                 JSR LOAD_INSTRUMENT  ; X is already set to 0
+                JMP KB_WR_2_SCREEN
                 
 NOT_RIGHT_BRACKET
+                CMP #$1C                ; Eneter Key Pressed
+                BNE SPECIAL_KEYS
+                
+                PHA
+                ; start or stop scrolling
+                LDA STATE_MACHINE
+                BEQ START_SOF
+STOP_SOF
+                LDA #0
+                STA STATE_MACHINE
+                LDA @lINT_MASK_REG0
+                ORA #FNX0_INT00_SOF
+                STA @lINT_MASK_REG0
+                PLA
+                JMP KB_WR_2_SCREEN
+                
+START_SOF
+                LDA #1
+                STA STATE_MACHINE
+                JSR RESET_STATE_MACHINE
+                LDA @lINT_MASK_REG0
+                AND #~(FNX0_INT00_SOF)
+                STA @lINT_MASK_REG0
+                PLA
+                JMP KB_WR_2_SCREEN
 
+SPECIAL_KEYS
                 ; Check for Shift Press or Unpressed
                 CMP #$2A                ; Left Shift Pressed
                 BNE NOT_KB_SET_SHIFT
@@ -127,29 +155,34 @@ NOT_KB_CLR_CTRL
                 BRL KB_SET_ALT
 NOT_KB_SET_ALT
                 CMP #$B8                ; Left ALT Unpressed
-                BNE NOT_LFT_ALT_UNPRESSED
+                BNE NOT_SPECIAL
                 BRL KB_CLR_ALT
 
-NOT_LFT_ALT_UNPRESSED
-                CMP #$1C                ; Eneter Key Pressed
-                BNE KB_UNPRESSED
+NOT_SPECIAL
+                CMP #$48                ; UP arrow
+                BNE NOT_UP
                 
-                ; start or stop scrolling
-                LDA @lINT_MASK_REG0
-                AND #FNX0_INT00_SOF
-                CMP #FNX0_INT00_SOF
-                BEQ START_SOF
-STOP_SOF
-                LDA @lINT_MASK_REG0
-                ORA #FNX0_INT00_SOF
-                STA @lINT_MASK_REG0
-                BRA KB_UNPRESSED
+                PHA
+                LDA STATE_MACHINE
+                BNE UP_WRONG_STATE
+                JSR DECR_LINE
+    UP_WRONG_STATE
+                PLA
+                JMP KB_WR_2_SCREEN
                 
-START_SOF
-                LDA @lINT_MASK_REG0
-                AND #~(FNX0_INT00_SOF)
-                STA @lINT_MASK_REG0
+NOT_UP
+                CMP #$50                ; DOWN arrow
+                BNE NOT_DOWN
+                
+                PHA
+                LDA STATE_MACHINE
+                BNE DOWN_WRONG_STATE
+                JSR INCR_LINE
+    DOWN_WRONG_STATE
+                PLA
+                JMP KB_WR_2_SCREEN
 
+NOT_DOWN
 KB_UNPRESSED
                 AND #$80                ; See if the Scan Code is press or Depressed
                 CMP #$80                ; Depress Status - We will not do anything at this point
@@ -251,6 +284,7 @@ SOF_INTERRUPT
                 BNE TICK_DONE
                 
                 ; we now have to increment the line count
+INCR_LINE
                 CLC
                 SED
                 INC LINE_NUM_HEX
@@ -267,6 +301,25 @@ INCR_DONE
                 LDA #0  ; reset the tick to 0
 
 TICK_DONE
+                STA @lTICK
+                RTS
+                
+
+DECR_LINE
+                SEC
+                SED
+                DEC LINE_NUM_HEX
+                LDA @lLINE_NUM_DEC
+                SBC #1
+                BNE DECR_DONE
+                LDA #63
+                STA LINE_NUM_HEX
+                LDA #$64
+DECR_DONE
+                CLD
+                STA @lLINE_NUM_DEC
+                JSR DISPLAY_LINE
+                LDA #0  ; reset the tick to 0
                 STA @lTICK
                 RTS
                 

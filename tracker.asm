@@ -195,7 +195,7 @@ ENABLE_IRQS
 ; *******************************************************************************
 RESET_STATE_MACHINE
                 .as
-                LDA #0
+                LDA #1
                 STA STATE_MACHINE
                 
                 STZ LINE_NUM_HEX
