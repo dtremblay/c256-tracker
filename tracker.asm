@@ -5,26 +5,7 @@
 .include "vicky_def.asm"
 .include "interrupt_def.asm"
 
-* = $60
-MIDI_COUNTER    .byte 0
-MIDI_REG        .byte 0
-MIDI_CTRL       .byte 0
-MIDI_CHANNEL    .byte 0
-MIDI_DATA1      .byte 0
-MIDI_DATA2      .byte 0
-TIMING_CNTR     .byte 0
-INSTR_ADDR      .fill 3,0
-INSTR_NUMBER    .byte $17, 0
-LINE_NUM_HEX    .byte 1
-TAB_COUNTER     .byte 1
-REM_LINES       .byte 1
-BLNK_BTM        .byte 1
-
 MOUSE_BUTTONS_REG= $180F00 ; bit 2=middle, bit 1=right, bit 0=left
-MIDI_DATA_REG    = $AF1330 ; read/write MIDI data
-MIDI_STATUS_REG  = $AF1331 ; read - status, write control
-MIDI_ADDRESS_HI  = $AF1160
-MIDI_ADDRESS_LO  = $AF1161
 INSTR_REC_LEN    = INSTRUMENT_BAGPIPE1 - INSTRUMENT_ACCORDN
 
 * = MOUSE_BUTTONS_REG
@@ -90,6 +71,8 @@ RVECTOR_EIRQ    .addr HIRQ     ; FFFE
 .include "keyboard_def.asm"
 .include "display.asm"
 .include "Interrupt_Handler.asm" ; Interrupt Handler Routines
+.include "midi.asm"
+.include "display_func.asm"
 
 ; Draw the screen
 ; Top portion is the instruments editor (left) and order list (right)
@@ -123,7 +106,7 @@ TRACKER
                 STA INSTR_ADDR+2
                 
                 ; pick ELPIANO2 as the default instrument
-                LDA #$21
+                LDA #$42
                 STA @lINSTR_NUMBER
                 
                 LDX #0 ; setup channel 1
@@ -138,6 +121,7 @@ TRACKER
                 JSL IOPL2_TONE_TEST
 
                 JSR ENABLE_IRQS
+                JSR INIT_OPL2_TMRS
                 CLI
                 
                 ; we allow input of data via MIDI
@@ -145,98 +129,13 @@ TRACKER
           
 ALWAYS          NOP
                 NOP
+                
+READ_OPL2_STATUS
+                LDA OPL2_L_BASE
+                LDY #14
+                JSR WRITE_HEX
+                
                 BRA ALWAYS
-          
-DRAW_DISPLAY
-                ; set the display size - 128 x 64
-                LDA #128
-                STA COLS_PER_LINE
-                LDA #64
-                STA LINES_MAX
-
-                ; set the visible display size - 80 x 60
-                LDA #80
-                STA COLS_VISIBLE
-                LDA #60
-                STA LINES_VISIBLE
-                LDA #0
-                STA BORDER_X_SIZE
-                STA BORDER_Y_SIZE
-
-                ; set the border to purple
-                setas
-                LDA #$20
-                STA BORDER_COLOR_B
-                STA BORDER_COLOR_R
-                LDA #0
-                STA BORDER_COLOR_G
-
-                ; enable the border
-                LDA #Border_Ctrl_Enable
-                STA BORDER_CTRL_REG
-
-                ; enable text display
-                LDA #Mstr_Ctrl_Text_Mode_En
-                STA MASTER_CTRL_REG_L
-
-                setal
-                LDA #<>CS_TEXT_MEM_PTR      ; store the initial screen buffer location
-                STA SCREENBEGIN
-                STA CURSORPOS
-                setas
-                LDA #`CS_TEXT_MEM_PTR
-                STA SCREENBEGIN+2
-                STA CURSORPOS+2
-
-                ; copy screen data from TRACKER_SCREEN to CS_TEXT_MEM_PTR
-                setaxl
-                LDA #128*28-1
-                LDX #<>TRACKER_SCREEN
-                LDY #<>CS_TEXT_MEM_PTR
-                MVN #`TRACKER_SCREEN,#$AF
-
-                LDA #256 * 8
-                LDX #<>FNXFONT
-                LDY #<>FONT_MEMORY_BANK0
-                MVN #`FNXFONT,#$AF
-
-                ; set the fg LUT to Purple
-                LDA #$60FF
-                STA FG_CHAR_LUT_PTR + 8;
-                STA BG_CHAR_LUT_PTR + 8;
-                LDA #$0080
-                STA FG_CHAR_LUT_PTR + 10;
-                STA BG_CHAR_LUT_PTR + 10;
-                
-                LDA #$8020
-                STA FG_CHAR_LUT_PTR + 12;
-                STA BG_CHAR_LUT_PTR + 12;
-                LDA #$0010
-                STA FG_CHAR_LUT_PTR + 14;
-                STA BG_CHAR_LUT_PTR + 14;
-                
-                LDA #$CCCC
-                STA FG_CHAR_LUT_PTR + 16;
-                STA BG_CHAR_LUT_PTR + 16;
-                LDA #$00CC
-                STA FG_CHAR_LUT_PTR + 18;
-                STA BG_CHAR_LUT_PTR + 18;
-
-                ; set the character bg and fg color
-                LDX #128*64
-                setas
-                LDA #$20
-SETTEXTCOLOR
-                STA CS_COLOR_MEM_PTR-1,X
-                DEX
-                BNE SETTEXTCOLOR
-                
-                LDY #38 * 128  
-                JSR REVERSE_LUT
-
-                RTS
-          
-
 ;
 ; IINITCURSOR
 ; Author: Stefany
@@ -265,141 +164,35 @@ INIT_CURSOR     PHA
 ENABLE_IRQS
                 ; Clear Any Pending Interrupt
                 LDA @lINT_PENDING_REG0
-                AND #FNX0_INT07_MOUSE | FNX0_INT00_SOF
+                AND #FNX0_INT07_MOUSE | FNX0_INT00_SOF 
+                ;AND #FNX0_INT07_MOUSE | FNX0_INT02_TMR0
                 STA @lINT_PENDING_REG0  ; Writing it back will clear the Active Bit
                 
                 LDA @lINT_PENDING_REG1
                 AND #FNX1_INT00_KBD | FNX1_INT05_MPU401
                 STA @lINT_PENDING_REG1  ; Writing it back will clear the Active Bit
                 
-                ; Enable Mouse and SOF
+                LDA @lINT_PENDING_REG2
+                AND #FNX2_INT01_OPL2L | FNX2_INT00_OPL2R
+                STA @lINT_PENDING_REG2  ; Writing it back will clear the Active Bit
+                
+                ; Enable Mouse
+                ;LDA #~(FNX0_INT07_MOUSE | FNX0_INT00_SOF | FNX0_INT02_TMR0)
                 LDA #~(FNX0_INT07_MOUSE | FNX0_INT00_SOF)
                 STA @lINT_MASK_REG0
                 
                 ; Enable Keyboard
                 LDA #~(FNX1_INT00_KBD | FNX1_INT05_MPU401)
                 STA @lINT_MASK_REG1
+                
+                ; Enable OPL2 Interrupts
+                LDA #~(FNX2_INT01_OPL2L | FNX2_INT00_OPL2R)
+                STA @lINT_MASK_REG2
                 RTS
                 
-; ****************************************************
-; * Write a Hex Value to the position specified by Y
-; * Y contains the screen position
-; * A contains the value to display
-WRITE_HEX
-                .as
-                .xl
-        PHA
-            PHX
-                PHY
-                STA @lTEMP_STORAGE
-                AND #$F0
-                lsr A
-                lsr A
-                lsr A
-                lsr A
-                setxs
-                TAX
-                LDA HEX_MAP,X
-                STA @lLOW_NIBBLE
-                
-                LDA @lTEMP_STORAGE
-                AND #$0F
-                TAX
-                LDA HEX_MAP,X
-                STA @lHIGH_NIBBLE
-                
-                setaxl
-                PLY
-                LDA @lLOW_NIBBLE
-                STA [SCREENBEGIN], Y
-                ; change the foreground color of the text
-                LDA #$3030
-                TYX
-                STA @lCS_COLOR_MEM_PTR, X
-                setas
-            PLX
-        PLA
-                RTS
-                
-; ****************************************************
-; * Write On or Off to the position specified by Y
-; * Y contains the screen position
-; * A if 0, then Off, otherwise On
-WRITE_OFF_ON
-                .as
-                PHX
-                CMP #0
-                BEQ DISPLAY_OFF
-                LDA #'O'
-                STA [SCREENBEGIN], Y
-                LDA #$30
-                TYX
-                STA @lCS_COLOR_MEM_PTR, X
-                INY
-                
-                LDA #'n'
-                STA [SCREENBEGIN], Y
-                LDA #$30
-                TYX
-                STA @lCS_COLOR_MEM_PTR, X
-                
-                INY
-                LDA #$20
-                STA [SCREENBEGIN], Y
-                LDA #$30
-                TYX
-                STA @lCS_COLOR_MEM_PTR, X
-                BRA ON_OFF_DONE
-                
-DISPLAY_OFF
-                LDA #'O'
-                STA [SCREENBEGIN], Y
-                LDA #$30
-                TYX
-                STA @lCS_COLOR_MEM_PTR, X
-                INY
-                
-                LDA #'f'
-                STA [SCREENBEGIN], Y
-                LDA #$30
-                TYX
-                STA @lCS_COLOR_MEM_PTR, X
-                
-                INY
-                LDA #'f'
-                STA [SCREENBEGIN], Y
-                LDA #$30
-                TYX
-                STA @lCS_COLOR_MEM_PTR, X
-ON_OFF_DONE
-                PLX
-                RTS
-
-; Y Register contains the position to write
-WRITE_INSTRUMENT
-                .as
-                LDA #10
-                STA @lTEMP_STORAGE
-      WRITE_CHAR
-                LDA [INSTR_ADDR]
-                STA [SCREENBEGIN], Y
-                INC INSTR_ADDR
-                BNE WRITE_CONTINUE
-                INC INSTR_ADDR + 1
-                
-      WRITE_CONTINUE
-                LDA #$30
-                TYX
-                STA @lCS_COLOR_MEM_PTR, X
-                INY
-                
-                LDA @lTEMP_STORAGE
-                DEC A
-                STA @lTEMP_STORAGE
-                BNE WRITE_CHAR
-                
-                RTS
-                
+; *******************************************************************************
+; * Reset everything to their initial state
+; *******************************************************************************
 RESET_STATE_MACHINE
                 .as
                 LDA #0
@@ -416,198 +209,46 @@ RESET_STATE_MACHINE
                 
                 RTS
                 
-PATTERN_SEQ     .byte 9,23,0  ; 33 lines per page
-                .byte 8,24,0
-                .byte 7,25,0
-                .byte 6,26,0
-                .byte 5,27,0
-                .byte 4,28,0
-                .byte 3,29,0
-                .byte 2,30,0
-                .byte 1,31,0
-                .byte 0,32,0
-                
-                
-DISPLAY_LINE
-                .as
-                PHB
-                
-                LDA LINE_NUM_DEC
-                ; display the line number at the 'Line:' field
-                LDY #23*128 + 7
-                JSR WRITE_HEX
-                
-                LDA #32
-                STA REM_LINES
-                
-                LDY #<>CS_TEXT_MEM_PTR + 128 * 28 ; top of the pattern display
-                LDA LINE_NUM_HEX
-                CMP #10
-                BCS DRAW_DATA ; if line# is greater than 10, skip blank lines and topline
-                BEQ BLANKS_LOOP
-                
-DRAW_BLANK_LINES
-                
-                SEC
-                LDA #9
-                SBC LINE_NUM_HEX
-                
-                STA TAB_COUNTER
-                BEQ DRAW_TOP_LINE
-                
-BLANKS_LOOP
-                setal
-                LDA #127
-                LDX #<>blank_line
-                MVN #`blank_line,#$AF
-                setas
-                DEC REM_LINES
-                DEC TAB_COUNTER
-                BNE BLANKS_LOOP
-                
-DRAW_TOP_LINE
-                setal
-                LDA #127
-                LDX #<>top_line
-                MVN #`top_line,#$AF
-                setas
-                DEC REM_LINES
-                
-DRAW_DATA
-                SEC
-                LDA LINE_NUM_HEX
-                SBC #9
-                BPL MOD_TOP_LINE
-TOP_LINE_1
-                LDA #0
-                STA BLNK_BTM
-                LDA #1
-MOD_TOP_LINE
-                BEQ TOP_LINE_1
-                STA TAB_COUNTER
-TRIPLET
-                LDA TAB_COUNTER
-                AND #3
-                BEQ draw_tick_line
-                
-                setal
-                LDA #127
-                LDX #<>untick_line
-                MVN #`untick_line,#$AF
-                setas
-                DEC REM_LINES
-                JMP next_line
-                
-draw_tick_line
-                setal
-                LDA #127
-                LDX #<>tick_line
-                MVN #`tick_line,#$AF
-                setas
-                DEC REM_LINES
-                
-next_line 
-                INC TAB_COUNTER
-                LDA TAB_COUNTER
-                CMP #65
-                BEQ DRAW_BOTTOM_BAR
-                LDA REM_LINES
-                BNE TRIPLET
-                BEQ DRAW_LINE_DONE
-                
-DRAW_BOTTOM_BAR
-                setal
-                LDA #127
-                LDX #<>btm_line
-                MVN #`btm_line,#$AF
-                setas
-                LDA REM_LINES
-                BEQ DRAW_LINE_DONE
-                
-BLANKS_BTM_LOOP
-                setal
-                LDA #127
-                LDX #<>blank_line
-                MVN #`blank_line,#$AF
-                setas
-                DEC REM_LINES
-                BNE BLANKS_BTM_LOOP
-                
-                ; compute the start of line address
-DRAW_LINE_DONE
-                LDA #37
-                STA M0_OPERAND_A
-                STZ M0_OPERAND_A + 1
-                STZ M0_OPERAND_B + 1
-                LDA LINE_NUM_HEX
-                STA M0_OPERAND_B
-                LDX M0_RESULT
-                INX
-                
-                ; now draw the pattern screen
-                LDA #`PATTERNS
-                PHA
-                PLB
-                .databank `PATTERNS
-                
-                LDA PATTERNS,X ; line number
-                INX
-                LDY #38*128
-                JSR DRAW_CHANNEL
-                
-                LDA #0
-                PHA
-                PLB
-                
-                .databank 0
-                PLB
+; ***********************************************************************
+; * Timers are not yet implemented in C256 Foenix.
+; ***********************************************************************
+INIT_TIMER0     setal
+                LDA #$1000
+                STA TIMER_CTRL_REGLL
+                STA TIMER_CTRL_REGHL
                 setas
                 RTS
                 
-                
-; A contains the value to display
-; Y contains the screen location
-DRAW_CHANNEL
+; ***********************************************************************
+; * OPL2 Timers
+; * Timer1 increments every 80us.   When register overflows an IRQ is generate.
+; * Timer2 increments every 320us.  When register overflows an IRQ is generate.
+; ***********************************************************************
+INIT_OPL2_TMRS
                 .as
-                CLC
-                ADC #$30
-                STA [SCREENBEGIN], Y
+                LDA #$80 ; Reset OPL2 Interrupts
+                STA OPL2_L_IRQ ; byte 4 of OPL2
                 
-                RTS
+                ; wait 80 us
+                JSR WAIT_80
                 
-REVERSE_LUT     ; write 2 to reverse the characters
-                .as
-                LDA #`CS_COLOR_MEM_PTR
-                PHA
-                PLB
-                .databank `CS_COLOR_MEM_PTR
-                LDA #9
-                STA TAB_COUNTER
+                LDA #$10
+                STA OPL2_L_TIMER1 ; byte 2 of OPL2
+                STA OPL2_L_TIMER2 ; byte 2 of OPL2
 
-                LDA #2
-REVERSE_LUT_TABS
-                LDX #8
-REVERSE_LUT_LOOP
-                STA CS_COLOR_MEM_PTR, Y
-                INY
+                LDA #$3 ; enable timers 1 and 2
+                STA OPL2_L_IRQ ; byte 4 of OPL2
+                
+                RTS
+
+WAIT_80         
+                .as
+                LDX #560
+   WAIT_LP
                 DEX
-                BNE REVERSE_LUT_LOOP
-                
-                INY
-                DEC TAB_COUNTER
-                BNE REVERSE_LUT_TABS
-                
-                .databank 0
+                BNE WAIT_LP
                 RTS
                 
-DISPLAY_PATTERN
-                .as
-                LDA PATTERN_NUM
-                ; display the pattern number
-                LDY #23*128 + 19
-                JSR WRITE_HEX
-                RTS
-
 ; X contains the channel
 LOAD_INSTRUMENT
                 .as
@@ -685,39 +326,9 @@ LOAD_INSTRUMENT
                 setas
                 ;display instrument name
                 LDY #5 * 128 + 24
-                JSR WRITE_INSTRUMENT
+                JSR WRITE_INSTRUMENT_NAME
                 
 DRUM_SET
-                RTS
-
-INIT_MIDI
-                PHA
-                setas
-                .xl
-                STZ MIDI_COUNTER
-                STZ TIMING_CNTR
-                
-                LDA #5    ; (C256 - MIDI IN) Bit[0] = 1, Bit[2] = 1 (Page 132 Manual)
-                STA @lGP25_REG
-                ; LDA #0
-                ; STA @lGP26_REG ; disable MIDI out
-                
-                LDA #$3F
-                STA @lMIDI_STATUS_REG
-                
-                LDY #10 * 128 + 54
-MORE_DATA       LDA @lMIDI_DATA_REG
-                JSR WRITE_HEX
-                INY
-                INY
-                
-                LDA @lMIDI_STATUS_REG
-                AND #$80
-                CMP #$80
-                BNE MORE_DATA
-                
-INIT_MIDI_DONE
-                PLA
                 RTS
 
 ; 
@@ -1133,33 +744,7 @@ MOUSE_READ      .as
                 LDA KBD_INPT_BUF
                 RTS
 
-                
-SETUP_VDMA_FOR_TESTING_1D
-                setas
-                LDA #$01 ; Start Transfer
-                STA @lVDMA_CONTROL_REG
-
-                LDA #$FE
-                STA @lVDMA_SIZE_L
-                LDA #$9F
-                STA @lVDMA_SIZE_M
-                LDA #$00
-                STA @lVDMA_SIZE_H
-
-                LDA #$64
-                STA @lVDMA_DST_ADDY_L
-                LDA #$84
-                STA @lVDMA_DST_ADDY_M
-                LDA #$03
-                STA @lVDMA_DST_ADDY_H
-
-                LDA #$55
-                STA @lVDMA_BYTE_2_WRITE
-
-                LDA #$85 ; Start Transfer
-                STA @lVDMA_CONTROL_REG
-                LDA @lVDMA_STATUS_REG
-                RTS
+              
                 
 ; Find the matching note for the key pressed
 ; A = Scan code
@@ -1200,235 +785,9 @@ NONOTE
                 PLA
                 RTS
 
-; xl and as
-; A contains the MIDI DATA
-RECEIVE_MIDI_DATA
-                .as
-                setxl
-                PHA
-                
-                BPL RECEIVED_DATA_MSG
-                
-                PHA
-                AND #$F ; channel - store it somewhere when you care
-                STA MIDI_CHANNEL
-                
-                PLA
-                AND #$70
-                LSR 
-                LSR 
-                LSR 
-                
-                STA MIDI_CTRL
-                CMP #$E
-                BNE RECEIVE_MIDI_DATA_DONE
-                
-                JSR SYSTEM_COMMAND
-                BRA RECEIVE_MIDI_DATA_DONE 
-                
-RECEIVED_DATA_MSG
-                PHA
-                setxs
-                LDA MIDI_CTRL
-                TAX
-                PLA
-                JSR (MIDI_COMMAND_TABLE,X)
-                setxl
-                
-RECEIVE_MIDI_DATA_DONE
-                PLA
-                RTS
-                
-; /// A contains the last byte received from MIDI
-NOTE_OFF
-NOTE_ON         ; we need two data bytes: the note and the velocity
-                .as
-                .xs
-                LDX MIDI_COUNTER
-                STA MIDI_DATA1,X
-                
-                TXA
-                INC A
-                STA MIDI_COUNTER
-                CMP #2
-                BNE MORE_NOTE_DATA_NEEDED
-                
-                STZ MIDI_COUNTER  ; reset the counter
-                LDA #0
-                STA OPL2_CHANNEL
-                
-                
-                setxl
-                LDA MIDI_CTRL
-                LDY #12*128 + 54
-                JSR WRITE_HEX
-                
-                ; NOTE VALUE
-                LDA MIDI_DATA1
-                STA @lD0_OPERAND_B
-                LDY #12*128 + 56
-                JSR WRITE_HEX
-                
-                LDA #0
-                STA @lD0_OPERAND_A + 1
-                STA @lD0_OPERAND_B + 1
-                LDA #12
-                STA @lD0_OPERAND_A
-                
-                SEC
-                LDA @lD0_RESULT
-                SBC #2
-                STA OPL2_OCTAVE
-                LDY #12*128 + 60
-                JSR WRITE_HEX
-                
-                LDA @lD0_REMAINDER
-                STA OPL2_NOTE
-                LDY #12*128 + 62
-                JSR WRITE_HEX
-                
-                ; VELOCITY VALUE
-                LDA MIDI_DATA2
-                LDY #12*128 + 64
-                JSR WRITE_HEX
-                
-                ; /// if velocity is zero, turn note off
-                CMP #0
-                BNE PLAY_NOTE_ON  ; otherwise, turn note on
-                STA OPL2_PARAMETER0
-                LDA #$FF
-                LDY #12*128 + 70
-                JSR WRITE_HEX
-                
-                JSR OPL2_SET_KEYON
-                
-                BRA MORE_NOTE_DATA_NEEDED
-                
-PLAY_NOTE_ON
-                LDA #1
-                STA OPL2_PARAMETER0
-                
-                setal
-                JSR OPL2_GET_REG_OFFSET
-                JSL OPL2_PLAYNOTE
-                setas
-                
-MORE_NOTE_DATA_NEEDED
-                setxs
-                RTS
 
 
-POLY_PRESSURE
-CONTROL_CHANGE
-PITCH_BEND
-                .xs
-                LDX MIDI_COUNTER
-                STA MIDI_DATA1,X
-                
-                TXA
-                INC A
-                STA MIDI_COUNTER
-                CMP #2
-                BNE MORE_CTRL_DATA_NEEDED
-                
-                setxl
-                LDA MIDI_CTRL
-                LDY #14*128 + 54
-                JSR WRITE_HEX
-                
-                LDA MIDI_DATA1
-                LDY #14*128+56
-                JSR WRITE_HEX
-                
-                LDA MIDI_DATA2
-                LDY #14*128+58
-                JSR WRITE_HEX
-                
-                STZ MIDI_COUNTER
-                
-                ;JSR CTRL_TRACKER_NOTE
-                
-MORE_CTRL_DATA_NEEDED
-                RTS
-                
-PROGRAM_CHANGE
-CHANNEL_PRESSURE
-                .as
-                PHA
-                setxl
-                LDA MIDI_CTRL
-                LDY #15*128 + 54
-                JSR WRITE_HEX
-                
-                PLA
-                LDY #15*128 + 56
-                JSR WRITE_HEX
-                
-                LDA #16
-                STA MIDI_CTRL
-                RTS
-                
-SYSTEM_COMMAND
-                .as
-                setxl
-                LDA @lTIMING_CNTR
-                INC A
-                CMP #3
-                BNE DISPLAY_COUNTER
-                LDA #0
-                
-DISPLAY_COUNTER
-                LDY #16*128 + 54
-                JSR WRITE_HEX
-                STA @lTIMING_CNTR
-                RTS
-                
-INVALID_COMMAND .as
-                ; 
-                RTS
 
-SETUP_VDMA_FOR_TESTING_2D
-        setas
-
-VDMA_WAIT_TF
-; Wait for the Previous Transfer to be Finished
-                LDA @lVDMA_STATUS_REG
-                AND #VDMA_STAT_VDMA_IPS
-                CMP #VDMA_STAT_VDMA_IPS
-                BEQ VDMA_WAIT_TF
-
-                LDA #$01 ; Start Transfer
-                STA @lVDMA_CONTROL_REG
-
-                LDA #200
-                STA @lVDMA_X_SIZE_L
-                LDA #00
-                STA @lVDMA_X_SIZE_H
-
-                LDA #64
-                STA @lVDMA_Y_SIZE_L
-                LDA #00
-                STA @lVDMA_Y_SIZE_H
-
-                LDA #$60
-                STA @lVDMA_DST_ADDY_L
-                LDA #$90
-                STA @lVDMA_DST_ADDY_M
-                LDA #$01
-                STA @lVDMA_DST_ADDY_H
-
-                LDA #$80
-                STA @lVDMA_DST_STRIDE_L
-                LDA #$02
-                STA @lVDMA_DST_STRIDE_H
-
-                LDA #$F9
-                STA @lVDMA_BYTE_2_WRITE
-
-                LDA #$87 ; Start Transfer
-                STA @lVDMA_CONTROL_REG
-                LDA @lVDMA_STATUS_REG
-                RTS
                 
                 ;      00,  01,  02,  03,  04,  05,  06,  07,  08,  09,  0A,  0B,  0C,  0D,  0E,  0F
 SCAN_TO_NOTE    .text $80, $80, $80, $31, $33, $80, $36, $38, $3A, $80, $80, $80, $80, $80, $80, $80

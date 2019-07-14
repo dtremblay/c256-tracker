@@ -5,11 +5,11 @@
 
 ; Direct Access to Left Channel
 ; L = Left
-; OPL2_L_BASE               = $AFE500
+OPL2_L_BASE               = $AFE500
 ; OPL2_L_TEST               = $AFE501 ; TEST
-; OPL2_L_TIMER1             = $AFE502 ; TIMER-1
-; OPL2_L_TIMER2             = $AFE503 ; TIMER-2
-; OPL2_L_IRQ                = $AFE504 ;
+OPL2_L_TIMER1             = $AFE502 ; TIMER-1
+OPL2_L_TIMER2             = $AFE503 ; TIMER-2
+OPL2_L_IRQ                = $AFE504 ;
 ; OPL2_L_CSM                = $AFE508 ;
 ; OPL2_L_AM_VID_EG_KSR_MULT = $AFE520 ; $20..$35 (21 Registers)
 ; OPL2_L_KSL_TL             = $AFEE40;  $40..$55 (21 Registers)

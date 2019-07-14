@@ -44,6 +44,7 @@ OPL2_TONE_TESTING_L2
                 ; DELAY of 300ms Here
                 ;
                 INC OPL2_LOOP
+                INC OPL2_LOOP
                 LDA OPL2_LOOP
                 CMP #12
                 BNE OPL2_TONE_TESTING_L1
@@ -86,7 +87,7 @@ OPL2_GET_REGISTER        ;Return Byte, Param: (byte reg, byte value);
               STA OPL2_IND_ADDY_HL
               setas
               LDA [OPL2_IND_ADDY_LL]
-                RTL
+              RTL
 
 OPL2_GET_WAVEFORM_SELECT   ; Return Bool
               setal
@@ -98,7 +99,7 @@ OPL2_GET_WAVEFORM_SELECT   ; Return Bool
               setas
               LDA [OPL2_IND_ADDY_LL]
               AND #$20
-                RTL
+              RTL
 
 OPL2_GET_SCALINGLEVEL  ; Return Byte, Param: (byte channel, byte operatorNum);
               setal
@@ -114,7 +115,7 @@ OPL2_GET_SCALINGLEVEL  ; Return Byte, Param: (byte channel, byte operatorNum);
               LSR A
               LSR A
               LSR A
-                RTL
+              RTL
 
 ;OPL2_GET_BLOCK
 ;OPL2_OPERATOR    = $000028 ;
@@ -188,7 +189,7 @@ OPL2_GET_FEEDBACK         ; Return Byte, Param: (byte channel);
               LDA [OPL2_IND_ADDY_LL]
               AND #$E0
               LSR
-                RTL
+              RTL
 
 OPL2_GET_SYNTHMODE        ; Return Bool, Param: (byte channel);
               setas

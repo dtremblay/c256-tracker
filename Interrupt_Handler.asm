@@ -127,11 +127,31 @@ NOT_KB_CLR_CTRL
                 BRL KB_SET_ALT
 NOT_KB_SET_ALT
                 CMP #$B8                ; Left ALT Unpressed
-                BNE KB_UNPRESSED
+                BNE NOT_LFT_ALT_UNPRESSED
                 BRL KB_CLR_ALT
 
+NOT_LFT_ALT_UNPRESSED
+                CMP #$1C                ; Eneter Key Pressed
+                BNE KB_UNPRESSED
+                
+                ; start or stop scrolling
+                LDA @lINT_MASK_REG0
+                AND #FNX0_INT00_SOF
+                CMP #FNX0_INT00_SOF
+                BEQ START_SOF
+STOP_SOF
+                LDA @lINT_MASK_REG0
+                ORA #FNX0_INT00_SOF
+                STA @lINT_MASK_REG0
+                BRA KB_UNPRESSED
+                
+START_SOF
+                LDA @lINT_MASK_REG0
+                AND #~(FNX0_INT00_SOF)
+                STA @lINT_MASK_REG0
 
-KB_UNPRESSED    AND #$80                ; See if the Scan Code is press or Depressed
+KB_UNPRESSED
+                AND #$80                ; See if the Scan Code is press or Depressed
                 CMP #$80                ; Depress Status - We will not do anything at this point
                 BNE KB_NORM_SC
                 
@@ -279,9 +299,42 @@ MIDI_DONE
                 RTS
                 
 TIMER0_INTERRUPT
+OPL2R_INTERRUPT
+OPL2L_INTERRUPT
                 .as
-;; PUT YOUR CODE HERE
-                 RTS
+                LDA OPL2_L_BASE ; LOAD OPL2 STATUS
+                ;STA OPL2_L_IRQ ; byte 4 of OPL2
+                LDY #10
+                JSR WRITE_HEX
+                
+                LDA #$FF
+                STA OPL2_L_TIMER1 ; byte 2 of OPL2
+                
+                LDA @lTICK
+                INC A
+                CMP @lBPM
+                BNE TMR_TICK_DONE
+                
+                ; we now have to increment the line count
+                CLC
+                SED
+                INC LINE_NUM_HEX
+                LDA @lLINE_NUM_DEC
+                ADC #1
+                CMP #$65  ; this is the maximum number of lines
+                BNE TMR_INCR_DONE
+                LDA #1
+                STZ LINE_NUM_HEX
+TMR_INCR_DONE
+                CLD
+                STA @lLINE_NUM_DEC
+                JSR DISPLAY_LINE
+                LDA #0  ; reset the tick to 0
+
+TMR_TICK_DONE
+                STA @lTICK
+
+                RTS
 ;
 ; ///////////////////////////////////////////////////////////////////
 ; ///
@@ -414,12 +467,6 @@ COM1_INTERRUPT  .as
 LPT1_INTERRUPT  .as
 
 ;; PUT YOUR CODE HERE
-                RTS
-
-OPL2R_INTERRUPT .as
-                RTS
-
-OPL2L_INTERRUPT .as
                 RTS
 
 NMI_HANDLER

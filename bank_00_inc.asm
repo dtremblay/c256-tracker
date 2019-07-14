@@ -87,8 +87,25 @@ BMP_FILE_SIZE    = $000050 ; 4 Bytes
 BMP_POSITION_X   = $000054 ; 2 Bytes Where, the BMP will be position on the X Axis
 BMP_POSITION_Y   = $000056 ; 2 Bytes Where, the BMP will be position on the Y Axis
 BMP_PALET_CHOICE = $000058 ;
+
+
 ;Empty Region
 ;XXX             = $000060
+* = $60
+MIDI_COUNTER    .byte 0
+MIDI_REG        .byte 0
+MIDI_CTRL       .byte 0
+MIDI_CHANNEL    .byte 0
+MIDI_DATA1      .byte 0
+MIDI_DATA2      .byte 0
+TIMING_CNTR     .byte 0
+INSTR_ADDR      .fill 3,0
+INSTR_NUMBER    .byte $17, 0
+LINE_NUM_HEX    .byte 1
+TAB_COUNTER     .byte 1
+REM_LINES       .byte 1
+BLNK_BTM        .byte 1
+
 ;..
 ;..
 ;..
@@ -101,6 +118,7 @@ MOUSE_POS_Y_LO   = $0000E3
 MOUSE_POS_Y_HI   = $0000E4
 
 USER_TEMP        = $0000F0 ;32 Bytes Temp space for user programs
+
 ;;///////////////////////////////////////////////////////////////
 ;;; NO CODE or Variable ought to be Instatied in this REGION
 ;; BEGIN
