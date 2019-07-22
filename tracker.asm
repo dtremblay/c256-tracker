@@ -14,11 +14,14 @@ TEMP_STORAGE    .byte 0,0
 LOW_NIBBLE      .byte 0
 HIGH_NIBBLE     .byte 0
 HEX_MAP         .text '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'
-STATE_MACHINE   .byte 0  ; 0 is record mode, 1 is play mode
+STATE_MACHINE   .byte 0  ; High Nibble is the Mode (inst, order, pattern), Low nibble is state: 0 is record mode, 1 is play mode
 TICK            .byte 0  ; this is used to count the number of 1/60 intervals
-BPM             .byte 30 ; how fast should the lines change - 
+BPM             .byte 60 ; how fast should the lines change - 
 PATTERN_NUM     .byte 1
 LINE_NUM_DEC    .byte 1
+INSTR_EDITOR_SCR = 128 * 6 + 4
+ORDER_EDITOR_SCR = 128 * 7 + 53
+PTRN_EDITOR_SCR  = 128 * 27 + 4
 
 * = HRESET
                 CLC
@@ -64,6 +67,9 @@ RVECTOR_ENMI    .addr HNMI     ; FFFA
 RVECTOR_ERESET  .addr HRESET   ; FFFC
 RVECTOR_EIRQ    .addr HIRQ     ; FFFE
 
+* = $160000
+.include "OPL2_Rad_Player.asm"
+
 * = $181000
 
 
@@ -80,6 +86,7 @@ RVECTOR_EIRQ    .addr HIRQ     ; FFFE
 ; we'll need to figure out how to do stereo, left- and right-only.
 
 TRACKER
+                JSL OPL2_INIT_PLAYER
                 ; Setup the Interrupt Controller
                 ; For Now all Interrupt are Falling Edge Detection (IRQ)
                 LDA #$FF
@@ -121,7 +128,8 @@ TRACKER
                 JSL IOPL2_TONE_TEST
 
                 JSR ENABLE_IRQS
-                JSR INIT_OPL2_TMRS
+                JSR INIT_TIMER0  
+                ; JSR INIT_OPL2_TMRS
                 CLI
                 
                 ; we allow input of data via MIDI
@@ -129,11 +137,6 @@ TRACKER
           
 ALWAYS          NOP
                 NOP
-                
-READ_OPL2_STATUS
-                LDA OPL2_L_BASE
-                LDY #14
-                JSR WRITE_HEX
                 
                 BRA ALWAYS
 ;
@@ -164,21 +167,19 @@ INIT_CURSOR     PHA
 ENABLE_IRQS
                 ; Clear Any Pending Interrupt
                 LDA @lINT_PENDING_REG0
-                AND #FNX0_INT07_MOUSE | FNX0_INT00_SOF 
-                ;AND #FNX0_INT07_MOUSE | FNX0_INT02_TMR0
+                AND #FNX0_INT07_MOUSE | FNX0_INT02_TMR0 ;AND #FNX0_INT00_SOF
                 STA @lINT_PENDING_REG0  ; Writing it back will clear the Active Bit
                 
                 LDA @lINT_PENDING_REG1
                 AND #FNX1_INT00_KBD | FNX1_INT05_MPU401
                 STA @lINT_PENDING_REG1  ; Writing it back will clear the Active Bit
                 
-                LDA @lINT_PENDING_REG2
-                AND #FNX2_INT01_OPL2L | FNX2_INT00_OPL2R
-                STA @lINT_PENDING_REG2  ; Writing it back will clear the Active Bit
+                ;LDA @lINT_PENDING_REG2
+                ;AND #FNX2_INT01_OPL2L | FNX2_INT00_OPL2R
+                ;STA @lINT_PENDING_REG2  ; Writing it back will clear the Active Bit
                 
                 ; Enable Mouse
-                ;LDA #~(FNX0_INT07_MOUSE | FNX0_INT00_SOF | FNX0_INT02_TMR0)
-                LDA #~(FNX0_INT07_MOUSE | FNX0_INT00_SOF)
+                LDA #~(FNX0_INT07_MOUSE | FNX0_INT02_TMR0)  ;LDA #~(FNX0_INT00_SOF | FNX0_INT00_SOF )
                 STA @lINT_MASK_REG0
                 
                 ; Enable Keyboard
@@ -186,8 +187,8 @@ ENABLE_IRQS
                 STA @lINT_MASK_REG1
                 
                 ; Enable OPL2 Interrupts
-                LDA #~(FNX2_INT01_OPL2L | FNX2_INT00_OPL2R)
-                STA @lINT_MASK_REG2
+                ;LDA #~(FNX2_INT01_OPL2L | FNX2_INT00_OPL2R)
+                ;STA @lINT_MASK_REG2
                 RTS
                 
 ; *******************************************************************************
@@ -206,17 +207,62 @@ RESET_STATE_MACHINE
                 
                 JSR DISPLAY_LINE
                 JSR DISPLAY_PATTERN
+                JSR DISPLAY_BPM
                 
                 RTS
                 
 ; ***********************************************************************
 ; * Timers are not yet implemented in C256 Foenix.
 ; ***********************************************************************
-INIT_TIMER0     setal
-                LDA #$1000
-                STA TIMER_CTRL_REGLL
-                STA TIMER_CTRL_REGHL
+INIT_TIMER0     
+                .as
+                PHB
+                
+                LDA #0
+                PHA
+                PLB ; set databank to 0
+                
+                LDA #3
+                STA M0_OPERAND_A
+                STZ M0_OPERAND_A + 1
+                STZ M0_OPERAND_B + 1
+                SEC
+                LDA BPM
+                SBC #4
+                STA M0_OPERAND_B
+                
+                setal
+                LDA M0_RESULT 
+                TAX
+                
                 setas
+                LDA #0
+                STA TIMER0_CHARGE_L
+                STA TIMER0_CHARGE_M
+                STA TIMER0_CHARGE_H
+                
+                LDA @lSPM_004,X
+                STA TIMER0_CMP_L
+                LDY #8
+                JSR WRITE_HEX
+                
+                LDA @lSPM_004+1,X
+                STA TIMER0_CMP_M
+                LDY #6
+                JSR WRITE_HEX
+                
+                LDA @lSPM_004+2,X
+                STA TIMER0_CMP_H
+                LDY #4
+                JSR WRITE_HEX
+                
+                LDA #TMR0_CMP_RECLR
+                STA TIMER0_CMP_REG
+                
+                LDA #(TMR0_EN | TMR0_UPDWN | TMR0_SCLR)
+                STA TIMER0_CTRL_REG
+                
+                PLB
                 RTS
                 
 ; ***********************************************************************
@@ -805,16 +851,18 @@ MIDI_COMMAND_TABLE
                  .word <>INVALID_COMMAND
                  
 * = $190000 ; pattern memory - reserving memory is kind of inefficient, but it's easier right now
-PATTERNS .for pattern=1, pattern <= 30, pattern += 1 ; 71070 bytes total
-    ; one pattern is 64 lines, each line is 9 channels - 2369 bytes per pattern
+PATTERNS .for pattern=1, pattern <= 36, pattern += 1 ; 71070 bytes total
+    ; one pattern is 64 lines, each line is 9 channels - 1792 bytes per pattern
     .byte pattern
-    .for line = 1, line <= 64, line += 1  ; 37 bytes per line
+    .for line = 1, line <= 64, line += 1  ; 28 bytes per line
         .byte line     ; line number
         .rept 9
             ; we could compress the notes/octave to reduce
-            .byte 0, 0, 0, 0 ; note, octave, instrument, effect
+            .byte 0, 0, 0 ; note, octave, instrument, effect
         .next
     .next
 .next
 
 ORDERS    .fill 120, 0
+* = $1A0000
+.include "bpm.asm"

@@ -29,7 +29,7 @@ IRQ_HANDLER
                 LDA INT_PENDING_REG0
                 BEQ CHECK_PENDING_REG1
 ; Start of Frame
-                check_irq_bit INT_PENDING_REG0, FNX0_INT00_SOF, SOF_INTERRUPT
+                ;check_irq_bit INT_PENDING_REG0, FNX0_INT00_SOF, SOF_INTERRUPT
 ; Timer 0
                 check_irq_bit INT_PENDING_REG0, FNX0_INT02_TMR0, TIMER0_INTERRUPT
 ; FDC Interrupt
@@ -60,9 +60,9 @@ CHECK_PENDING_REG2
                 BEQ EXIT_IRQ_HANDLE
                 
 ; OPL2 Right Interrupt
-                check_irq_bit INT_PENDING_REG2, FNX2_INT00_OPL2R, OPL2R_INTERRUPT
+                ;check_irq_bit INT_PENDING_REG2, FNX2_INT00_OPL2R, OPL2R_INTERRUPT
 ; OPL2 Left Interrupt
-                check_irq_bit INT_PENDING_REG2, FNX2_INT01_OPL2L, OPL2L_INTERRUPT
+                ;check_irq_bit INT_PENDING_REG2, FNX2_INT01_OPL2L, OPL2L_INTERRUPT
                 
 EXIT_IRQ_HANDLE
                 ; Exit Interrupt Handler
@@ -76,6 +76,7 @@ EXIT_IRQ_HANDLE
 ;
 ; ****************************************************************
 ; ****************************************************************
+; * Todo: rewrite this to use indirect or indexed jumps
 KEYBOARD_INTERRUPT
                 .as
                 ldx #$0000
@@ -104,32 +105,69 @@ NOT_LEFT_BRACKET
                 JMP KB_WR_2_SCREEN
                 
 NOT_RIGHT_BRACKET
-                CMP #$1C                ; Eneter Key Pressed
-                BNE SPECIAL_KEYS
+                CMP #$0C        ; minus
+                BNE NOT_MINUS
                 
-                PHA
-                ; start or stop scrolling
-                LDA STATE_MACHINE
-                BEQ START_SOF
-STOP_SOF
-                LDA #0
-                STA STATE_MACHINE
-                LDA @lINT_MASK_REG0
-                ORA #FNX0_INT00_SOF
-                STA @lINT_MASK_REG0
-                PLA
+                LDA STATE_MACHINE      ; only allow for this in edit mode
+                AND #$F
+                BNE MINUS_DONE
+                ; if the pattern is 1, then stay here otherwise, decrement
+                LDA PATTERN_NUM
+                CMP #1
+                BEQ MINUS_DONE
+                SED  ; switch to decimal
+                SEC
+                SBC #1
+                STA PATTERN_NUM
+                CLD  ; switch out of decimal
+                JSR DISPLAY_PATTERN
+    MINUS_DONE
                 JMP KB_WR_2_SCREEN
                 
-START_SOF
-                LDA #1
-                STA STATE_MACHINE
-                JSR RESET_STATE_MACHINE
-                LDA @lINT_MASK_REG0
-                AND #~(FNX0_INT00_SOF)
-                STA @lINT_MASK_REG0
-                PLA
+NOT_MINUS
+                CMP #$0D        ; plus
+                BNE BPM_KEYS
+                
+                LDA STATE_MACHINE      ; only allow for this in edit mode
+                AND #$F
+                BNE PLUS_DONE
+                ; if the pattern is 30, then stay here otherwise, increment
+                LDA PATTERN_NUM
+                CMP #$30
+                BEQ PLUS_DONE
+                SED  ; switch to decimal
+                CLC
+                ADC #1
+                STA PATTERN_NUM
+                CLD  ; switch out of decimal
+                JSR DISPLAY_PATTERN
+    PLUS_DONE
                 JMP KB_WR_2_SCREEN
+                
+BPM_KEYS        CMP #$27     ; semi-colon
+                BNE NOT_SEMI_COLON
+                ; reduce the BPM by 1 beat
+                LDA BPM
+                CMP #4
+                BEQ PLUS_DONE
+                DEC A
+                BRA SETUP_TIMER
 
+NOT_SEMI_COLON
+                CMP #$28     ; quote
+                BNE SPECIAL_KEYS
+                ; increase the BPM by 1 beat
+                LDA BPM
+                CMP #200
+                BEQ PLUS_DONE
+                INC A
+                
+    SETUP_TIMER
+                STA BPM
+                JSR DISPLAY_BPM
+                JSR INIT_TIMER0
+                JMP KB_WR_2_SCREEN
+                
 SPECIAL_KEYS
                 ; Check for Shift Press or Unpressed
                 CMP #$2A                ; Left Shift Pressed
@@ -229,6 +267,37 @@ KB_WR_2_SCREEN
                 LDY #74
                 JSR WRITE_HEX
                 
+                CMP #$0D                ; Enter Key Pressed
+                BNE KB_CHECK_B_DONE
+                
+                PHA
+                ; start or stop scrolling
+                LDA STATE_MACHINE
+                AND #1
+                BEQ START_SOF
+STOP_SOF
+                LDA #0
+                STA STATE_MACHINE
+                LDA @lINT_MASK_REG0
+                ORA #FNX0_INT02_TMR0
+                STA @lINT_MASK_REG0
+                PLA
+                JMP KB_CHECK_B_DONE
+                
+START_SOF
+                LDA KEYBOARD_SC_FLG
+                BNE CONTINUE_FROM_CURRENT_LOCATION
+                
+                JSR RESET_STATE_MACHINE
+
+    CONTINUE_FROM_CURRENT_LOCATION
+                LDA #1
+                STA STATE_MACHINE
+                
+                LDA @lINT_MASK_REG0
+                AND #~(FNX0_INT02_TMR0)
+                STA @lINT_MASK_REG0
+                PLA
                 JMP KB_CHECK_B_DONE
 
 KB_SET_SHIFT    LDA KEYBOARD_SC_FLG
@@ -277,14 +346,20 @@ KB_DONE
 ; ///
 ; ///////////////////////////////////////////////////////////////////
 SOF_INTERRUPT
+TIMER0_INTERRUPT
+
                 .as
+                LDA STATE_MACHINE  ; the SOF is still called even when the interrupt is masked.
+                BEQ TICK_DONE
+                
                 LDA @lTICK
                 INC A
-                CMP @lBPM
+                CMP #4
                 BNE TICK_DONE
                 
                 ; we now have to increment the line count
 INCR_LINE
+
                 CLC
                 SED
                 INC LINE_NUM_HEX
@@ -303,7 +378,7 @@ INCR_DONE
 TICK_DONE
                 STA @lTICK
                 RTS
-                
+
 
 DECR_LINE
                 SEC
@@ -350,44 +425,7 @@ MORE_MIDI_DATA  LDA @lMIDI_STATUS_REG ; if bit D7 is low, there is more data to 
 MIDI_DONE
                 PLA
                 RTS
-                
-TIMER0_INTERRUPT
-OPL2R_INTERRUPT
-OPL2L_INTERRUPT
-                .as
-                LDA OPL2_L_BASE ; LOAD OPL2 STATUS
-                ;STA OPL2_L_IRQ ; byte 4 of OPL2
-                LDY #10
-                JSR WRITE_HEX
-                
-                LDA #$FF
-                STA OPL2_L_TIMER1 ; byte 2 of OPL2
-                
-                LDA @lTICK
-                INC A
-                CMP @lBPM
-                BNE TMR_TICK_DONE
-                
-                ; we now have to increment the line count
-                CLC
-                SED
-                INC LINE_NUM_HEX
-                LDA @lLINE_NUM_DEC
-                ADC #1
-                CMP #$65  ; this is the maximum number of lines
-                BNE TMR_INCR_DONE
-                LDA #1
-                STZ LINE_NUM_HEX
-TMR_INCR_DONE
-                CLD
-                STA @lLINE_NUM_DEC
-                JSR DISPLAY_LINE
-                LDA #0  ; reset the tick to 0
 
-TMR_TICK_DONE
-                STA @lTICK
-
-                RTS
 ;
 ; ///////////////////////////////////////////////////////////////////
 ; ///

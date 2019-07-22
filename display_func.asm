@@ -54,7 +54,7 @@ DRAW_DISPLAY
                 LDY #<>FONT_MEMORY_BANK0
                 MVN #`FNXFONT,#$AF
 
-                ; set the fg LUT to Purple
+                ; set the fg LUT to Purple (2)
                 LDA #$60FF
                 STA FG_CHAR_LUT_PTR + 8;
                 STA BG_CHAR_LUT_PTR + 8;
@@ -62,6 +62,7 @@ DRAW_DISPLAY
                 STA FG_CHAR_LUT_PTR + 10;
                 STA BG_CHAR_LUT_PTR + 10;
                 
+                ; set the fg LUT to Green (3)
                 LDA #$8020
                 STA FG_CHAR_LUT_PTR + 12;
                 STA BG_CHAR_LUT_PTR + 12;
@@ -69,6 +70,7 @@ DRAW_DISPLAY
                 STA FG_CHAR_LUT_PTR + 14;
                 STA BG_CHAR_LUT_PTR + 14;
                 
+                ; set the fg LUT to Gray (4)
                 LDA #$CCCC
                 STA FG_CHAR_LUT_PTR + 16;
                 STA BG_CHAR_LUT_PTR + 16;
@@ -87,6 +89,10 @@ SETTEXTCOLOR
                 
                 LDY #38 * 128  
                 JSR REVERSE_LUT
+                
+                LDA #$40 ; white
+                LDY #$2000 + INSTR_EDITOR_SCR
+                STA [SCREENBEGIN], Y 
 
                 RTS
                 
@@ -400,5 +406,15 @@ DISPLAY_PATTERN
                 LDA PATTERN_NUM
                 ; display the pattern number
                 LDY #23*128 + 19
+                JSR WRITE_HEX
+                RTS
+                
+; ***********************************************************************
+; * Display Beats per minute
+; ***********************************************************************
+DISPLAY_BPM
+                .as
+                LDA BPM
+                LDY #23*128 + 40
                 JSR WRITE_HEX
                 RTS
