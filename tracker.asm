@@ -19,7 +19,6 @@ TICK            .byte 0  ; this is used to count the number of 1/60 intervals
 BPM             .byte 60 ; how fast should the lines change - 
 PATTERN_NUM     .byte 1
 LINE_NUM_DEC    .byte 1
-INSTR_EDITOR_SCR = 128 * 6 + 4
 ORDER_EDITOR_SCR = 128 * 7 + 53
 PTRN_EDITOR_SCR  = 128 * 27 + 4
 

@@ -155,7 +155,7 @@ BPM_KEYS        CMP #$27     ; semi-colon
 
 NOT_SEMI_COLON
                 CMP #$28     ; quote
-                BNE SPECIAL_KEYS
+                BNE TRY_GRAVE
                 ; increase the BPM by 1 beat
                 LDA BPM
                 CMP #200
@@ -166,6 +166,24 @@ NOT_SEMI_COLON
                 STA BPM
                 JSR DISPLAY_BPM
                 JSR INIT_TIMER0
+                JMP KB_WR_2_SCREEN
+
+TRY_GRAVE
+                CMP #$29
+                BNE SPECIAL_KEYS
+                
+                LDA STATE_MACHINE
+                PHA
+                AND #$30
+                LSR
+                LSR
+                TAX
+                PLA
+                
+                EOR HL_CLR_TABLE+3,X
+                STA STATE_MACHINE
+                
+                JSR HIGHLIGHT_MODE
                 JMP KB_WR_2_SCREEN
                 
 SPECIAL_KEYS

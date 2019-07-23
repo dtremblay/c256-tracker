@@ -90,9 +90,7 @@ SETTEXTCOLOR
                 LDY #38 * 128  
                 JSR REVERSE_LUT
                 
-                LDA #$40 ; white
-                LDY #$2000 + INSTR_EDITOR_SCR
-                STA [SCREENBEGIN], Y 
+                JSR HIGHLIGHT_MODE
 
                 RTS
                 
@@ -412,9 +410,65 @@ DISPLAY_PATTERN
 ; ***********************************************************************
 ; * Display Beats per minute
 ; ***********************************************************************
+INSTR_HL_SCR     = 128 * 5 + 6
+INSTR_NUM_HL_SCR = 128 * 6 + 4
+ORDER_HL_SCR     = 128 * 5 + 54
+PTTRN_HL_SCR     = 128 * 26 + 3
+
 DISPLAY_BPM
                 .as
                 LDA BPM
                 LDY #23*128 + 40
                 JSR WRITE_HEX
+                RTS
+                
+; ***********************************************************************
+; * Display Highlight - 0: instrument, 1: order: 2: pattern
+; ***********************************************************************
+HL_CLR_TABLE
+                .byte $40, $20, $20, $10
+                .byte $20, $40, $20, $30
+                .byte $20, $20, $40, $20
+HIGHLIGHT_MODE 
+                .as
+                ; Read the mode and highlight the proper section
+                LDA STATE_MACHINE
+                AND #$30
+                LSR
+                LSR
+                PHA
+                PHA
+                
+                TAX
+                LDA HL_CLR_TABLE,X
+                LDX #10
+                LDY #$2000 + INSTR_HL_SCR
+    INSTR_HIGHLIGHT_LOOP
+                STA [SCREENBEGIN], Y
+                INY
+                DEX
+                BNE INSTR_HIGHLIGHT_LOOP
+                ; Highlight the '1' INSTR
+                LDY #$2000 + INSTR_NUM_HL_SCR
+                STA [SCREENBEGIN], Y 
+                
+                PLA
+                TAX
+                LDA HL_CLR_TABLE+1,X
+                LDX #5
+                LDY #$2000 + ORDER_HL_SCR
+    ORDER_HIGHLIGHT_LOOP
+                STA [SCREENBEGIN], Y
+                INY
+                DEX
+                BNE ORDER_HIGHLIGHT_LOOP
+                
+                
+                ; Highlight the '1' PATTERN
+                PLA
+                TAX
+                LDA HL_CLR_TABLE+2,X
+                LDY #$2000 + PTTRN_HL_SCR
+                STA [SCREENBEGIN], Y 
+                                
                 RTS
