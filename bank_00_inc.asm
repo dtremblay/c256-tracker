@@ -105,7 +105,8 @@ LINE_NUM_HEX    .byte 1
 TAB_COUNTER     .byte 1
 REM_LINES       .byte 1
 BLNK_BTM        .byte 1
-
+PTRN_ADDR       .long 0
+LINE_ADDR       .long 0
 ;..
 ;..
 ;..

@@ -204,9 +204,8 @@ RESET_STATE_MACHINE
                 STA LINE_NUM_DEC
                 STA PATTERN_NUM
                 
-                JSR DISPLAY_LINE
-                JSR DISPLAY_PATTERN
                 JSR DISPLAY_BPM
+                JSR DISPLAY_PATTERN
                 
                 RTS
                 
@@ -850,8 +849,10 @@ MIDI_COMMAND_TABLE
                  .word <>INVALID_COMMAND
                  
 * = $190000 ; pattern memory - reserving memory is kind of inefficient, but it's easier right now
-PATTERNS .for pattern=1, pattern <= 36, pattern += 1 ; 71070 bytes total
-    ; one pattern is 64 lines, each line is 9 channels - 1792 bytes per pattern
+PATTERN_BYTES = 1793
+LINE_BYTES    =   28
+PATTERNS .for pattern=1, pattern <= 36, pattern += 1 ; 64548 bytes total
+    ; one pattern is 64 lines, each line is 9 channels - 1793 bytes per pattern
     .byte pattern
     .for line = 1, line <= 64, line += 1  ; 28 bytes per line
         .byte line     ; line number

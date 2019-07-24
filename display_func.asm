@@ -219,23 +219,43 @@ WRITE_INSTRUMENT_NAME
                 
                 
 ; ****************************************************
-; * Display a pattern line
+; * Display the pattern screen
 ; * 
 ; * LINE_NUM_DEC contains the decimal line number.
 ; * LINE_NUM_HEX contains the hex line number.
+; * TAB_COUNTER contains the line number being drawn from 1 to 64.
 ; * We are defaulting to 32 lines of pattern to display.
 ; * If line number is < 10, display blanks
 ; * A simple header is displayed above line 1.
 ; * lines are grouped by 4, every fourth line is a tick line.
-DISPLAY_LINE
+DISPLAY_PATTERN
                 .as
-                PHB
+                LDA PATTERN_NUM
+                ; display the pattern number
+                LDY #23*128 + 19
+                JSR WRITE_HEX
                 
+                ; find the starting address of the pattern and write it to the PTRN_ADDR
+                DEC A  ; use 0 based offsets
+                STA M0_OPERAND_A
+                STZ M0_OPERAND_A + 1
+                setal
+                LDA #PATTERN_BYTES  ; this is the pattern size
+                STA M0_OPERAND_B
+                LDA M0_RESULT
+                INC A ; skip the pattern # byte
+                STA PTRN_ADDR
+                setas 
+                LDA #`PATTERNS
+                STA PTRN_ADDR + 2
+                
+                ; Draw the line number in the heading
                 LDA LINE_NUM_DEC
                 ; display the line number at the 'Line:' field
                 LDY #23*128 + 7
                 JSR WRITE_HEX
                 
+                ; Draw the pattern grid
                 LDA #32
                 STA REM_LINES
                 
@@ -283,8 +303,22 @@ TOP_LINE_1
                 LDA #1
 MOD_TOP_LINE
                 BEQ TOP_LINE_1
+                
                 STA TAB_COUNTER
+                
 TRIPLET
+                STZ M0_OPERAND_A + 1
+                STZ M0_OPERAND_B + 1
+                LDA TAB_COUNTER
+                DEC A ; use zero based offset
+                STA M0_OPERAND_B
+                ; compute the address of the line
+                LDA #LINE_BYTES
+                STA M0_OPERAND_A
+                setal
+                LDA M0_RESULT
+                STA LINE_ADDR
+                setas
                 LDA TAB_COUNTER
                 AND #3
                 BEQ draw_tick_line
@@ -294,6 +328,7 @@ TRIPLET
                 LDX #<>untick_line
                 MVN #`untick_line,#$AF
                 setas
+                JSR DRAW_LINE_DATA
                 DEC REM_LINES
                 JMP next_line
                 
@@ -303,6 +338,7 @@ draw_tick_line
                 LDX #<>tick_line
                 MVN #`tick_line,#$AF
                 setas
+                JSR DRAW_LINE_DATA
                 DEC REM_LINES
                 
 next_line 
@@ -332,35 +368,46 @@ BLANKS_BTM_LOOP
                 DEC REM_LINES
                 BNE BLANKS_BTM_LOOP
                 
-                ; compute the start of line address
 DRAW_LINE_DONE
-                LDA #37
-                STA M0_OPERAND_A
-                STZ M0_OPERAND_A + 1
-                STZ M0_OPERAND_B + 1
-                LDA LINE_NUM_HEX
-                STA M0_OPERAND_B
-                LDX M0_RESULT
-                INX
+                RTS
                 
-                ; now draw the pattern screen
-                LDA #`PATTERNS
+; ****************************************************
+; * Y contains the current draw location (after MVN).
+; * TAB_COUNTER contains the line to draw.
+; * PTRN_ADDR is the address of the pattern.
+DRAW_LINE_DATA
+                .as
+                PHY
+                PHX
+                PHB
+                
+                ; LDA #`PATTERNS
+                ; PHA
+                ; PLB
+                ; .databank `PATTERNS
+                TYX
+                LDY LINE_ADDR
+                LDA [PTRN_ADDR],Y ; line number
                 PHA
-                PLB
-                .databank `PATTERNS
                 
-                LDA PATTERNS,X ; line number
-                INX
-                LDY #38*128
+                ; compute the location to write to
+                SEC
+                setal
+                TXA
+                SBC #$A080
+                TAY
+                setas
+                PLA
                 JSR DRAW_CHANNEL
                 
-                LDA #0
-                PHA
-                PLB
+                ; LDA #0
+                ; PHA
+                ; PLB
                 
-                .databank 0
+                ; .databank 0
                 PLB
-                setas
+                PLX
+                PLY
                 RTS
                 
 ; ***********************************************************************
@@ -371,11 +418,14 @@ DRAW_CHANNEL
                 CLC
                 ADC #$30
                 STA [SCREENBEGIN], Y
-                
                 RTS
                 
+; ***********************************************************************
+; * Draw one line with reverse background
+; ***********************************************************************
 REVERSE_LUT     ; write 2 to reverse the characters
                 .as
+                PHB
                 LDA #`CS_COLOR_MEM_PTR
                 PHA
                 PLB
@@ -383,7 +433,7 @@ REVERSE_LUT     ; write 2 to reverse the characters
                 LDA #9
                 STA TAB_COUNTER
 
-                LDA #2
+                LDA #$42
 REVERSE_LUT_TABS
                 LDX #8
 REVERSE_LUT_LOOP
@@ -397,14 +447,7 @@ REVERSE_LUT_LOOP
                 BNE REVERSE_LUT_TABS
                 
                 .databank 0
-                RTS
-                
-DISPLAY_PATTERN
-                .as
-                LDA PATTERN_NUM
-                ; display the pattern number
-                LDY #23*128 + 19
-                JSR WRITE_HEX
+                PLB
                 RTS
                 
 ; ***********************************************************************

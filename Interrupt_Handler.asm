@@ -390,7 +390,7 @@ INCR_LINE
 INCR_DONE
                 CLD
                 STA @lLINE_NUM_DEC
-                JSR DISPLAY_LINE
+                JSR DISPLAY_PATTERN
                 LDA #0  ; reset the tick to 0
 
 TICK_DONE
@@ -411,7 +411,7 @@ DECR_LINE
 DECR_DONE
                 CLD
                 STA @lLINE_NUM_DEC
-                JSR DISPLAY_LINE
+                JSR DISPLAY_PATTERN
                 LDA #0  ; reset the tick to 0
                 STA @lTICK
                 RTS
