@@ -57,11 +57,31 @@ OPL2_INIT
                 LDA #$0000
                 STA OPL2_REG_REGION
                 STA OPL2_REG_OFFSET
-                STA OPL2_IND_ADDY_LL
-                STA OPL2_IND_ADDY_HL
                 STA OPL2_NOTE
                 STA OPL2_PARAMETER0
                 STA OPL2_PARAMETER2
+                
+                ; instrument library address
+                LDA #<>INSTRUMENT_ACCORDN
+                STA RAD_ADDR
+                LDA #<`INSTRUMENT_ACCORDN
+                STA RAD_ADDR + 2
+                
+                ; display the address
+                setas
+                PHY
+                LDA RAD_ADDR+2
+                LDY #128
+                JSR WRITE_HEX
+                LDA RAD_ADDR+1
+                LDY #130
+                JSR WRITE_HEX
+                LDA RAD_ADDR
+                LDY #132
+                JSR WRITE_HEX
+                PLY
+                
+                
                 setas
                 RTL
 

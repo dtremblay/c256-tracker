@@ -19,36 +19,7 @@ patternOffsets      .word $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000
                     .word $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000
                     .word $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000
 orderListOffset     .word $00000000
-instruments         .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-                    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+
 songLength          .byte $00
 InitialSpeed        .byte $06
 hasSlowTimer        .byte $00 ;BOOL $00 = False, $01 = True
@@ -69,131 +40,271 @@ patternBreak        .byte $FF
 .ends
 
 
-
+; ************************************************************************************************
 ; We are assuming that the RAD File is already Loaded Somewhere
-              
-OPL2_INIT_PLAYER
-              JSL PARSER_RAD_FILE_INSTRUMENT; Go Parse the Instrument and Order lOst
+; ************************************************************************************************
+RAD_INIT_PLAYER
               JSL OPL2_INIT   ; Init OPL2
-              SEC ; Set the WaveFormSelect to True
-              JSL OPL2_SET_WAVEFORMSELECT; Set WaveFormSelect True
-              ;
-              CLC
-              JSL OPL2_SET_PERCUSSION ; Set Percussion False
-              setas
-              LDA @lTuneInfo.InitialSpeed
-              STA @lPlayerInfo.speed
-              LDA #$FF
-              STA  @lPlayerInfo.orders
-              LDA #$00
-              STA  @lPlayerInfo.line
-              STA  @lPlayerInfo.tick
-              JSL RADPLAYER_NEXTORDER   ;
-              JSL RADPLAYER_READLINE ;
-              RTL
-
-PARSER_RAD_FILE_INSTRUMENT
+              
+              ; READ the RAD file
               setaxl
-              LDY #$0000          ; Pointer in the File
               LDA #<>RAD_FILE_TEMP ; Set the Pointer where the File Begins
               STA OPL2_ADDY_PTR_LO;
               LDA #<`RAD_FILE_TEMP
               STA OPL2_ADDY_PTR_HI;
               setas
-              LDY #$0011  ;Jump to Pointer 11 in the File
+              ; get the version of the file
+              LDY #$0010
+              LDA [OPL2_ADDY_PTR_LO],Y
+              CMP #$10 ; BCD version 1.0 or 2.1
+              BNE LOAD_VERSION_21
+              JSL READ_VERSION_10
+              RTL
+              
+LOAD_VERSION_21
+              JSL READ_VERSION_21
+              RTL
+              
+              
+READ_VERSION_21
+              ;not implemented
+              RTL
+              
+READ_VERSION_10
+              JSR PARSER_RAD_FILE_INSTRUMENT_10; Go Parse the Instrument and Order list
+              JSR PROCESS_ORDER_LIST_10
+              JSR READ_PATTERNS_10
+              
+              RTL
+
+ADLIB_OFFSETS .byte 7,1,8,2,9,3,10,4,5,11,6
+
+; ************************************************************************************************
+; Read the instrument table
+; ************************************************************************************************
+PARSER_RAD_FILE_INSTRUMENT_10
+              INY ; $11 bit 7: description, bit6: slow timer, bits4..0: speed
+              
               LDA [OPL2_ADDY_PTR_LO],Y
               ;Will Ignore the has slowSlowTimer for now
               AND #$1F
               STA @lTuneInfo.InitialSpeed
               LDA [OPL2_ADDY_PTR_LO],Y
               AND #$80
-              CMP #$80  ; Check if there is Text following
-              BNE No_File_Description
+              BEQ READ_INSTR_DATA
 Not_Done_With_Description
               INY ; Move the Pointer Forward
               LDA [OPL2_ADDY_PTR_LO],Y
               CMP #$00  ; Check for the End of Text
               BNE Not_Done_With_Description
-No_File_Description
+              
+READ_INSTR_DATA
               INY ; This points after either After Description or next to Offset 0x11
+              
               ; Let's Init the Address Point for the instrument Tables
-              setal
-              LDA #<`TuneInfo.instruments
-              STA OPL2_IND_ADDY_HL
+              
+              LDA #<`INSTRUMENT_ACCORDN
+              STA RAD_ADDR + 2
+              
               ; Let's Read Some Instruments HERE
 ProcessNextInstruments
-              setal
-              LDA #$0000 ; THis is to make sure that B is 0
               setas
               LDA [OPL2_ADDY_PTR_LO],Y  ; Read Instrument Number
-              CMP #$00  ; Check if there is no more instruments
               BEQ DoneProcessingInstrument;
+              
               setal
+              ; find the address of the instrument by multiplying by the record length
               DEC A
-              ASL A
-              ASL A
-              ASL A
-              ASL A
+              STA @lM0_OPERAND_A
+              LDA #INSTR_REC_LEN
+              STA @lM0_OPERAND_B
+              LDA @lM0_RESULT  ; not sure why this one requires a long address - bank is still 0
+              
               CLC
-              ADC #<>TuneInfo.instruments
-              STA OPL2_IND_ADDY_LL
+              ADC #<>INSTRUMENT_ACCORDN
+              STA RAD_ADDR
+              LDA #0
               setas
+              
               INY
-              LDX #$0000
+              STZ RAD_TEMP
+              STA [RAD_ADDR]  ; Not a drum instrument
+              
 Transfer_Instrument_Info
-              LDA [OPL2_ADDY_PTR_LO],Y  ; Read Instrument Number
-              STA [OPL2_IND_ADDY_LL]; 2 Different Indexed Pointer
-              setal
-              INC OPL2_IND_ADDY_LL
-              setas
+              LDX RAD_TEMP
+              LDA ADLIB_OFFSETS,X  ; RAD uses a different order for registers
+              TAX
+              
+              LDA [OPL2_ADDY_PTR_LO],Y  ; Read Register
+              PHY
+              TXY
+              STA [RAD_ADDR],Y  ; Write to the instrument table 
+              PLY
               INY
-              INX
-              CPX #$09
+              INC RAD_TEMP
+              LDA RAD_TEMP
+              CMP #11
               BCC Transfer_Instrument_Info
-              LDA [OPL2_ADDY_PTR_LO],Y  ; Save the First 8 Bytes in the Data Base
-              AND #$07
-              STA OPL2_PARAMETER0
+              
+              PHY ; store the position in the file on the stack
+              LDY #12 ; beginning of text
+              LDA #$20
+              ;TODO: set description to 'RAD INST #'
+    BLANK_INSTR_DESCR
+              STA [RAD_ADDR],Y
               INY
-              LDA [OPL2_ADDY_PTR_LO],Y
-              INY
-              AND #$07
-              ASL A
-              ASL A
-              ASL A
-              ASL A
-              ORA OPL2_PARAMETER0
-              STA [OPL2_IND_ADDY_LL]  ; 2 Different Indexed Pointer
+              CPY #22
+              BNE BLANK_INSTR_DESCR
+              PLY
+              
               BRA ProcessNextInstruments;
+              
 DoneProcessingInstrument
               INY
-              LDA [OPL2_ADDY_PTR_LO],Y  ; Read Instrument Number
+              RTS
+              
+; ************************************************************************************************
+; * Read the orders list
+; ************************************************************************************************
+PROCESS_ORDER_LIST_10
+              LDA [OPL2_ADDY_PTR_LO],Y  ; Read Song Length
               STA @lTuneInfo.songLength
+              TAX
               INY
-              CLC
+              
               setal
-              TYA ; Store the Pointer of the Offset List
-              ADC OPL2_ADDY_PTR_LO
-              STA @lTuneInfo.orderListOffset
-              LDA OPL2_ADDY_PTR_HI
-              STA @lTuneInfo.orderListOffset+2
-              CLC ; This will jump over the the OrderList
-              LDA @lTuneInfo.orderListOffset
+              LDA #<>ORDERS
+              STA RAD_ADDR
+              LDA #<`ORDERS
+              STA RAD_ADDR + 2
               setas
-              ADC @lTuneInfo.songLength
-              setal
-              STA OPL2_ADDY_PTR_LO
-              setas
-              ; They are already in Big Endian, so no conversion necessary
-              LDY #$0000 ; Now the Point Y has been embedded in the OPL2_ADDY_PTR_LO, let's clear it
-              LDX #$0000
-TransferPaternOffset ; This is the Table of Pointer for the different Pattern
+    READ_ORDER
               LDA [OPL2_ADDY_PTR_LO],Y
-              STA @lTuneInfo.patternOffsets,X
-              INX
               INY
-              CPY #$20
-              BCC TransferPaternOffset
-              RTL
+              STA [RAD_ADDR]
+              INC RAD_ADDR
+              BCS ORDER_CONTINUE
+              INC RAD_ADDR + 1
+        ORDER_CONTINUE
+              DEX
+              BNE READ_ORDER
+              RTS
+              
+; ************************************************************************************************
+; * Read the pattern table
+; * Y contains the position in the file
+; ************************************************************************************************
+READ_PATTERNS_10
+              ; RAD_PATTRN holds the pattern number
+              STZ RAD_PATTRN
+              ; high byte of the pattern address
+              LDA #<`PATTERNS
+              STA RAD_PTN_DEST + 2
+    NEXT_PATTERN
+              
+              ; read the file offset
+              setal
+              LDA [OPL2_ADDY_PTR_LO],Y
+              BEQ SKIP_PATTERN
+              
+              PHY
+              TAY
+              
+              ; compute the start address of the pattern
+              LDA RAD_PATTRN
+              AND #$00FF
+              STA @lM0_OPERAND_A
+              LDA #PATTERN_BYTES
+              STA @lM0_OPERAND_B
+              LDA @lM0_RESULT
+              INC A ; skip the pattern byte
+              STA RAD_PTN_DEST
+              
+              setas
+              JSR READ_PATTERN_10
+              PLY
+              
+    SKIP_PATTERN
+              INY
+              INY
+              setas
+              INC RAD_PATTRN
+              LDA RAD_PATTRN
+              CMP #32
+              BNE NEXT_PATTERN
+              RTS
+              
+; ************************************************************************************************
+; * Read the pattern table
+; * Y contains the position in the RAD 1.0 file
+; * RAD_PTN_DEST is the address to write to
+; ************************************************************************************************
+READ_PATTERN_10
+              LDA [OPL2_ADDY_PTR_LO],Y ; read the line number - bit 7 indicates the last line 
+              STA @lRAD_LINE
+              INY
+              setal
+              AND #$7F
+              STA @lM0_OPERAND_A
+              LDA #LINE_BYTES
+              STA @lM0_OPERAND_B
+              LDA @lM0_RESULT
+              INC A ; skip the line number
+              STA @lRAD_LINE_PTR
+              setas
+              
+    READ_NOTE
+              LDX RAD_LINE_PTR ; X contains the offset in the destination memory
+
+              LDA [OPL2_ADDY_PTR_LO],Y ; channel - bit 7 indicates the last note
+              INY
+              STA @lRAD_LAST_NOTE
+              AND #$F
+              STA @lRAD_CHANNEL
+              
+              setal
+              TXA
+              CLC
+              ADC RAD_CHANNEL ; multiply channel by 3
+              ADC RAD_CHANNEL 
+              ADC RAD_CHANNEL
+              TAX
+              setas
+              
+              LDA [OPL2_ADDY_PTR_LO],Y ; note / octave
+              PHY
+              TXY
+              STA [RAD_PTN_DEST],Y
+              PLY
+              INY
+              INX 
+              
+              LDA [OPL2_ADDY_PTR_LO],Y ; instrument/effect
+              PHY
+              TXY
+              STA [RAD_PTN_DEST],Y
+              PLY
+              INY
+              INX
+              
+              AND #$F
+              BEQ CHECK_LASTNOTE
+              
+              LDA [OPL2_ADDY_PTR_LO],Y ; effect parameter
+              PHY
+              TXY
+              STA [RAD_PTN_DEST],Y
+              PLY
+              INY
+              INX
+     CHECK_LASTNOTE
+              LDA @lRAD_LAST_NOTE
+              BPL READ_NOTE
+              
+              LDA @lRAD_LINE
+              BPL READ_PATTERN_10
+
+              RTS
 
 ; Output
 ; Y = Is the Pointer in the File to the next Patternlist.
@@ -632,7 +743,7 @@ RAD_SETINSTRUMENT
               STA OPL2_OPERATOR
               setal
 
-              LDA #<`TuneInfo.instruments
+              LDA #<`INSTRUMENT_ACCORDN
               STA OPL2_ADDY_PTR_HI
               LDA OPL2_PARAMETER0
               AND #$00FF
@@ -642,7 +753,7 @@ RAD_SETINSTRUMENT
               ASL A
               ASL A
               CLC
-              ADC #<>TuneInfo.instruments
+              ADC #<>INSTRUMENT_ACCORDN
               STA OPL2_ADDY_PTR_LO
               setal
               LDA #$0020
@@ -760,6 +871,23 @@ COMPUTE_POINTER
               LDA OPL2_IND_ADDY_LL
               ADC M1_RESULT
               STA OPL2_IND_ADDY_LL
+              RTS
+              
+DISPLAY_A_LONG
+              PHA
+              STA TEMP_STORAGE
+              
+              setas
+              LDA TEMP_STORAGE+1
+              JSR WRITE_HEX
+              
+              LDA TEMP_STORAGE
+              INY
+              INY
+              JSR WRITE_HEX
+              setal
+              
+              PLA
               RTS
 ;
 ;#define OPERATOR1 0

@@ -17,8 +17,8 @@ HEX_MAP         .text '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E
 STATE_MACHINE   .byte 0  ; High Nibble is the Mode (inst, order, pattern), Low nibble is state: 0 is record mode, 1 is play mode
 TICK            .byte 0  ; this is used to count the number of 1/60 intervals
 BPM             .byte 60 ; how fast should the lines change - 
-PATTERN_NUM     .byte 1
-LINE_NUM_DEC    .byte 1
+PATTERN_NUM     .byte 1  ; pattern being displayed/played
+LINE_NUM_DEC    .byte 1  ; line being display/played
 ORDER_EDITOR_SCR = 128 * 7 + 53
 PTRN_EDITOR_SCR  = 128 * 27 + 4
 
@@ -66,11 +66,7 @@ RVECTOR_ENMI    .addr HNMI     ; FFFA
 RVECTOR_ERESET  .addr HRESET   ; FFFC
 RVECTOR_EIRQ    .addr HIRQ     ; FFFE
 
-* = $160000
-.include "OPL2_Rad_Player.asm"
-
 * = $181000
-
 
 .include "OPL2_library.asm"
 .include "keyboard_def.asm"
@@ -85,7 +81,6 @@ RVECTOR_EIRQ    .addr HIRQ     ; FFFE
 ; we'll need to figure out how to do stereo, left- and right-only.
 
 TRACKER
-                JSL OPL2_INIT_PLAYER
                 ; Setup the Interrupt Controller
                 ; For Now all Interrupt are Falling Edge Detection (IRQ)
                 LDA #$FF
@@ -128,7 +123,8 @@ TRACKER
 
                 JSR ENABLE_IRQS
                 JSR INIT_TIMER0  
-                ; JSR INIT_OPL2_TMRS
+                JSL RAD_INIT_PLAYER
+                
                 CLI
                 
                 ; we allow input of data via MIDI
@@ -210,7 +206,7 @@ RESET_STATE_MACHINE
                 RTS
                 
 ; ***********************************************************************
-; * Timers are not yet implemented in C256 Foenix.
+; * Initialize the timer
 ; ***********************************************************************
 INIT_TIMER0     
                 .as
@@ -828,11 +824,7 @@ NONOTE
                 PLX
                 PLA
                 RTS
-
-
-
-
-                
+               
                 ;      00,  01,  02,  03,  04,  05,  06,  07,  08,  09,  0A,  0B,  0C,  0D,  0E,  0F
 SCAN_TO_NOTE    .text $80, $80, $80, $31, $33, $80, $36, $38, $3A, $80, $80, $80, $80, $80, $80, $80
                 .text $30, $32, $34, $35, $37, $39, $3B, $40, $80, $80, $80, $80, $80, $80, $80, $21
@@ -848,6 +840,8 @@ MIDI_COMMAND_TABLE
                  .word <>PITCH_BEND, <>SYSTEM_COMMAND
                  .word <>INVALID_COMMAND
                  
+.include "OPL2_Rad_Player.asm"
+
 * = $190000 ; pattern memory - reserving memory is kind of inefficient, but it's easier right now
 PATTERN_BYTES = 1793
 LINE_BYTES    =   28
@@ -857,12 +851,11 @@ PATTERNS .for pattern=1, pattern <= 36, pattern += 1 ; 64548 bytes total
     .for line = 1, line <= 64, line += 1  ; 28 bytes per line
         .byte line     ; line number
         .rept 9
-            ; we could compress the notes/octave to reduce
-            .byte 0, 0, 0 ; note, octave, instrument, effect
+            .byte 0, 0, 0 ; note/octave, instrument, effect
         .next
     .next
 .next
-
 ORDERS    .fill 120, 0
+
 * = $1A0000
 .include "bpm.asm"

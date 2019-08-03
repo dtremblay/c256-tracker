@@ -220,6 +220,7 @@ NOT_SPECIAL
                 
                 PHA
                 LDA STATE_MACHINE
+                AND #$F
                 BNE UP_WRONG_STATE
                 JSR DECR_LINE
     UP_WRONG_STATE
@@ -232,6 +233,7 @@ NOT_UP
                 
                 PHA
                 LDA STATE_MACHINE
+                AND #$F
                 BNE DOWN_WRONG_STATE
                 JSR INCR_LINE
     DOWN_WRONG_STATE

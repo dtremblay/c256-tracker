@@ -118,7 +118,12 @@ MOUSE_POS_X_HI   = $0000E2
 MOUSE_POS_Y_LO   = $0000E3
 MOUSE_POS_Y_HI   = $0000E4
 
-USER_TEMP        = $0000F0 ;32 Bytes Temp space for user programs
+RAD_ADDR         = $0000F0 ; 3 bytes to avoid OPL2 errors.
+RAD_PATTRN       = $0000F3 ; 1 bytes - offset to patter
+RAD_PTN_DEST     = $0000F4 ; 3 bytes - where to write the pattern data
+RAD_CHANNEL      = $0000F7 ; 2 bytes - 0 to 8 
+RAD_LAST_NOTE    = $0000F9 ; 1 if this is the last note
+RAD_LINE_PTR     = $0000FA ; 2 bytes - offset to memory location
 
 ;;///////////////////////////////////////////////////////////////
 ;;; NO CODE or Variable ought to be Instatied in this REGION
