@@ -230,7 +230,20 @@ WRITE_INSTRUMENT_NAME
 ; * lines are grouped by 4, every fourth line is a tick line.
 DISPLAY_PATTERN
                 .as
-                LDA PATTERN_NUM
+                PHB
+                PHD
+                ;setal
+                ;LDA #0
+                ;setas
+                ;PHA
+                ;PLB
+                ;TCD
+                
+                
+                LDA #`PATTERNS
+                STA PTRN_ADDR + 2
+                
+                LDA PATTERN_NUM ; this is a BCD value so it won't work once values are above 9
                 ; display the pattern number
                 LDY #23*128 + 19
                 JSR WRITE_HEX
@@ -245,10 +258,8 @@ DISPLAY_PATTERN
                 LDA M0_RESULT
                 INC A ; skip the pattern # byte
                 STA PTRN_ADDR
-                setas 
-                LDA #`PATTERNS
-                STA PTRN_ADDR + 2
                 
+                setas 
                 ; Draw the line number in the heading
                 LDA LINE_NUM_DEC
                 ; display the line number at the 'Line:' field
@@ -263,7 +274,6 @@ DISPLAY_PATTERN
                 LDA LINE_NUM_HEX
                 CMP #10
                 BCS DRAW_DATA ; if line# is greater than 10, skip blank lines and topline
-                BEQ BLANKS_LOOP
                 
 DRAW_BLANK_LINES
                 
@@ -271,9 +281,8 @@ DRAW_BLANK_LINES
                 LDA #9
                 SBC LINE_NUM_HEX
                 
-                STA TAB_COUNTER
                 BEQ DRAW_TOP_LINE
-                
+                STA TAB_COUNTER
 BLANKS_LOOP
                 setal
                 LDA #127
@@ -291,33 +300,31 @@ DRAW_TOP_LINE
                 MVN #`top_line,#$AF
                 setas
                 DEC REM_LINES
-                
+                LDA #1
+                BRA MOD_TOP_LINE
 DRAW_DATA
                 SEC
                 LDA LINE_NUM_HEX
                 SBC #9
-                BPL MOD_TOP_LINE
-TOP_LINE_1
-                LDA #0
-                STA BLNK_BTM
-                LDA #1
+
 MOD_TOP_LINE
-                BEQ TOP_LINE_1
-                
                 STA TAB_COUNTER
-                
+                PHY
+                LDY #128
+                JSR WRITE_HEX
+                PLY
 TRIPLET
                 STZ M0_OPERAND_A + 1
                 STZ M0_OPERAND_B + 1
                 LDA TAB_COUNTER
                 DEC A ; use zero based offset
-                STA M0_OPERAND_B
+                STA @lM0_OPERAND_B
                 ; compute the address of the line
                 LDA #LINE_BYTES
-                STA M0_OPERAND_A
+                STA @lM0_OPERAND_A
                 setal
-                LDA M0_RESULT
-                STA LINE_ADDR
+                LDA @lM0_RESULT
+                STA @lLINE_ADDR
                 setas
                 LDA TAB_COUNTER
                 AND #3
@@ -369,6 +376,8 @@ BLANKS_BTM_LOOP
                 BNE BLANKS_BTM_LOOP
                 
 DRAW_LINE_DONE
+                PLD
+                PLB
                 RTS
                 
 ; ****************************************************
@@ -379,45 +388,87 @@ DRAW_LINE_DATA
                 .as
                 PHY
                 PHX
-                PHB
-                
-                ; LDA #`PATTERNS
-                ; PHA
-                ; PLB
-                ; .databank `PATTERNS
-                TYX
-                LDY LINE_ADDR
-                LDA [PTRN_ADDR],Y ; line number
-                PHA
+
+                LDA #9 ; number of channels to populate
+                STA RAD_CHANNEL
                 
                 ; compute the location to write to
-                SEC
+                
                 setal
-                TXA
+                TYA ; copy Y into A
+                SEC
                 SBC #$A080
-                TAY
+                TAX
                 setas
-                PLA
-                JSR DRAW_CHANNEL
                 
-                ; LDA #0
-                ; PHA
-                ; PLB
+                LDY LINE_ADDR
+                INY ; skip the line number
+    NEXT_CHANNEL
+                ; display the note in the first column
+                LDA [PTRN_ADDR],Y ; note/octave
+                BEQ RAD_NO_NOTE
+                INX ; skip the first column
+                INY
+                JSR DISPLAY_VALUE
                 
-                ; .databank 0
-                PLB
+                INX ; skip the middle column
+                LDA [PTRN_ADDR],Y ; instrument/effect
+                INY
+                JSR DISPLAY_VALUE
+                
+                ; display the effect parameter
+                LDA [PTRN_ADDR],Y ;
+                INY
+                JSR DISPLAY_VALUE
+                INX ; skip the vertical bar
+    DRAW_NEXT_CHANNEL
+                DEC RAD_CHANNEL
+                BNE NEXT_CHANNEL
+
                 PLX
                 PLY
                 RTS
                 
+    RAD_NO_NOTE
+                INY
+                INY
+                INY
+                setal
+                CLC
+                TXA
+                ADC #9
+                TAX
+                setas
+                BRA DRAW_NEXT_CHANNEL
+                
 ; ***********************************************************************
 ; A contains the value to display
-; Y contains the screen location
-DRAW_CHANNEL
+; X contains the screen location
+DISPLAY_VALUE   
                 .as
+                PHY
+                PHA
+                TXY
+                
+                AND #$F0 ; high-nibble
+                LSR
+                LSR
+                LSR
+                LSR
                 CLC
                 ADC #$30
                 STA [SCREENBEGIN], Y
+                INY
+                
+                PLA
+                AND #$F ; low-nibble
+                CLC
+                ADC #$30
+                STA [SCREENBEGIN], Y
+                INY
+                
+                TYX
+                PLY
                 RTS
                 
 ; ***********************************************************************

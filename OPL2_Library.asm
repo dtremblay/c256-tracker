@@ -67,20 +67,6 @@ OPL2_INIT
                 LDA #<`INSTRUMENT_ACCORDN
                 STA RAD_ADDR + 2
                 
-                ; display the address
-                setas
-                PHY
-                LDA RAD_ADDR+2
-                LDY #128
-                JSR WRITE_HEX
-                LDA RAD_ADDR+1
-                LDY #130
-                JSR WRITE_HEX
-                LDA RAD_ADDR
-                LDY #132
-                JSR WRITE_HEX
-                PLY
-                
                 
                 setas
                 RTL

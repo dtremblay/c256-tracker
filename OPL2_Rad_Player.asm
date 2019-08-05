@@ -872,23 +872,6 @@ COMPUTE_POINTER
               ADC M1_RESULT
               STA OPL2_IND_ADDY_LL
               RTS
-              
-DISPLAY_A_LONG
-              PHA
-              STA TEMP_STORAGE
-              
-              setas
-              LDA TEMP_STORAGE+1
-              JSR WRITE_HEX
-              
-              LDA TEMP_STORAGE
-              INY
-              INY
-              JSR WRITE_HEX
-              setal
-              
-              PLA
-              RTS
 ;
 ;#define OPERATOR1 0
 ;#define OPERATOR2 1

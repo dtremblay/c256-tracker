@@ -237,18 +237,12 @@ INIT_TIMER0
                 
                 LDA @lSPM_004,X
                 STA TIMER0_CMP_L
-                LDY #8
-                JSR WRITE_HEX
                 
                 LDA @lSPM_004+1,X
                 STA TIMER0_CMP_M
-                LDY #6
-                JSR WRITE_HEX
                 
                 LDA @lSPM_004+2,X
                 STA TIMER0_CMP_H
-                LDY #4
-                JSR WRITE_HEX
                 
                 LDA #TMR0_CMP_RECLR
                 STA TIMER0_CMP_REG
