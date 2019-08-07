@@ -39,6 +39,8 @@ pitchSlideSpeed     .byte $00, $00, $00, $00, $00, $00, $00, $00, $00
 patternBreak        .byte $FF
 .ends
 
+; special characters for notes
+note_array          .byte $43, $90, $44, $91, $45, $46, $92, $47, $93, $41, $94, $42, $95
 
 ; ************************************************************************************************
 ; We are assuming that the RAD File is already Loaded Somewhere

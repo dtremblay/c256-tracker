@@ -232,13 +232,6 @@ DISPLAY_PATTERN
                 .as
                 PHB
                 PHD
-                ;setal
-                ;LDA #0
-                ;setas
-                ;PHA
-                ;PLB
-                ;TCD
-                
                 
                 LDA #`PATTERNS
                 STA PTRN_ADDR + 2
@@ -250,16 +243,15 @@ DISPLAY_PATTERN
                 
                 ; find the starting address of the pattern and write it to the PTRN_ADDR
                 DEC A  ; use 0 based offsets
-                STA M0_OPERAND_A
+                STA @lM0_OPERAND_A
                 STZ M0_OPERAND_A + 1
-                setal
+            setal
                 LDA #PATTERN_BYTES  ; this is the pattern size
-                STA M0_OPERAND_B
-                LDA M0_RESULT
+                STA @lM0_OPERAND_B
+                LDA @lM0_RESULT
                 INC A ; skip the pattern # byte
                 STA PTRN_ADDR
-                
-                setas 
+            setas 
                 ; Draw the line number in the heading
                 LDA LINE_NUM_DEC
                 ; display the line number at the 'Line:' field
@@ -276,7 +268,6 @@ DISPLAY_PATTERN
                 BCS DRAW_DATA ; if line# is greater than 10, skip blank lines and topline
                 
 DRAW_BLANK_LINES
-                
                 SEC
                 LDA #9
                 SBC LINE_NUM_HEX
@@ -284,21 +275,21 @@ DRAW_BLANK_LINES
                 BEQ DRAW_TOP_LINE
                 STA TAB_COUNTER
 BLANKS_LOOP
-                setal
+            setal
                 LDA #127
                 LDX #<>blank_line
                 MVN #`blank_line,#$AF
-                setas
+            setas
                 DEC REM_LINES
                 DEC TAB_COUNTER
                 BNE BLANKS_LOOP
                 
 DRAW_TOP_LINE
-                setal
+            setal
                 LDA #127
                 LDX #<>top_line
                 MVN #`top_line,#$AF
-                setas
+            setas
                 DEC REM_LINES
                 LDA #1
                 BRA MOD_TOP_LINE
@@ -314,37 +305,39 @@ MOD_TOP_LINE
                 JSR WRITE_HEX
                 PLY
 TRIPLET
+                ; compute the address of the line
+                LDA #LINE_BYTES
+                STA @lM0_OPERAND_A
                 STZ M0_OPERAND_A + 1
                 STZ M0_OPERAND_B + 1
                 LDA TAB_COUNTER
                 DEC A ; use zero based offset
                 STA @lM0_OPERAND_B
-                ; compute the address of the line
-                LDA #LINE_BYTES
-                STA @lM0_OPERAND_A
-                setal
+                
+                
+            setal
                 LDA @lM0_RESULT
-                STA @lLINE_ADDR
-                setas
+                STA LINE_ADDR
+            setas
                 LDA TAB_COUNTER
                 AND #3
                 BEQ draw_tick_line
                 
-                setal
+            setal
                 LDA #127
                 LDX #<>untick_line
                 MVN #`untick_line,#$AF
-                setas
+            setas
                 JSR DRAW_LINE_DATA
                 DEC REM_LINES
                 JMP next_line
                 
 draw_tick_line
-                setal
+            setal
                 LDA #127
                 LDX #<>tick_line
                 MVN #`tick_line,#$AF
-                setas
+            setas
                 JSR DRAW_LINE_DATA
                 DEC REM_LINES
                 
@@ -358,20 +351,20 @@ next_line
                 BEQ DRAW_LINE_DONE
                 
 DRAW_BOTTOM_BAR
-                setal
+            setal
                 LDA #127
                 LDX #<>btm_line
                 MVN #`btm_line,#$AF
-                setas
+            setas
                 LDA REM_LINES
                 BEQ DRAW_LINE_DONE
                 
 BLANKS_BTM_LOOP
-                setal
+            setal
                 LDA #127
                 LDX #<>blank_line
                 MVN #`blank_line,#$AF
-                setas
+            setas
                 DEC REM_LINES
                 BNE BLANKS_BTM_LOOP
                 
@@ -409,8 +402,17 @@ DRAW_LINE_DATA
                 BEQ RAD_NO_NOTE
                 INX ; skip the first column
                 INY
-                JSR DISPLAY_VALUE
+                JSR DISPLAY_NOTE_OCTAVE
                 
+                ROL A ; put bit 7 into the carry
+                BCC SKIP_MID_COL
+                LDA #'1'
+                PHY
+                TXY
+                STA [SCREENBEGIN], Y
+                PLY
+                
+        SKIP_MID_COL
                 INX ; skip the middle column
                 LDA [PTRN_ADDR],Y ; instrument/effect
                 INY
@@ -444,6 +446,7 @@ DRAW_LINE_DATA
 ; ***********************************************************************
 ; A contains the value to display
 ; X contains the screen location
+; ***********************************************************************
 DISPLAY_VALUE   
                 .as
                 PHY
@@ -468,6 +471,40 @@ DISPLAY_VALUE
                 INY
                 
                 TYX
+                PLY
+                RTS
+                
+; ***********************************************************************
+; A contains the value to display: ignore bit 7, octave is bit 6-4, note is bits 3-0
+; X contains the screen location
+; ***********************************************************************
+DISPLAY_NOTE_OCTAVE
+                .as
+                PHY
+                PHA
+                PHA
+                TXY
+                setal
+                AND #$F ; low-nibble - C#=1, D=2, ... C=12, 0 is no note and $F is Key Off
+                TAX
+                setas
+                LDA @lnote_array, X 
+                STA [SCREENBEGIN], Y
+                INY
+                
+                PLA
+                AND #$70 ; high-nibble
+                LSR
+                LSR
+                LSR
+                LSR
+                CLC
+                ADC #$30
+                STA [SCREENBEGIN], Y
+                INY
+                
+                TYX
+                PLA
                 PLY
                 RTS
                 
@@ -565,4 +602,47 @@ HIGHLIGHT_MODE
                 LDY #$2000 + PTTRN_HL_SCR
                 STA [SCREENBEGIN], Y 
                                 
+                RTS
+                
+; ***********************************************************************
+; * Display Orders for each pattern in the song length
+; ***********************************************************************
+DISPLAY_ORDERS
+                .as
+                
+                LDA @lTuneInfo.songLength
+                STA TAB_COUNTER
+                LDX #0
+                LDY #128 * 7 + 53
+                
+                setal
+                LDA #<>ORDERS
+                STA RAD_ADDR
+                LDA #<`ORDERS
+                STA RAD_ADDR + 2
+                setas
+                
+        NEXT_ORDER
+                TXA
+                JSR WRITE_HEX
+                INY
+                INY
+                INY
+                
+                PHY
+                TXY
+                LDA [RAD_ADDR],Y
+                INC A 
+                PLY
+                
+                JSR WRITE_HEX
+                INX
+                setal
+                TYA
+                CLC
+                ADC #128 - 3
+                TAY
+                setas
+                DEC TAB_COUNTER
+                BNE NEXT_ORDER
                 RTS

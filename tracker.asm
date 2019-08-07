@@ -129,6 +129,9 @@ TRACKER
                 
                 ; we allow input of data via MIDI
                 JSR INIT_MIDI
+                JSR DISPLAY_ORDERS
+                JSR DISPLAY_PATTERN
+                
           
 ALWAYS          NOP
                 NOP
@@ -191,7 +194,7 @@ ENABLE_IRQS
 ; *******************************************************************************
 RESET_STATE_MACHINE
                 .as
-                LDA #1
+                LDA #0
                 STA STATE_MACHINE
                 
                 STZ LINE_NUM_HEX
@@ -201,7 +204,6 @@ RESET_STATE_MACHINE
                 STA PATTERN_NUM
                 
                 JSR DISPLAY_BPM
-                JSR DISPLAY_PATTERN
                 
                 RTS
                 
@@ -834,7 +836,7 @@ MIDI_COMMAND_TABLE
                  .word <>PITCH_BEND, <>SYSTEM_COMMAND
                  .word <>INVALID_COMMAND
                  
-.include "OPL2_Rad_Player.asm"
+.include "Rad_Player.asm"
 
 * = $190000 ; pattern memory - reserving memory is kind of inefficient, but it's easier right now
 PATTERN_BYTES = 1793

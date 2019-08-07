@@ -18,7 +18,7 @@ INIT_MIDI
                 LDA #$3F
                 STA @lMIDI_STATUS_REG
                 
-                LDY #10 * 128 + 54
+                LDY #10 * 128 + 70
 MORE_DATA       LDA @lMIDI_DATA_REG
                 JSR WRITE_HEX
                 INY
@@ -92,13 +92,13 @@ NOTE_ON         ; we need two data bytes: the note and the velocity
                 
                 setxl
                 LDA MIDI_CTRL
-                LDY #12*128 + 54
+                LDY #12*128 + 66
                 JSR WRITE_HEX
                 
                 ; NOTE VALUE
                 LDA MIDI_DATA1
                 STA @lD0_OPERAND_B
-                LDY #12*128 + 56
+                LDY #12*128 + 68
                 JSR WRITE_HEX
                 
                 LDA #0
@@ -111,17 +111,17 @@ NOTE_ON         ; we need two data bytes: the note and the velocity
                 LDA @lD0_RESULT
                 SBC #2
                 STA OPL2_OCTAVE
-                LDY #12*128 + 60
+                LDY #12*128 + 72
                 JSR WRITE_HEX
                 
                 LDA @lD0_REMAINDER
                 STA OPL2_NOTE
-                LDY #12*128 + 62
+                LDY #12*128 + 74
                 JSR WRITE_HEX
                 
                 ; VELOCITY VALUE
                 LDA MIDI_DATA2
-                LDY #12*128 + 64
+                LDY #12*128 + 76
                 JSR WRITE_HEX
                 
                 ; /// if velocity is zero, turn note off
@@ -129,7 +129,7 @@ NOTE_ON         ; we need two data bytes: the note and the velocity
                 BNE PLAY_NOTE_ON  ; otherwise, turn note on
                 STA OPL2_PARAMETER0
                 LDA #$FF
-                LDY #12*128 + 70
+                LDY #12*128 + 78
                 JSR WRITE_HEX
                 
                 JSR OPL2_SET_KEYON
@@ -165,15 +165,15 @@ PITCH_BEND
                 
                 setxl
                 LDA MIDI_CTRL
-                LDY #14*128 + 54
+                LDY #14*128 + 66
                 JSR WRITE_HEX
                 
                 LDA MIDI_DATA1
-                LDY #14*128+56
+                LDY #14*128+68
                 JSR WRITE_HEX
                 
                 LDA MIDI_DATA2
-                LDY #14*128+58
+                LDY #14*128+70
                 JSR WRITE_HEX
                 
                 STZ MIDI_COUNTER
@@ -189,11 +189,11 @@ CHANNEL_PRESSURE
                 PHA
                 setxl
                 LDA MIDI_CTRL
-                LDY #15*128 + 54
+                LDY #15*128 + 66
                 JSR WRITE_HEX
                 
                 PLA
-                LDY #15*128 + 56
+                LDY #15*128 + 68
                 JSR WRITE_HEX
                 
                 LDA #16
@@ -210,7 +210,7 @@ SYSTEM_COMMAND
                 LDA #0
                 
 DISPLAY_COUNTER
-                LDY #16*128 + 54
+                LDY #16*128 + 66
                 JSR WRITE_HEX
                 STA @lTIMING_CNTR
                 RTS

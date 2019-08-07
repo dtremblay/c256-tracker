@@ -17,7 +17,7 @@ line3     .byte $c2
           .fill (SCREEN_WIDTH - 40) / 2, 0
           .text 'C256 Foenix Tracker' ; 19 characters
           .fill 4, 0
-          .text '[Version 0.0.4]' ; 15 characters
+          .text '[Version 0.1.0]' ; 15 characters
           .fill (SCREEN_WIDTH - 40) / 2, 0
           .byte $c2
           .fill UNUSED_SCR, 0
@@ -30,7 +30,9 @@ line4     .byte $c2
 line5     .byte $ab
           .fill 50, $C3
           .byte $b2
-          .fill SCREEN_WIDTH - 50 -3, $C3
+          .fill 7, $C3
+          .byte $b2
+          .fill SCREEN_WIDTH - 50 -11, $C3
           .byte $b3
           .fill UNUSED_SCR, 0
 
@@ -44,9 +46,13 @@ line6     .byte $c2
           .byte $b0, $c3, $ae
           .fill 2, 0
           .byte $c2
-          .fill 2, 0
+          .fill 1, 0
           .text 'Order'
-          .fill 20,0
+          .fill 1,0
+          .byte $c2
+          .fill 1,0
+          .text 'MIDI'
+          .fill 14,0
           .byte $c2
           .fill UNUSED_SCR, 0
 
@@ -71,7 +77,11 @@ line7     .byte $ab
           .byte $ad
           .fill 2, $C3
           .byte $db
-          .fill SCREEN_WIDTH - 50 -3, $C3
+          .fill 3, $C3
+          .byte $b2
+          .fill 3, $C3
+          .byte $db
+          .fill SCREEN_WIDTH - 50 -11, $C3
           .byte $b3
           .fill UNUSED_SCR, 0
 
@@ -89,7 +99,11 @@ lines8
           .byte $c2
           .fill 8, 0
           .byte $c2
-          .fill SCREEN_WIDTH - 50 -3,0
+          .fill 3, 0
+          .byte $c2
+          .fill 3, 0
+          .byte $c2
+          .fill SCREEN_WIDTH - 50 -11,0
           .byte $c2
           .fill UNUSED_SCR, 0
           
@@ -107,7 +121,11 @@ lines9
           .byte $c2
           .fill 8, 0
           .byte $c2
-          .fill SCREEN_WIDTH - 50 -3,0
+          .fill 3, 0
+          .byte $c2
+          .fill 3, 0
+          .byte $c2
+          .fill SCREEN_WIDTH - 50 -11,0
           .byte $c2
           .fill UNUSED_SCR, 0
           
@@ -125,7 +143,11 @@ lines10
           .byte $c2
           .fill 8, 0
           .byte $c2
-          .fill SCREEN_WIDTH - 50 -3,0
+          .fill 3, 0
+          .byte $c2
+          .fill 3, 0
+          .byte $c2
+          .fill SCREEN_WIDTH - 50 -11,0
           .byte $c2
           .fill UNUSED_SCR, 0
           
@@ -143,7 +165,11 @@ lines11
           .byte $c2
           .fill 8, 0
           .byte $c2
-          .fill SCREEN_WIDTH - 50 -3,0
+          .fill 3, 0
+          .byte $c2
+          .fill 3, 0
+          .byte $c2
+          .fill SCREEN_WIDTH - 50 -11,0
           .byte $c2
           .fill UNUSED_SCR, 0
           
@@ -161,7 +187,11 @@ lines12
           .byte $c2
           .fill 8, 0
           .byte $c2
-          .fill SCREEN_WIDTH - 50 -3,0
+          .fill 3, 0
+          .byte $c2
+          .fill 3, 0
+          .byte $c2
+          .fill SCREEN_WIDTH - 50 -11,0
           .byte $c2
           .fill UNUSED_SCR, 0
 
@@ -179,7 +209,11 @@ lines13
           .byte $c2
           .fill 8, 0
           .byte $c2
-          .fill SCREEN_WIDTH - 50 -3,0
+          .fill 3, 0
+          .byte $c2
+          .fill 3, 0
+          .byte $c2
+          .fill SCREEN_WIDTH - 50 -11,0
           .byte $c2
           .fill UNUSED_SCR, 0
           
@@ -197,7 +231,11 @@ lines14
           .byte $c2
           .fill 8, 0
           .byte $c2
-          .fill SCREEN_WIDTH - 50 -3,0
+          .fill 3, 0
+          .byte $c2
+          .fill 3, 0
+          .byte $c2
+          .fill SCREEN_WIDTH - 50 -11,0
           .byte $c2
           .fill UNUSED_SCR, 0
           
@@ -215,7 +253,11 @@ lines15
           .byte $c2
           .fill 8, 0
           .byte $c2
-          .fill SCREEN_WIDTH - 50 -3,0
+          .fill 3, 0
+          .byte $c2
+          .fill 3, 0
+          .byte $c2
+          .fill SCREEN_WIDTH - 50 -11,0
           .byte $c2
           .fill UNUSED_SCR, 0
           
@@ -233,7 +275,11 @@ lines16
           .byte $c2
           .fill 8, 0
           .byte $c2
-          .fill SCREEN_WIDTH - 50 -3,0
+          .fill 3, 0
+          .byte $c2
+          .fill 3, 0
+          .byte $c2
+          .fill SCREEN_WIDTH - 50 -11,0
           .byte $c2
           .fill UNUSED_SCR, 0
           
@@ -251,7 +297,11 @@ lines17
           .byte $c2
           .fill 8, 0
           .byte $c2
-          .fill SCREEN_WIDTH - 50 -3,0
+          .fill 3, 0
+          .byte $c2
+          .fill 3, 0
+          .byte $c2
+          .fill SCREEN_WIDTH - 50 -11,0
           .byte $c2
           .fill UNUSED_SCR, 0
           
@@ -269,7 +319,11 @@ lines18
           .byte $c2
           .fill 8, 0
           .byte $c2
-          .fill SCREEN_WIDTH - 50 -3,0
+          .fill 3, 0
+          .byte $c2
+          .fill 3, 0
+          .byte $c2
+          .fill SCREEN_WIDTH - 50 -11,0
           .byte $c2
           .fill UNUSED_SCR, 0
           
@@ -287,7 +341,11 @@ lines19
           .byte $c2
           .fill 8, 0
           .byte $c2
-          .fill SCREEN_WIDTH - 50 -3,0
+          .fill 3, 0
+          .byte $c2
+          .fill 3, 0
+          .byte $c2
+          .fill SCREEN_WIDTH - 50 -11,0
           .byte $c2
           .fill UNUSED_SCR, 0
           
@@ -303,9 +361,13 @@ line20    .byte $ab
           .fill 3, $C3
           .byte $db
           .fill 8, $C3
-          .byte $db
-          .fill SCREEN_WIDTH - 50 -3, $C3
           .byte $b3
+          .fill 3, 0
+          .byte $c2
+          .fill 3, 0
+          .byte $c2
+          .fill SCREEN_WIDTH - 50 -11, 0
+          .byte $C2
           .fill UNUSED_SCR, 0
           
 line21
@@ -322,7 +384,11 @@ line21
           .byte $c2
           .fill 8, 0
           .byte $c2
-          .fill SCREEN_WIDTH - 50 -3,0
+          .fill 3, 0
+          .byte $c2
+          .fill 3, 0
+          .byte $c2
+          .fill SCREEN_WIDTH - 50 -11,0
           .byte $c2
           .fill UNUSED_SCR, 0
 
@@ -340,7 +406,11 @@ line22
           .byte $c2
           .fill 8, 0
           .byte $c2
-          .fill SCREEN_WIDTH - 50 -3,0
+          .fill 3, 0
+          .byte $c2
+          .fill 3, 0
+          .byte $c2
+          .fill SCREEN_WIDTH - 50 -11,0
           .byte $c2
           .fill UNUSED_SCR, 0
 
@@ -363,7 +433,11 @@ line23    .byte $ab
           .byte $db
           .fill 8, $C3
           .byte $b1
-          .fill SCREEN_WIDTH - 50 -3, $C3
+          .fill 3, $C3
+          .byte $b1
+          .fill 3, $C3
+          .byte $b1
+          .fill SCREEN_WIDTH - 50 -11, $C3
           .byte $b3
           .fill UNUSED_SCR, 0
 
@@ -378,8 +452,8 @@ line24
           .text 'Speed:  N'  ; 9 chars
           .byte $c2
           .fill 2, 0
-          .text '    TEST.TRK' ; 12 chars
-          .fill 22, 0
+          .text 'File: adlibsp.rad' ; 17 chars
+          .fill 17, 0
           .byte $c2
           .fill UNUSED_SCR, 0
 
