@@ -61,23 +61,28 @@ RAD_INIT_PLAYER
               CMP #$10 ; BCD version 1.0 or 2.1
               BNE LOAD_VERSION_21
               JSL READ_VERSION_10
-              RTL
+              RTL  ; End of RAD_INIT_PLAYER
               
 LOAD_VERSION_21
               JSL READ_VERSION_21
-              RTL
+              RTL  ; End of RAD_INIT_PLAYER
               
-              
+; ************************************************************************************************
+; Read a RAD file version 2.1
+; ************************************************************************************************
 READ_VERSION_21
               ;not implemented
-              RTL
+              RTL  ; End of READ_VERSION_21
               
+; ************************************************************************************************
+; Read a RAD file version 1.1
+; ************************************************************************************************
 READ_VERSION_10
               JSR PARSER_RAD_FILE_INSTRUMENT_10; Go Parse the Instrument and Order list
               JSR PROCESS_ORDER_LIST_10
               JSR READ_PATTERNS_10
               
-              RTL
+              RTL  ; End of READ_VERSION_10
 
 ADLIB_OFFSETS .byte 7,1,8,2,9,3,10,4,5,11,6
 
@@ -306,6 +311,13 @@ READ_PATTERN_10
               LDA @lRAD_LINE
               BPL READ_PATTERN_10
 
+              RTS
+
+; ************************************************************************************************
+; * Play the notes given a pattern and line number.
+; ************************************************************************************************
+RAD_PLAY_NOTES
+              .as
               RTS
 
 ; Output

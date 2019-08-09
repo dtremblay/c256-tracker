@@ -77,6 +77,14 @@ DRAW_DISPLAY
                 LDA #$00CC
                 STA FG_CHAR_LUT_PTR + 18;
                 STA BG_CHAR_LUT_PTR + 18;
+                
+                ; set the fg LUT to Yellow (5)
+                LDA #$DD22
+                STA FG_CHAR_LUT_PTR + 20;
+                STA BG_CHAR_LUT_PTR + 20;
+                LDA #$00DD
+                STA FG_CHAR_LUT_PTR + 22;
+                STA BG_CHAR_LUT_PTR + 22;
 
                 ; set the character bg and fg color
                 LDX #128*64
@@ -87,7 +95,7 @@ SETTEXTCOLOR
                 DEX
                 BNE SETTEXTCOLOR
                 
-                LDY #38 * 128  
+                LDY #38 * 128
                 JSR REVERSE_LUT
                 
                 JSR HIGHLIGHT_MODE
@@ -300,11 +308,11 @@ DRAW_DATA
 
 MOD_TOP_LINE
                 STA TAB_COUNTER
-                PHY
-                LDY #128
-                JSR WRITE_HEX
-                PLY
 TRIPLET
+                LDA #0
+                PHA
+                PLB
+                
                 ; compute the address of the line
                 LDA #LINE_BYTES
                 STA @lM0_OPERAND_A
@@ -418,10 +426,18 @@ DRAW_LINE_DATA
                 INY
                 JSR DISPLAY_VALUE
                 
+                CMP #0 ; if the effect byte is 0, don't display the next value
+                BNE SHOW_EFFECT
+                INX
+                INX 
+                BRA EFFECT_CONT
+                
+        SHOW_EFFECT
                 ; display the effect parameter
                 LDA [PTRN_ADDR],Y ;
+                JSR DISPLAY_DEC_VALUE
+        EFFECT_CONT
                 INY
-                JSR DISPLAY_VALUE
                 INX ; skip the vertical bar
     DRAW_NEXT_CHANNEL
                 DEC RAD_CHANNEL
@@ -458,22 +474,59 @@ DISPLAY_VALUE
                 LSR
                 LSR
                 LSR
-                CLC
-                ADC #$30
+                
+                TAX
+                LDA HEX_MAP, X
+                
                 STA [SCREENBEGIN], Y
                 INY
                 
                 PLA
                 AND #$F ; low-nibble
-                CLC
-                ADC #$30
+                BEQ SKIP_VALUE
+                
+                TAX
+                LDA HEX_MAP, X
+                
                 STA [SCREENBEGIN], Y
+    SKIP_VALUE
                 INY
                 
                 TYX
                 PLY
                 RTS
                 
+; ***********************************************************************
+; A contains the hex value to convert
+; ***********************************************************************
+DISPLAY_DEC_VALUE
+                .as
+                PHA
+                
+                AND #$7
+                STA DEC_MEM
+                
+                PLA
+                AND #$F8 ; count in BCD in factors of 8
+                CLC
+                LSR
+                LSR
+                LSR
+                STA CONV_VAL
+                 
+                SED  ; switch to decimal mode
+                BEQ ADD_DEC
+                CLC
+                LDA #0
+        MULT_DEC
+                ADC #$8
+                DEC CONV_VAL
+                BNE MULT_DEC
+        ADD_DEC
+                ADC DEC_MEM
+                JSR DISPLAY_VALUE
+                CLD
+                RTS
 ; ***********************************************************************
 ; A contains the value to display: ignore bit 7, octave is bit 6-4, note is bits 3-0
 ; X contains the screen location
@@ -483,6 +536,7 @@ DISPLAY_NOTE_OCTAVE
                 PHY
                 PHA
                 PHA
+                
                 TXY
                 setal
                 AND #$F ; low-nibble - C#=1, D=2, ... C=12, 0 is no note and $F is Key Off
@@ -521,16 +575,31 @@ REVERSE_LUT     ; write 2 to reverse the characters
                 LDA #9
                 STA TAB_COUNTER
 
-                LDA #$42
+                
 REVERSE_LUT_TABS
-                LDX #8
-REVERSE_LUT_LOOP
+                LDA #$42 ; purple background and white foreground
                 STA CS_COLOR_MEM_PTR, Y
                 INY
-                DEX
-                BNE REVERSE_LUT_LOOP
-                
+                STA CS_COLOR_MEM_PTR, Y
                 INY
+                STA CS_COLOR_MEM_PTR, Y
+                INY
+                
+                LDA #$52 ; purple background and yellow foreground
+                STA CS_COLOR_MEM_PTR, Y
+                INY
+                STA CS_COLOR_MEM_PTR, Y
+                INY
+                
+                LDA #$42 ; purple background and white foreground
+                STA CS_COLOR_MEM_PTR, Y
+                INY
+                STA CS_COLOR_MEM_PTR, Y
+                INY
+                STA CS_COLOR_MEM_PTR, Y
+                INY
+                
+                INY ; skip separator
                 DEC TAB_COUNTER
                 BNE REVERSE_LUT_TABS
                 

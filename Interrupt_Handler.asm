@@ -309,6 +309,7 @@ START_SOF
                 BNE CONTINUE_FROM_CURRENT_LOCATION
                 
                 JSR RESET_STATE_MACHINE
+                JSR DISPLAY_PATTERN
 
     CONTINUE_FROM_CURRENT_LOCATION
                 LDA #1
@@ -379,7 +380,6 @@ TIMER0_INTERRUPT
                 
                 ; we now have to increment the line count
 INCR_LINE
-
                 CLC
                 SED
                 INC LINE_NUM_HEX
@@ -392,6 +392,12 @@ INCR_LINE
 INCR_DONE
                 CLD
                 STA @lLINE_NUM_DEC
+                ; if the state is PLAY then play the notes
+                LDA STATE_MACHINE
+                AND #1
+                BEQ EDIT_MODE
+                JSR RAD_PLAY_NOTES
+        EDIT_MODE
                 JSR DISPLAY_PATTERN
                 LDA #0  ; reset the tick to 0
 
@@ -399,6 +405,11 @@ TICK_DONE
                 STA @lTICK
                 RTS
 
+; ///////////////////////////////////////////////////////////////////
+; ///
+; /// This is called when the up arrow is pressed on the keyboard
+; ///
+; ///////////////////////////////////////////////////////////////////
 
 DECR_LINE
                 SEC

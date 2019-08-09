@@ -104,9 +104,10 @@ INSTR_NUMBER    .byte $17, 0
 LINE_NUM_HEX    .byte 1
 TAB_COUNTER     .byte 1
 REM_LINES       .byte 1
-BLNK_BTM        .byte 1
+DEC_MEM         .byte 1
 PTRN_ADDR       .long 0
 LINE_ADDR       .long 0
+CONV_VAL        .byte 0
 ;..
 ;..
 ;..
