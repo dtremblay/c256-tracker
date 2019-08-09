@@ -366,9 +366,9 @@ RAD_PLAYNOTES
 ; ********************************
 RAD_PLAYNOTE
               .as
+              BEQ PN_DONE
               LDY #2
               JSR WRITE_HEX
-              BEQ PN_DONE
               PHA
               PHA
               AND #$70
