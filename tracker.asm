@@ -199,7 +199,7 @@ RESET_STATE_MACHINE
                 
                 STZ LINE_NUM_HEX
                 
-                LDA #1
+                LDA #1  ; we should load the first pattern in the order list
                 STA LINE_NUM_DEC
                 STA PATTERN_NUM
                 

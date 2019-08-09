@@ -316,10 +316,79 @@ READ_PATTERN_10
 ; ************************************************************************************************
 ; * Play the notes given a pattern and line number.
 ; ************************************************************************************************
-RAD_PLAY_NOTES
+RAD_PLAYNOTES
               .as
+              PHY
+              setal
+              LDA #PATTERN_BYTES
+              STA @lM0_OPERAND_B
+              LDA PATTERN_NUM
+              AND #$FF
+              DEC A ; start at 0
+              STA @lM0_OPERAND_A
+
+              setas
+              LDY #6
+              JSR WRITE_HEX
+              setal
+              
+              LDA @lM0_RESULT
+              INC A ; skip the pattern number byte
+              STA RAD_PTN_DEST
+              LDA #<`PATTERNS
+              STA RAD_PTN_DEST + 2
+              
+              LDA #LINE_BYTES
+              STA @lM0_OPERAND_A
+              
+              LDA LINE_NUM_HEX
+              AND #$FF
+              STA @lM0_OPERAND_B
+              
+              setas
+              LDY #8
+              JSR WRITE_HEX
+              setal
+
+              
+              LDY M0_RESULT
+              INY ; skip the line number byte
+              
+              LDA [RAD_PTN_DEST],Y
+              AND #$FF
+              setas
+              JSR RAD_PLAYNOTE
+              PLY
               RTS
 
+; ********************************
+; * A contain the octave/note byte
+; ********************************
+RAD_PLAYNOTE
+              .as
+              LDY #2
+              JSR WRITE_HEX
+              BEQ PN_DONE
+              PHA
+              PHA
+              AND #$70
+              LSR
+              LSR
+              LSR
+              LSR
+              STA @lOPL2_OCTAVE
+              PLA
+              AND #$0F
+              STA @lOPL2_NOTE
+              
+              LDA #0
+              STA @lOPL2_CHANNEL
+              JSR OPL2_GET_REG_OFFSET
+              JSL OPL2_PLAYNOTE
+              setas
+              PLA
+        PN_DONE
+              RTS
 ; Output
 ; Y = Is the Pointer in the File to the next Patternlist.
 ; This is a 16Bits Offset, it needs to be added to absolute Starting address of the File
@@ -708,7 +777,7 @@ IncreaseOneOctave
               RTS
 
 
-RAD_PLAYNOTE
+RAD_PLAYNOTE_2
               setas
               LDA #$00
               STA OPL2_PARAMETER0 ; Set Keyon False

@@ -309,6 +309,7 @@ START_SOF
                 BNE CONTINUE_FROM_CURRENT_LOCATION
                 
                 JSR RESET_STATE_MACHINE
+                JSR RAD_PLAYNOTES
                 JSR DISPLAY_PATTERN
 
     CONTINUE_FROM_CURRENT_LOCATION
@@ -396,7 +397,7 @@ INCR_DONE
                 LDA STATE_MACHINE
                 AND #1
                 BEQ EDIT_MODE
-                JSR RAD_PLAY_NOTES
+                JSR RAD_PLAYNOTES
         EDIT_MODE
                 JSR DISPLAY_PATTERN
                 LDA #0  ; reset the tick to 0
