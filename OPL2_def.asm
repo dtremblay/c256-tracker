@@ -52,7 +52,7 @@ OPL2_S_KSL_TL             = $AFE740;  $40..$55 (21 Registers)
 OPL2_S_AR_DR              = $AFE760;  $60..$75 (21 Registers)
 OPL2_S_SL_RR              = $AFE780;  $80..$95 (21 Registers)
 ; OPL2_S_FNumber            = $AFE7A0;  $A0..$A8
-; OPL2_S_KON_BLOCK_FNumber  = $AFE7B0;  $B0..$B9
+;OPL2_S_KON_BLOCK_FNumber  = $AFE7B0;  $B0..$B9
 ; OPL2_S_DPTH_RYTHM         = $AFE7BD;  $BD
 OPL2_S_FEEDBACK           = $AFE7C0;  $C0..$C9
 OPL2_S_WAVE_SELECT        = $AFE7E0;  $E0..$F5
@@ -127,8 +127,7 @@ DRUM_TOM    = $04
 DRUM_CYMBAL = $02
 DRUM_HI_HAT = $01
 
-;Note to frequency mapping.
-NOTE_C =    0
+;Note to frequency mapping.  -- 0 is no note and F is key-off
 NOTE_CS =   1
 NOTE_D =    2
 NOTE_DS =   3
@@ -140,6 +139,7 @@ NOTE_GS =   8
 NOTE_A =    9
 NOTE_AS =  10
 NOTE_B =   11
+NOTE_C =   12
 
 ;const float fIntervals[8] = {
 ;  0.048, 0.095, 0.190, 0.379, 0.759, 1.517, 3.034, 6.069

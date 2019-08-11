@@ -288,7 +288,7 @@ KB_WR_2_SCREEN
                 JSR WRITE_HEX
                 
                 CMP #$0D                ; Enter Key Pressed
-                BNE KB_CHECK_B_DONE
+                BNE KB_CHECK_B_DONE_R
                 
                 PHA
                 ; start or stop scrolling
@@ -296,12 +296,15 @@ KB_WR_2_SCREEN
                 AND #1
                 BEQ START_SOF
 STOP_SOF
-                LDA #0
+                LDA #0  ; record mode
                 STA STATE_MACHINE
+                JSR RAD_ALL_NOTES_OFF
+                
                 LDA @lINT_MASK_REG0
                 ORA #FNX0_INT02_TMR0
                 STA @lINT_MASK_REG0
                 PLA
+        KB_CHECK_B_DONE_R
                 JMP KB_CHECK_B_DONE
                 
 START_SOF
@@ -309,12 +312,13 @@ START_SOF
                 BNE CONTINUE_FROM_CURRENT_LOCATION
                 
                 JSR RESET_STATE_MACHINE
-                JSR RAD_PLAYNOTES
                 JSR DISPLAY_PATTERN
 
     CONTINUE_FROM_CURRENT_LOCATION
                 LDA #1
                 STA STATE_MACHINE
+                
+                JSR RAD_PLAYNOTES
                 
                 LDA @lINT_MASK_REG0
                 AND #~(FNX0_INT02_TMR0)
@@ -388,8 +392,12 @@ INCR_LINE
                 ADC #1
                 CMP #$65  ; this is the maximum number of lines
                 BNE INCR_DONE
+
                 LDA #1
                 STZ LINE_NUM_HEX
+                ; read the next pattern from the order list
+                JSR INCREMENT_ORDER
+                
 INCR_DONE
                 CLD
                 STA @lLINE_NUM_DEC

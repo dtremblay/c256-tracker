@@ -12,23 +12,32 @@
 ; BPL ( > )
 ; BEQ ( A == DATA )
 ; BNE ( A < > DATA )
-;
 
+NOTE_INTRO  .byte  $3C, $42, $44, $45, $47, $49, $4B, $4C
 IOPL2_TONE_TEST
                 setas
                 setxl
-                LDA #$00
-                STA OPL2_LOOP
+                LDX #0
 
 OPL2_TONE_TESTING_L1
+                LDA NOTE_INTRO, X
+                AND #$F
                 STA OPL2_NOTE ; start at C
-                AND #$01        ; replace modulo 3 -  play each note on a different channel
-                STA OPL2_CHANNEL
-                LDA #$03
+                
+                LDA NOTE_INTRO, X
+                AND #$70
+                LSR A
+                LSR A
+                LSR A
+                LSR A
                 STA OPL2_OCTAVE
+                
+                TXA
+                AND #$03        ; replace modulo 3 -  play each note on a different channel
+                STA OPL2_CHANNEL
                 JSL OPL2_PLAYNOTE
 
-                LDX #$0000
+                LDY #$0000
                 
 ; Delay around 30ms
 OPL2_TONE_TESTING_L2
@@ -36,17 +45,15 @@ OPL2_TONE_TESTING_L2
                 NOP
                 NOP
                 NOP
-                INX
-                CPX #$FFFF
+                INY
+                CPY #$FFFF
                 BNE OPL2_TONE_TESTING_L2
 
                 ;
                 ; DELAY of 300ms Here
                 ;
-                INC OPL2_LOOP
-                INC OPL2_LOOP
-                LDA OPL2_LOOP
-                CMP #12
+                INX
+                CPX #8
                 BNE OPL2_TONE_TESTING_L1
 
                 RTL
@@ -66,7 +73,6 @@ OPL2_INIT
                 STA RAD_ADDR
                 LDA #<`INSTRUMENT_ACCORDN
                 STA RAD_ADDR + 2
-                
                 
                 setas
                 RTL
@@ -124,10 +130,6 @@ OPL2_GET_SCALINGLEVEL  ; Return Byte, Param: (byte channel, byte operatorNum);
               RTL
 
 ;OPL2_GET_BLOCK
-;OPL2_OPERATOR    = $000028 ;
-;OPL2_CHANNEL     = $000029 ;
-;OPL2_ENABLE      = $00002A ;
-;OPL2_REG_OFFSET  = $00002B ;
 OPL2_GET_BLOCK            ; Return Byte, Param: (byte channel);
               setas
               CLC
@@ -172,7 +174,7 @@ OPL2_GET_KEYON            ; Return Bool, Param: (byte channel);
               setas
               LDA [OPL2_IND_ADDY_LL]
               AND #$20
-                RTL
+              RTL
 
 OPL2_GET_FEEDBACK         ; Return Byte, Param: (byte channel);
               setas
@@ -274,11 +276,12 @@ OPL2_Get_WaveForm         ; Return Byte, Param: (byte channel, byte operatorNum)
 ;OPL2_PLAYNOTE
 ; Inputs
 ; OPL2_CHANNEL @ $000027 ;
-; OPL2_NOTE    @ $000030 ;
+; OPL2_NOTE    @ $000030 ; Notes start at 1 to 12
 ; OPL2_OCTAVE  @ $000031 ;
 ; OPL2_PARAMETER0 Will Change
 OPL2_PLAYNOTE   ;Return void, Param: (byte channel, byte octave, byte note);
                 setas
+                PHX
                 LDA #$00
                 STA OPL2_PARAMETER0 ; Set Keyon False
                 JSR OPL2_SET_KEYON
@@ -288,6 +291,7 @@ OPL2_PLAYNOTE   ;Return void, Param: (byte channel, byte octave, byte note);
                 
                 setxs
                 LDA OPL2_NOTE
+                DEC A
                 ASL A
                 TAX
                 LDA @lnoteFNumbers,X
@@ -300,8 +304,12 @@ OPL2_PLAYNOTE   ;Return void, Param: (byte channel, byte octave, byte note);
                 STA OPL2_PARAMETER0 ; Set Keyon False
                 JSR OPL2_SET_KEYON
                 setxl
+                PLX
                 RTL
 
+; **************************************************************
+; * Not used
+; **************************************************************
 OPL2_PLAYDRUM             ;Return void, Param: (byte drum, byte octave, byte note);
                 RTL
 ;

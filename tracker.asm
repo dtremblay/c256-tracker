@@ -106,18 +106,21 @@ TRACKER
                 LDA #`INSTRUMENT_ACCORDN
                 STA INSTR_ADDR+2
                 
-                ; pick ELPIANO2 as the default instrument
+                ; pick Marimba as the default instrument
                 LDA #$42
                 STA @lINSTR_NUMBER
-                
-                LDX #0 ; setup channel 1
+                LDX #0 ; setup channels
+        NEXT_INSTR
+                LDA #0
+                XBA
+                PHX
+                LDA registerOffsets_operator0,X
+                TAX
                 JSR LOAD_INSTRUMENT
-                
-                LDX #1 ; setup channel 2
-                JSR LOAD_INSTRUMENT
-                
-                LDX #2 ; setup channel 3
-                JSR LOAD_INSTRUMENT
+                PLX
+                INX
+                CPX #9
+                BNE NEXT_INSTR
                 
                 JSL IOPL2_TONE_TEST
 
@@ -196,15 +199,43 @@ RESET_STATE_MACHINE
                 .as
                 LDA #0
                 STA STATE_MACHINE
-                
+                STA RAD_ORDER_NUM
                 STZ LINE_NUM_HEX
+                STZ RAD_ORDER_NUM + 1
                 
-                LDA #1  ; we should load the first pattern in the order list
+                LDA #1
                 STA LINE_NUM_DEC
+                
+                LDX RAD_ORDER_NUM
+                LDA @lORDERS,X  ; load the first pattern in the order list
+                INC A
+        PATTN_OK
                 STA PATTERN_NUM
                 
                 JSR DISPLAY_BPM
                 
+                RTS
+                
+INCREMENT_ORDER
+                .as
+                PHA
+                LDA #0
+                XBA
+                LDA @lRAD_ORDER_NUM
+                INC A
+                CMP @lTuneInfo.songLength
+                BNE LOAD_ORDER
+                LDA #0
+        LOAD_ORDER
+                STA @lRAD_ORDER_NUM
+                TAX
+                LDY #128 * 5
+                JSR WRITE_HEX
+                
+                LDA @lORDERS,X  ; load the pattern from the order list
+                INC A
+                STA PATTERN_NUM
+                PLA
                 RTS
                 
 ; ***********************************************************************
@@ -367,7 +398,7 @@ LOAD_INSTRUMENT
 DRUM_SET
                 RTS
 
-; 
+; X contains the OPL2 register
 LOAD_AM_VIB_MULT
                 LDA [INSTR_ADDR]
                 PHA
@@ -432,6 +463,7 @@ LOAD_AM_VIB_MULT
                 
                 RTS
                 
+; X contains the OPL2 register
 LOAD_KEY_OP_LVL
                 ; Operator 1
                 LDA [INSTR_ADDR]
@@ -822,9 +854,9 @@ NONOTE
                 RTS
                
                 ;      00,  01,  02,  03,  04,  05,  06,  07,  08,  09,  0A,  0B,  0C,  0D,  0E,  0F
-SCAN_TO_NOTE    .text $80, $80, $80, $31, $33, $80, $36, $38, $3A, $80, $80, $80, $80, $80, $80, $80
-                .text $30, $32, $34, $35, $37, $39, $3B, $40, $80, $80, $80, $80, $80, $80, $80, $21
-                .text $23, $80, $26, $28, $2A, $80, $80, $80, $80, $80, $80, $80, $20, $22, $24, $25
+SCAN_TO_NOTE    .text $80, $80, $80, $31, $33, $80, $36, $38, $3A, $80, $41, $80, $80, $80, $80, $80
+                .text $2C, $32, $34, $35, $37, $39, $3B, $3C, $42, $80, $80, $80, $80, $80, $80, $21
+                .text $23, $80, $26, $28, $2A, $80, $80, $80, $80, $80, $80, $80, $1C, $22, $24, $25
                 .text $27, $29, $2B, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80
                 .text $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80
                 .text $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80
@@ -847,7 +879,7 @@ PATTERNS .for pattern=1, pattern <= 36, pattern += 1 ; 64548 bytes total
     .for line = 1, line <= 64, line += 1  ; 28 bytes per line
         .byte line     ; line number
         .rept 9
-            .byte 0, 0, 0 ; note/octave, instrument, effect
+            .byte 0, 0, 0 ; note/octave, instrument/effect, effect param
         .next
     .next
 .next
