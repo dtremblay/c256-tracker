@@ -424,7 +424,7 @@ DRAW_LINE_DATA
                 INX ; skip the middle column
                 LDA [PTRN_ADDR],Y ; instrument/effect
                 INY
-                JSR DISPLAY_VALUE
+                JSR DISPLAY_VALUE_SKIP_LOW_NIBBLE_IF_ZERO
                 
                 CMP #0 ; if the effect byte is 0, don't display the next value
                 BNE SHOW_EFFECT
@@ -460,10 +460,11 @@ DRAW_LINE_DATA
                 BRA DRAW_NEXT_CHANNEL
                 
 ; ***********************************************************************
+; Always display the first nibble and only display the second nibble if non-zero
 ; A contains the value to display
 ; X contains the screen location
 ; ***********************************************************************
-DISPLAY_VALUE   
+DISPLAY_VALUE_SKIP_LOW_NIBBLE_IF_ZERO
                 .as
                 PHY
                 PHA
@@ -490,6 +491,36 @@ DISPLAY_VALUE
                 
                 STA [SCREENBEGIN], Y
     SKIP_VALUE
+                INY
+                
+                TYX
+                PLY
+                RTS
+                
+DISPLAY_VALUE
+                .as
+                PHY
+                PHA
+                TXY
+                
+                AND #$F0 ; high-nibble
+                LSR
+                LSR
+                LSR
+                LSR
+                
+                TAX
+                LDA HEX_MAP, X
+                
+                STA [SCREENBEGIN], Y
+                INY
+                
+                PLA
+                AND #$F ; low-nibble
+                TAX
+                LDA HEX_MAP, X
+                
+                STA [SCREENBEGIN], Y
                 INY
                 
                 TYX

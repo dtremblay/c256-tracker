@@ -47,43 +47,43 @@ note_array          .byte $43, $90, $44, $91, $45, $46, $92, $47, $93, $41, $94,
 ; We are assuming that the RAD File is already Loaded Somewhere
 ; ************************************************************************************************
 RAD_INIT_PLAYER
-              JSL OPL2_INIT   ; Init OPL2
+            JSL OPL2_INIT   ; Init OPL2
               
-              ; READ the RAD file
-              setaxl
-              LDA #<>RAD_FILE_TEMP ; Set the Pointer where the File Begins
-              STA OPL2_ADDY_PTR_LO;
-              LDA #<`RAD_FILE_TEMP
-              STA OPL2_ADDY_PTR_HI;
-              setas
-              ; get the version of the file
-              LDY #$0010
-              LDA [OPL2_ADDY_PTR_LO],Y
-              CMP #$10 ; BCD version 1.0 or 2.1
-              BNE LOAD_VERSION_21
-              JSL READ_VERSION_10
-              RTL  ; End of RAD_INIT_PLAYER
-              
-LOAD_VERSION_21
-              JSL READ_VERSION_21
-              RTL  ; End of RAD_INIT_PLAYER
-              
+            ; READ the RAD file
+            setaxl
+            LDA #<>RAD_FILE_TEMP ; Set the Pointer where the File Begins
+            STA OPL2_ADDY_PTR_LO;
+            LDA #<`RAD_FILE_TEMP
+            STA OPL2_ADDY_PTR_HI;
+            setas
+            ; get the version of the file
+            LDY #$0010
+            LDA [OPL2_ADDY_PTR_LO],Y
+            CMP #$10 ; BCD version 1.0 or 2.1
+            BNE LOAD_VERSION_21
+            JSL READ_VERSION_10
+            RTL  ; End of RAD_INIT_PLAYER
+
+    LOAD_VERSION_21
+            JSL READ_VERSION_21
+            RTL  ; End of RAD_INIT_PLAYER
+
 ; ************************************************************************************************
 ; Read a RAD file version 2.1
 ; ************************************************************************************************
 READ_VERSION_21
-              ;not implemented
-              RTL  ; End of READ_VERSION_21
-              
+            ;not implemented
+            RTL  ; End of READ_VERSION_21
+
 ; ************************************************************************************************
 ; Read a RAD file version 1.1
 ; ************************************************************************************************
 READ_VERSION_10
-              JSR PARSER_RAD_FILE_INSTRUMENT_10; Go Parse the Instrument and Order list
-              JSR PROCESS_ORDER_LIST_10
-              JSR READ_PATTERNS_10
-              
-              RTL  ; End of READ_VERSION_10
+            JSR PARSER_RAD_FILE_INSTRUMENT_10; Go Parse the Instrument and Order list
+            JSR PROCESS_ORDER_LIST_10
+            JSR READ_PATTERNS_10
+
+            RTL  ; End of READ_VERSION_10
 
 ADLIB_OFFSETS .byte 7,1,8,2,9,3,10,4,5,11,6
 ;ADLIB_OFFSETS .byte 1,7,2,8,3,9,4,10,5,6,11
@@ -92,229 +92,231 @@ ADLIB_OFFSETS .byte 7,1,8,2,9,3,10,4,5,11,6
 ; Read the instrument table
 ; ************************************************************************************************
 PARSER_RAD_FILE_INSTRUMENT_10
-              INY ; $11 bit 7: description, bit6: slow timer, bits4..0: speed
-              
-              LDA [OPL2_ADDY_PTR_LO],Y
-              ;Will Ignore the has slowSlowTimer for now
-              AND #$1F
-              STA @lTuneInfo.InitialSpeed
-              LDA [OPL2_ADDY_PTR_LO],Y
-              AND #$80
-              BEQ READ_INSTR_DATA
-Not_Done_With_Description
-              INY ; Move the Pointer Forward
-              LDA [OPL2_ADDY_PTR_LO],Y
-              CMP #$00  ; Check for the End of Text
-              BNE Not_Done_With_Description
-              
-READ_INSTR_DATA
-              INY ; This points after either After Description or next to Offset 0x11
-              
-              ; Let's Init the Address Point for the instrument Tables
-              
-              LDA #<`INSTRUMENT_ACCORDN
-              STA RAD_ADDR + 2
-              
-              ; Let's Read Some Instruments HERE
-ProcessNextInstruments
-              setas
-              LDA [OPL2_ADDY_PTR_LO],Y  ; Read Instrument Number
-              BEQ DoneProcessingInstrument;
-              
-              setal
-              ; find the address of the instrument by multiplying by the record length
-              DEC A
-              STA @lM0_OPERAND_A
-              LDA #INSTR_REC_LEN
-              STA @lM0_OPERAND_B
-              LDA @lM0_RESULT  ; not sure why this one requires a long address - bank is still 0
-              
-              CLC
-              ADC #<>INSTRUMENT_ACCORDN
-              STA RAD_ADDR
-              LDA #0
-              setas
-              
-              INY
-              STZ RAD_TEMP
-              STA [RAD_ADDR]  ; Not a drum instrument
-              
-Transfer_Instrument_Info
-              LDX RAD_TEMP
-              LDA ADLIB_OFFSETS,X  ; RAD uses a different order for registers
-              TAX
-              
-              LDA [OPL2_ADDY_PTR_LO],Y  ; Read Register
-              PHY
-              TXY
-              STA [RAD_ADDR],Y  ; Write to the instrument table 
-              PLY
-              INY
-              INC RAD_TEMP
-              LDA RAD_TEMP
-              CMP #11
-              BCC Transfer_Instrument_Info
-              
-              PHY ; store the position in the file on the stack
-              LDY #12 ; beginning of text
-              LDA #$20
-              ;TODO: set description to 'RAD INST #'
+            INY ; $11 bit 7: description, bit6: slow timer, bits4..0: speed
+            
+            LDA [OPL2_ADDY_PTR_LO],Y
+            ;Will Ignore the has slowSlowTimer for now
+            AND #$1F
+            STA @lTuneInfo.InitialSpeed
+            LDA [OPL2_ADDY_PTR_LO],Y
+            AND #$80
+            BEQ READ_INSTR_DATA
+    Not_Done_With_Description
+            INY ; Move the Pointer Forward
+            LDA [OPL2_ADDY_PTR_LO],Y
+            CMP #$00  ; Check for the End of Text
+            BNE Not_Done_With_Description
+
+    READ_INSTR_DATA
+            INY ; This points after either After Description or next to Offset 0x11
+            
+            ; Let's Init the Address Point for the instrument Tables
+            LDA #<`INSTRUMENT_ACCORDN
+            STA RAD_ADDR + 2
+            
+            ; Let's Read Some Instruments HERE
+    ProcessNextInstruments
+            setas
+            LDA [OPL2_ADDY_PTR_LO],Y  ; Read Instrument Number
+            BEQ DoneProcessingInstrument;
+            
+            setal
+            ; find the address of the instrument by multiplying by the record length
+            DEC A
+            STA @lM0_OPERAND_A
+            LDA #INSTR_REC_LEN
+            STA @lM0_OPERAND_B
+            LDA @lM0_RESULT  ; not sure why this one requires a long address - bank is still 0
+            
+            CLC
+            ADC #<>INSTRUMENT_ACCORDN
+            STA RAD_ADDR
+            LDA #0
+            setas
+            
+            INY
+            STZ RAD_TEMP
+            STA [RAD_ADDR]  ; Not a drum instrument
+            
+    Transfer_Instrument_Info
+            LDX RAD_TEMP
+            LDA ADLIB_OFFSETS,X  ; RAD uses a different order for registers
+            TAX
+            
+            LDA [OPL2_ADDY_PTR_LO],Y  ; Read Register
+            PHY
+            TXY
+            STA [RAD_ADDR],Y  ; Write to the instrument table 
+            PLY
+            INY
+            INC RAD_TEMP
+            LDA RAD_TEMP
+            CMP #11
+            BCC Transfer_Instrument_Info
+            
+            PHY ; store the position in the file on the stack
+            LDY #12 ; beginning of text
+            LDA #$20
+            ;TODO: set description to 'RAD INST #'
     BLANK_INSTR_DESCR
-              STA [RAD_ADDR],Y
-              INY
-              CPY #22
-              BNE BLANK_INSTR_DESCR
-              PLY
-              
-              BRA ProcessNextInstruments;
-              
-DoneProcessingInstrument
-              INY
-              RTS
-              
+            STA [RAD_ADDR],Y
+            INY
+            CPY #22
+            BNE BLANK_INSTR_DESCR
+            PLY
+            
+            BRA ProcessNextInstruments;
+            
+    DoneProcessingInstrument
+            INY
+            RTS
+
 ; ************************************************************************************************
 ; * Read the orders list
 ; ************************************************************************************************
 PROCESS_ORDER_LIST_10
-              LDA [OPL2_ADDY_PTR_LO],Y  ; Read Song Length
-              STA @lTuneInfo.songLength
-              TAX
-              INY
-              
-              setal
-              LDA #<>ORDERS
-              STA RAD_ADDR
-              LDA #<`ORDERS
-              STA RAD_ADDR + 2
-              setas
+            LDA [OPL2_ADDY_PTR_LO],Y  ; Read Song Length
+            STA @lTuneInfo.songLength
+            TAX
+            INY
+            
+            setal
+            LDA #<>ORDERS
+            STA RAD_ADDR
+            LDA #<`ORDERS
+            STA RAD_ADDR + 2
+            setas
     READ_ORDER
-              LDA [OPL2_ADDY_PTR_LO],Y
-              INY
-              STA [RAD_ADDR]
-              INC RAD_ADDR
-              BCS ORDER_CONTINUE
-              INC RAD_ADDR + 1
-        ORDER_CONTINUE
-              DEX
-              BNE READ_ORDER
-              RTS
-              
+            LDA [OPL2_ADDY_PTR_LO],Y
+            INY
+            STA [RAD_ADDR]
+            INC RAD_ADDR
+            BCS ORDER_CONTINUE
+            INC RAD_ADDR + 1
+    ORDER_CONTINUE
+            DEX
+            BNE READ_ORDER
+            RTS
+
 ; ************************************************************************************************
 ; * Read the pattern table
 ; * Y contains the position in the file
 ; ************************************************************************************************
 READ_PATTERNS_10
-              ; RAD_PATTRN holds the pattern number
-              STZ RAD_PATTRN
-              ; high byte of the pattern address
-              LDA #<`PATTERNS
-              STA RAD_PTN_DEST + 2
+            ; RAD_PATTRN holds the pattern number
+            STZ RAD_PATTRN
+            ; high byte of the pattern address
+            LDA #<`PATTERNS
+            STA RAD_PTN_DEST + 2
     NEXT_PATTERN
-              
-              ; read the file offset
-              setal
-              LDA [OPL2_ADDY_PTR_LO],Y
-              BEQ SKIP_PATTERN
-              
-              PHY
-              TAY
-              
-              ; compute the start address of the pattern
-              LDA RAD_PATTRN
-              AND #$00FF
-              STA @lM0_OPERAND_A
-              LDA #PATTERN_BYTES
-              STA @lM0_OPERAND_B
-              LDA @lM0_RESULT
-              INC A ; skip the pattern byte
-              STA RAD_PTN_DEST
-              
-              setas
-              JSR READ_PATTERN_10
-              PLY
-              
+            
+            ; read the file offset
+            setal
+            LDA [OPL2_ADDY_PTR_LO],Y
+            BEQ SKIP_PATTERN
+            
+            PHY
+            TAY
+            
+            ; compute the start address of the pattern
+            LDA RAD_PATTRN
+            AND #$00FF
+            STA @lM0_OPERAND_A
+            LDA #PATTERN_BYTES
+            STA @lM0_OPERAND_B
+            LDA @lM0_RESULT
+            INC A ; skip the pattern byte
+            STA RAD_PTN_DEST
+            
+            setas
+            JSR READ_PATTERN_10
+            PLY
+            
     SKIP_PATTERN
-              INY
-              INY
-              setas
-              INC RAD_PATTRN
-              LDA RAD_PATTRN
-              CMP #32
-              BNE NEXT_PATTERN
-              RTS
-              
+            INY
+            INY
+            setas
+            INC RAD_PATTRN
+            LDA RAD_PATTRN
+            CMP #32
+            BNE NEXT_PATTERN
+            RTS
+
 ; ************************************************************************************************
 ; * Read the pattern table
 ; * Y contains the position in the RAD 1.0 file
 ; * RAD_PTN_DEST is the address to write to
 ; ************************************************************************************************
 READ_PATTERN_10
-              LDA [OPL2_ADDY_PTR_LO],Y ; read the line number - bit 7 indicates the last line 
-              STA @lRAD_LINE
-              INY
-              setal
-              AND #$7F
-              STA @lM0_OPERAND_A
-              LDA #LINE_BYTES
-              STA @lM0_OPERAND_B
-              LDA @lM0_RESULT
-              INC A ; skip the line number
-              STA @lRAD_LINE_PTR
-              setas
-              
+            LDA [OPL2_ADDY_PTR_LO],Y ; read the line number - bit 7 indicates the last line 
+            STA @lRAD_LINE
+            INY
+            setal
+            AND #$7F
+            STA @lM0_OPERAND_A
+            LDA #LINE_BYTES
+            STA @lM0_OPERAND_B
+            LDA @lM0_RESULT
+            INC A ; skip the line number
+            STA @lRAD_LINE_PTR
+            setas
+            
     READ_NOTE
-              LDX RAD_LINE_PTR ; X contains the offset in the destination memory
-
-              LDA [OPL2_ADDY_PTR_LO],Y ; channel - bit 7 indicates the last note
-              INY
-              STA @lRAD_LAST_NOTE
-              AND #$F
-              STA @lRAD_CHANNEL
-              
-              setal
-              TXA
-              CLC
-              ADC RAD_CHANNEL ; multiply channel by 3
-              ADC RAD_CHANNEL 
-              ADC RAD_CHANNEL
-              TAX
-              setas
-              
-              LDA [OPL2_ADDY_PTR_LO],Y ; note / octave
-              PHY
-              TXY
-              STA [RAD_PTN_DEST],Y
-              PLY
-              INY
-              INX 
-              
-              LDA [OPL2_ADDY_PTR_LO],Y ; instrument/effect
-              PHY
-              TXY
-              STA [RAD_PTN_DEST],Y
-              PLY
-              INY
-              INX
-              
-              AND #$F
-              BEQ CHECK_LASTNOTE
-              
-              LDA [OPL2_ADDY_PTR_LO],Y ; effect parameter
-              PHY
-              TXY
-              STA [RAD_PTN_DEST],Y
-              PLY
-              INY
-              INX
+            LDX RAD_LINE_PTR ; X contains the offset in the destination memory
+ 
+            LDA [OPL2_ADDY_PTR_LO],Y ; channel - bit 7 indicates the last note
+            INY
+            STA @lRAD_LAST_NOTE
+            AND #$F
+            STA @lRAD_CHANNEL
+            
+            setal
+            TXA
+            CLC
+            ADC RAD_CHANNEL ; multiply channel by 3
+            ADC RAD_CHANNEL 
+            ADC RAD_CHANNEL
+            TAX
+            setas
+            
+            LDA [OPL2_ADDY_PTR_LO],Y ; note / octave
+            PHY
+            TXY
+            STA [RAD_PTN_DEST],Y
+            PLY
+            INY
+            INX 
+            
+            LDA [OPL2_ADDY_PTR_LO],Y ; instrument/effect
+            PHY
+            TXY
+            STA [RAD_PTN_DEST],Y
+            PLY
+            INY
+            INX
+            
+            AND #$F
+            BEQ CHECK_LASTNOTE
+            
+            LDA [OPL2_ADDY_PTR_LO],Y ; effect parameter
+            PHY
+            TXY
+            STA [RAD_PTN_DEST],Y
+            PLY
+            INY
+            INX
      CHECK_LASTNOTE
-              LDA @lRAD_LAST_NOTE
-              BPL READ_NOTE
-              
-              LDA @lRAD_LINE
-              BPL READ_PATTERN_10
+            LDA @lRAD_LAST_NOTE
+            BPL READ_NOTE
+            
+            LDA @lRAD_LINE
+            BPL READ_PATTERN_10
+            RTS
 
-              RTS
 
+;*****************************
+; Draw 18 '-' in line 0 of the display
+;*****************************
 DRAW_BLANKS
             .as
             PHY
@@ -331,6 +333,9 @@ DRAW_BLANKS
             PLY
             RTS
             
+;**********************************************************
+; Draw the RAD_PTN_DEST address at position specified by Y
+;**********************************************************
 DISPLAY_RAD_PTN_DEST
             .as
             PHY
@@ -347,6 +352,9 @@ DISPLAY_RAD_PTN_DEST
             PLY
             RTS
             
+;**********************************************************
+; Draw the value of A at position specified by Y
+;**********************************************************
 WRITE_A_LNG
             .al
             PHA
@@ -362,6 +370,9 @@ WRITE_A_LNG
             PLA
             RTS
             
+; ************************************************************************************************
+; * Turn off all notes to all 9 channels
+; ************************************************************************************************
 RAD_ALL_NOTES_OFF
             .as
             PHY
@@ -380,484 +391,217 @@ RAD_ALL_NOTES_OFF
             BNE NEXT_NOTE_OFF
             PLY
             RTS
+
 ; ************************************************************************************************
 ; * Play the notes given a pattern and line number.
 ; ************************************************************************************************
 RAD_PLAYNOTES
-              .as
-              PHY
-              JSR DRAW_BLANKS
-              
-              setal
-              LDA PATTERN_NUM
-              AND #$FF
-              DEC A ; start at 0
-              STA @lM0_OPERAND_A
-              LDA #PATTERN_BYTES
-              STA @lM0_OPERAND_B
-              LDA @lM0_RESULT
-              INC A ; skip the pattern number byte
-              STA RAD_PTN_DEST
-              
-              setas
-              LDA #<`PATTERNS
-              STA RAD_PTN_DEST + 2
-              LDY #128 * 2
-              JSR DISPLAY_RAD_PTN_DEST
-              setal
-              
-              LDA LINE_NUM_HEX
-              AND #$7F
-              STA @lM0_OPERAND_A
-              LDA #LINE_BYTES
-              STA @lM0_OPERAND_B
-              LDA @lM0_RESULT
-              INC A  ; skip the line number byte
-              PHY
-              LDY #128 + 2
-              JSR WRITE_A_LNG
-              PLY
-              
-              TAY
-              LDA #0
-              setas
-              STZ OPL2_REG_REGION
+            .as
+            PHY
+            JSR DRAW_BLANKS
+            
+            setal
+            LDA PATTERN_NUM
+            AND #$FF
+            DEC A ; start at 0
+            STA @lM0_OPERAND_A
+            LDA #PATTERN_BYTES
+            STA @lM0_OPERAND_B
+            LDA @lM0_RESULT
+            INC A ; skip the pattern number byte
+            STA RAD_PTN_DEST
+            
+            setas
+            LDA #<`PATTERNS
+            STA RAD_PTN_DEST + 2
+            LDY #128 * 2
+            JSR DISPLAY_RAD_PTN_DEST
+            setal
+            
+            LDA LINE_NUM_HEX
+            AND #$7F
+            STA @lM0_OPERAND_A
+            LDA #LINE_BYTES
+            STA @lM0_OPERAND_B
+            LDA @lM0_RESULT
+            INC A  ; skip the line number byte
+            PHY
+            LDY #128 + 2
+            JSR WRITE_A_LNG
+            PLY
+            
+            TAY
+            LDA #0
+            setas
+            STZ OPL2_REG_REGION
         PN_NEXT_NOTE
-              STA @lOPL2_CHANNEL
-              
-              LDA [RAD_PTN_DEST],Y  ; octave/note
-              AND #$7F
-              BEQ SKIP_NOTE  ; if the note is 0, don't play anything.
-              JSR RAD_WRITE_OCT_NOTE
-              
-              LDA [RAD_PTN_DEST],Y  ; bit 7 is bit 4 of the instrument number
-              AND #$80
-              LSR A
-              LSR A
-              LSR A
-              STA RAD_TEMP
-              
-              INY
-              LDA [RAD_PTN_DEST],Y  ; instrument/effect
-              AND #$F0
-              LSR A
-              LSR A
-              LSR A
-              LSR A
-              ADC RAD_TEMP
-              DEC A  ; instruments are starting at 0
-              STA @lINSTR_NUMBER
+            STA @lOPL2_CHANNEL
+            
+            LDA [RAD_PTN_DEST],Y  ; octave/note
+            AND #$7F
+            BEQ SKIP_NOTE  ; if the note is 0, don't play anything.
+            JSR RAD_WRITE_OCT_NOTE
+            
+            LDA [RAD_PTN_DEST],Y  ; bit 7 is bit 4 of the instrument number
+            AND #$80
+            LSR A
+            LSR A
+            LSR A
+            STA RAD_TEMP
+            
+            INY
+            LDA [RAD_PTN_DEST],Y  ; instrument/effect
+            AND #$F0
+            LSR A
+            LSR A
+            LSR A
+            LSR A
+            ADC RAD_TEMP
+            DEC A  ; instruments are starting at 0
+            STA @lINSTR_NUMBER
+     
+            PHY
+            LDX OPL2_CHANNEL
+            LDA #0
+            XBA
+            LDA @lregisterOffsets_operator0,X
+            TAX
+            JSR LOAD_INSTRUMENT
+            PLY
+     
+            LDA #0
+            XBA
+            LDA [RAD_PTN_DEST],Y  ; instrument/effect
+            AND #$F
+            ASL A ; double bytes
+            ; we don't do anything with the effect
+            TAX
+            INY
+            JSR (RAD_EFFECT_TABLE,X)
+            INY
+            setal
+            PHY
+            JSR OPL2_GET_REG_OFFSET
+            JSL OPL2_PLAYNOTE
+            PLY
+            setas
+            
+    PN_CONTINUE
+            ; increment the channel
+            LDA @lOPL2_CHANNEL
+            INC A
+            CMP #9
+            BNE PN_NEXT_NOTE
+            BRA PN_END
+    SKIP_NOTE
+            INY
+            INY
+            INY
+            BRA PN_CONTINUE
+    PN_END
+            PLY
+            RTS
 
-              PHY
-              LDX OPL2_CHANNEL
-              LDA #0
-              XBA
-              LDA @lregisterOffsets_operator0,X
-              TAX
-              JSR LOAD_INSTRUMENT
-              PLY
+RAD_EFFECT_TABLE
+            .word <>RAD_EFFECT_NONE              ; 00
+            .word <>RAD_EFFECT_NOTE_SLIDE_UP     ; 01
+            .word <>RAD_EFFECT_NOTE_SLIDE_DOWN   ; 02
+            .word <>RAD_EFFECT_NOTE_SLIDE_TO     ; 03
+            .word <>RAD_NOOP            
+            .word <>RAD_EFFECT_NOTE_SLIDE_VOLUME ; 05
+            .word <>RAD_NOOP            
+            .word <>RAD_NOOP            
+            .word <>RAD_NOOP            
+            .word <>RAD_NOOP            
+            .word <>RAD_EFFECT_VOLUME_SLIDE      ; 0A
+            .word <>RAD_NOOP            
+            .word <>RAD_EFFECT_SET_VOLUME        ; 0C
+            .word <>RAD_EFFECT_PATTERN_BREAK     ; 0D
+            .word <>RAD_NOOP            
+            .word <>RAD_EFFECT_SET_SPEED         ; 0F
 
-              ; LDA [RAD_PTN_DEST],Y  ; instrument/effect
-              ; AND #$F
-              ; we don't do anything with the effect
-              
-              INY
-              ; LDA [RAD_PTN_DEST],Y  ; effect parameter
-              ; we don't do anything with the effect
-              
-              INY
-              setal
-              PHY
-              JSR OPL2_GET_REG_OFFSET
-              JSL OPL2_PLAYNOTE
-              ;JSR OPL2_SET_KEYON
-              PLY
-              setas
-              
-        PN_CONTINUE
-              ; increment the channel
-              LDA @lOPL2_CHANNEL
-              INC A
-              CMP #9
-              BNE PN_NEXT_NOTE
-              BRA PN_END
-        SKIP_NOTE
-              INY
-              INY
-              INY
-              BRA PN_CONTINUE
-        PN_END
-              PLY
-              RTS
+; ******************************************************
+; * Y contains the pointer to the effect parameter
+; ******************************************************
+RAD_NOOP
+RAD_EFFECT_NONE
+RAD_EFFECT_NOTE_SLIDE_UP
+RAD_EFFECT_NOTE_SLIDE_DOWN
+RAD_EFFECT_NOTE_SLIDE_TO
+RAD_EFFECT_NOTE_SLIDE_VOLUME
+RAD_EFFECT_VOLUME_SLIDE
+RAD_EFFECT_PATTERN_BREAK
+RAD_EFFECT_SET_SPEED
+            .as
+            RTS
+
+; ******************************************************
+; * Y contains the pointer to the effect parameter
+; ******************************************************
+RAD_EFFECT_SET_VOLUME
+            .as
+            PHY
+            setal
+            LDA #<>OPL2_S_BASE
+            STA OPL2_IND_ADDY_LL
+            LDA #`OPL2_S_BASE
+            STA OPL2_IND_ADDY_LL + 2
+            setas
+
+            LDA [RAD_PTN_DEST],Y  ; effect parameter
+            AND #$7F
+            BEQ HANDLE_ZERO
+            DEC A
+        HANDLE_ZERO
+            EOR #$3F ; complement
+            STA RAD_TEMP
+            setxs
+            LDX OPL2_CHANNEL
+            LDA @lregisterOffsets_operator0,X
+            CLC
+            ADC #$40
+            TAY
+            LDA [OPL2_IND_ADDY_LL],Y
+            AND #$C0 ; 
+            CLC
+            ADC RAD_TEMP
+            STA [OPL2_IND_ADDY_LL],Y
+            INY
+            INY
+            INY
+            LDA [OPL2_IND_ADDY_LL],Y
+            AND #$C0 ;
+            CLC
+            ADC RAD_TEMP
+            STA [OPL2_IND_ADDY_LL],Y
+            setxl
+            PLY
+            RTS
 
 ; ********************************
 ; * A contain the octave/note byte
 ; ********************************
 RAD_WRITE_OCT_NOTE
-              .as
-              PHY
-              PHA
-              PHA
-              LDA @lOPL2_CHANNEL
-              ASL A
-              TAY
-              PLA
-              JSR WRITE_HEX
-              AND #$70 ; octave
-              LSR
-              LSR
-              LSR
-              LSR
-              STA @lOPL2_OCTAVE
-              PLA
-              AND #$0F ; note
-              STA @lOPL2_NOTE
-              PLY
-              RTS
-              
-
-; Output
-; Y = Is the Pointer in the File to the next Patternlist.
-; This is a 16Bits Offset, it needs to be added to absolute Starting address of the File
-;
-RADPLAYER_NEXTORDER
-              setas
-              LDY #$0000
-              LDA #$00
-              STA RAD_STARTLINE
-              ;  order ++;
-              LDA @lPlayerInfo.orders
-              INC A
-              STA @lPlayerInfo.orders
-              TAY
-              ;  if (order >= songLength && loopSong) {order = 0;}
-              CMP @lTuneInfo.songLength
-              BCS NotClearingOrder
-              LDA @lPlayerInfo.loopSong
-              AND #$01
-              CMP #$01
-              BNE NotClearingOrder
-              LDA #$00
-              STA @lPlayerInfo.orders
-
-NotClearingOrder
-              setal
-              ;  radFile.seekSet(orderListOffset + order);
-              LDA @lTuneInfo.orderListOffset
-              STA OPL2_ADDY_PTR_LO
-              LDA @lTuneInfo.orderListOffset+2
-              STA OPL2_ADDY_PTR_HI
-              setax
-              LDA [OPL2_ADDY_PTR_LO],Y ; (Y = orders)
-              STA RAD_PATTERN_IDX     ;byte patternIndex = radFile.read();
-              AND #$80
-              CMP #$80
-              BNE NoOrderJump
-              ; Read the PatternIndex Again
-              LDA [OPL2_ADDY_PTR_LO],Y ; (Y = orders)
-              AND #$7F
-              STA @lPlayerInfo.orders
-              TAY ; Repoint to a new Order
-              LDA [OPL2_ADDY_PTR_LO],Y ; (Y = orders)
-              STA RAD_PATTERN_IDX     ;byte patternIndex = radFile.read();
-NoOrderJump   setal
-              AND #$00FF
-              TAX
-              LDA @lTuneInfo.patternOffsets,X
-              TAY ; Keep the Pointer in Y,
-              setas
-              LDA #$00
-              STA @lPlayerInfo.endOfPattern ; Set to False
-              STA RAD_LINE
-              ;  for (line = 0; line < startLine; line ++) {readLine();}
-ReadMoreLine
-              LDA RAD_STARTLINE
-              CMP RAD_LINE
-              BCS NoMoreLine2Read;
-              JSL RADPLAYER_READLINE
-              INC RAD_LINE
-              BRA ReadMoreLine;
-NoMoreLine2Read
-              STY RAD_Y_POINTER
-              RTL
-
-
-;
-RADPLAYER_READLINE
-              setas
-              LDY RAD_Y_POINTER
-              ;  // Reset note data on each channel.
-              LDA #$00
-              LDX #$0000
-ClearChannelNote
-              STA @lPlayerInfo.channelNote,X
-              INX
-              CPX #18
-              BCC ClearChannelNote
-              ;// If the previous line was the last line of the pattern then we're done.
-              LDA @lPlayerInfo.endOfPattern ; if <> 0 (or True) Exit
-              CMP #$00
-              BNE ReadLineEndOfPattern
-              setal
-              LDA #<>RAD_FILE_TEMP ; Set the Pointer where the File Begins
-              STA OPL2_ADDY_PTR_LO;
-              LDA #<`RAD_FILE_TEMP
-              STA OPL2_ADDY_PTR_HI;
-              setas
-              LDA [OPL2_ADDY_PTR_LO],Y
-              STA RAD_LINENUMBER
-              AND #$3F
-              CMP RAD_LINE
-              BEQ MoveOnWithReadLine
-              DEY
-              STY RAD_Y_POINTER
-              RTL
-MoveOnWithReadLine
-              LDA RAD_LINENUMBER
-              AND #$80
-              STA @lPlayerInfo.endOfPattern
-              LDX #$0000
-NextChannelProcess
-              ;// Read note and effect data for each channel.
-              INY
-              LDA [OPL2_ADDY_PTR_LO],Y ;byte channelNumber = radFile.read();
-              STA RAD_CHANNEL_NUM
-              AND #$80            ;   isLastChannel = channelNumber & 0x80;
-              STA RAD_ISLASTCHAN
-              LDA RAD_CHANNEL_NUM
-              AND #$0F            ; channelNumber = channelNumber & 0x0F;
-              STA RAD_CHANNEL_NUM
-              ASL ;
-              TAX
-              INY
-              LDA [OPL2_ADDY_PTR_LO],Y ;byte channelNumber = radFile.read();
-              STA @lPlayerInfo.channelNote+1, X
-              INY
-              LDA [OPL2_ADDY_PTR_LO],Y ;byte channelNumber = radFile.read();
-              STA @lPlayerInfo.channelNote, X
-              setal
-              LDA @lPlayerInfo.channelNote, X
-              AND #$000F
-              CMP #$0000
-              BEQ NoEffectParameter
-              setas
-              LDA RAD_CHANNEL_NUM
-              TAX
-              INY
-              LDA [OPL2_ADDY_PTR_LO],Y ;byte channelNumber = radFile.read();
-              STA @lPlayerInfo.efftectParameter,X
-              BRA MoveOnToNextChannel
-NoEffectParameter
-              setas
-              LDA RAD_CHANNEL_NUM
-              TAX
-              LDA #$00
-              STA @lPlayerInfo.efftectParameter,X
-MoveOnToNextChannel
-              LDA RAD_ISLASTCHAN
-              CMP #$00
-              BEQ NextChannelProcess
-ReadLineEndOfPattern
-              STY RAD_Y_POINTER
-              RTL
-
-; This part will be called by the Interrupt Handler
-; PLAYMUSIC
-              ; setas
-              ; LDA #$00
-              ; STA RAD_CHANNEL_NUM
-
-              ; setal
-              ; LDA RAD_CHANNEL_NUM
-              ; AND #$00FF
-              ; TAX
-              ; LDA @lPlayerInfo.channelNote, X
-              ; STA RAD_CHANNEL_DATA
-              ; setas
-              ; AND #$0F
-              ; STA RAD_CHANNE_EFFCT
-
-              ; LDA RAD_TICK
-              ; CMP #$00
-              ; BEQ InstrumentSetup
-              ; BRL NoInstrumentSetup
-; InstrumentSetup
-              ; CLC
-              ; LDA RAD_CHANNEL_DATA+1
-              ; AND #$80
-              ; LSR A
-              ; LSR A
-              ; LSR A
-              ; STA RAD_TEMP
-              ; LDA RAD_CHANNEL_DATA
-              ; AND #$F0
-              ; LSR A
-              ; LSR A
-              ; LSR A
-              ; LSR A
-              ; ADC RAD_TEMP
-              ; STA OPL2_PARAMETER3 ; Save Instruments
-              ; LDA RAD_CHANNEL_DATA+1
-              ; AND #$70
-              ; LSR A
-              ; LSR A
-              ; LSR A
-              ; LSR A
-              ; STA OPL2_OCTAVE
-              ; LDA RAD_CHANNEL_DATA+1
-              ; AND #$0F
-              ; STA OPL2_NOTE
-              ; LDA RAD_CHANNEL_NUM
-              ; STA OPL2_CHANNEL
-              ; LDA OPL2_PARAMETER3
-              ; CMP #$00
-              ; BEQ BypassSetupInstrument
-              ; JSR RAD_SETINSTRUMENT
-
-; BypassSetupInstrument
-              ; setas
-              ; LDA OPL2_NOTE
-              ; CMP #$0F
-              ; BNE NoSetKeyOn
-              ; ;      // Stop note.
-              ; LDA #$00
-              ; STA OPL2_PARAMETER0
-              ; JSL OPL2_SET_KEYON
-              ; BRA MoveOn2ProcessLineEffect
-; NoSetKeyOn
-              ; LDA RAD_CHANNE_EFFCT
-              ; CMP #EFFECT_NOTE_SLIDE_TO
-              ; BEQ MoveOn2ProcessLineEffect
-              ; ;      // Trigger note.
-              ; JSR RAD_PLAYNOTE
-
-; MoveOn2ProcessLineEffect
-              ; setas ; This is for security, just in case
-              ; LDA RAD_CHANNE_EFFCT
-              ; CMP #EFFECT_NOTE_SLIDE_TO
-              ; BNE NoEffectNoteSlideTo
-              ; LDA OPL2_NOTE
-              ; CMP #$00
-              ; BNE NoteBiggerThanZero
-              ; BRL DoneWithEffectSwitchCase
-; NoteBiggerThanZero
-              ; CMP #$0F
-              ; BCC NoteUnderFifteen
-              ; BRL DoneWithEffectSwitchCase
-; NoteUnderFifteen
-              ; setal
-              ; LDA RAD_CHANNEL_NUM ; Multiply by 2
-              ; AND #$00FF
-              ; ASL A
-              ; TAX
-              ; setas
-              ; ; Compute the (Note/12) First
-              ; ; Set Octave
-              ; LDA OPL2_NOTE    ;Divide Note/12
-              ; STA D0_OPERAND_A
-              ; LDA #$00
-              ; STA D0_OPERAND_A+1
-              ; STA D0_OPERAND_B+1
-              ; LDA #$0C
-              ; STA D0_OPERAND_B
-              ; CLC
-              ; LDA OPL2_OCTAVE
-              ; ADC D0_RESULT
-              ; ASL A
-              ; ASL A
-              ; ASL A
-              ; ASL A
-              ; STA @lPlayerInfo.pitchSlideDest+1,X
-              ; LDA #$00
-              ; STA @lPlayerInfo.pitchSlideDest,X
-              ; PHX
-              ; setal
-              ; CLC
-              ; LDA OPL2_NOTE
-              ; AND #$00FF
-              ; ADC D0_REMAINDER    ; Remainder of the Division Modulo
-              ; ASL A ;<<<<<<<<<<<<<<<<<<<<<<<<<
-              ; TAX
-              ; CLC
-              ; LDA @lnoteFNumbers,X
-              ; PLX
-              ; ADC @lPlayerInfo.pitchSlideDest,X
-              ; STA @lPlayerInfo.pitchSlideDest,X
-              ; LDA RAD_CHANNEL_NUM
-              ; AND #$00FF
-              ; TAX
-              ; setas
-              ; LDA @lPlayerInfo.efftectParameter,X
-              ; STA @lPlayerInfo.pitchSlideSpeed,X
-              ; BRA DoneWithEffectSwitchCase
-; NoEffectNoteSlideTo
-              ; CMP #EFFECT_SET_VOLUME
-              ; BNE NoEffectSetVolume
-              ; LDA #$01
-              ; STA OPL2_OPERATOR
-              ; setxs
-              ; LDX OPL2_CHANNEL
-              ; LDA #64
-              ; SBC @lPlayerInfo.efftectParameter,X
-              ; STA OPL2_PARAMETER0
-              ; setxl
-              ; JSL OPL2_SET_VOLUME
-              ; BRA DoneWithEffectSwitchCase
-
-; NoEffectSetVolume
-              ; CMP #EFFECT_PATTERN_BREAK
-              ; BNE NoEffectPatternBreak
-              ; LDX OPL2_CHANNEL
-              ; LDA @lPlayerInfo.efftectParameter,X
-              ; STA @lPlayerInfo.patternBreak
-              ; BRA DoneWithEffectSwitchCase
-
-; NoEffectPatternBreak
-              ; CMP #EFFECT_SET_SPEED
-              ; BNE DoneWithEffectSwitchCase
-              ; LDX OPL2_CHANNEL
-              ; LDA @lPlayerInfo.efftectParameter,X
-              ; STA @lPlayerInfo.speed
-; DoneWithEffectSwitchCase
-
-
-; NoInstrumentSetup ; Point outside of Tick == 0
-              ; setas ; This is for security, just in case
-              ; LDA RAD_CHANNE_EFFCT
-              ; CMP #EFFECT_NOTE_SLIDE_UP
-              ; BNE No_Effect_Note_Slide_Up
-
-
-              ; BRA DoneWithTickEffects
-; No_Effect_Note_Slide_Up
-              ; CMP #EFFECT_NOTE_SLIDE_DOWN
-              ; BNE No_Effect_Note_Slide_Down
-
-
-              ; BRA DoneWithTickEffects
-; No_Effect_Note_Slide_Down
-              ; CMP #EFFECT_NOTE_SLIDE_VOLUME
-              ; BNE No_Effect_Note_Slide_Volume
-
-
-
-              ; BRA DoneWithTickEffects
-; No_Effect_Note_Slide_Volume
-              ; CMP #EFFECT_NOTE_SLIDE_TO
-              ; BNE No_Effect_Note_Slide_To
-
-
-
-              ; BRA DoneWithTickEffects
-; No_Effect_Note_Slide_To
-              ; CMP #EFFECT_VOLUME_SLIDE
-              ; BNE No_Effect_Volume_Slide
-              ; NOP
-
-; DoneWithTickEffects
-; No_Effect_Volume_Slide
-              ; RTL
-
+            .as
+            PHY
+            PHA
+            PHA
+            LDA @lOPL2_CHANNEL
+            ASL A
+            TAY
+            PLA
+            JSR WRITE_HEX
+            AND #$70 ; octave
+            LSR
+            LSR
+            LSR
+            LSR
+            STA @lOPL2_OCTAVE
+            PLA
+            AND #$0F ; note
+            STA @lOPL2_NOTE
+            PLY
+            RTS
 
 RAD_PITCH_ADJUST
               setal
