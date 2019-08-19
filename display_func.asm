@@ -405,13 +405,22 @@ DRAW_LINE_DATA
                 LDY LINE_ADDR
                 INY ; skip the line number
     NEXT_CHANNEL
+                ; clear the instrument number byte
+                STZ RAD_TEMP
                 ; display the note in the first column
                 LDA [PTRN_ADDR],Y ; note/octave
-                BEQ RAD_NO_NOTE
                 INX ; skip the first column
                 INY
+                CMP #0
+                BNE DL_DRAW_NOTE
+                ; the note contains 0
+                INX
+                INX
+                BRA DL_SKIP_NOTE_DISPLAY
+
+        DL_DRAW_NOTE
                 JSR DISPLAY_NOTE_OCTAVE
-                
+        DL_SKIP_NOTE_DISPLAY
                 ROL A ; put bit 7 into the carry
                 BCC SKIP_MID_COL
                 LDA #'1'
@@ -419,27 +428,28 @@ DRAW_LINE_DATA
                 TXY
                 STA [SCREENBEGIN], Y
                 PLY
+                LDA #$10
+                STA RAD_TEMP
                 
         SKIP_MID_COL
                 INX ; skip the middle column
                 LDA [PTRN_ADDR],Y ; instrument/effect
                 INY
-                JSR DISPLAY_VALUE_SKIP_LOW_NIBBLE_IF_ZERO
                 
+                JSR DISPLAY_VALUE_SKIP_LOW_NIBBLE_IF_ZERO
                 CMP #0 ; if the effect byte is 0, don't display the next value
                 BNE SHOW_EFFECT
                 INX
                 INX 
-                BRA EFFECT_CONT
+                BRA DL_SKIP_EFFECT
                 
         SHOW_EFFECT
                 ; display the effect parameter
                 LDA [PTRN_ADDR],Y ;
                 JSR DISPLAY_DEC_VALUE
-        EFFECT_CONT
+        DL_SKIP_EFFECT
                 INY
                 INX ; skip the vertical bar
-    DRAW_NEXT_CHANNEL
                 DEC RAD_CHANNEL
                 BNE NEXT_CHANNEL
 
@@ -447,20 +457,10 @@ DRAW_LINE_DATA
                 PLY
                 RTS
                 
-    RAD_NO_NOTE
-                INY
-                INY
-                INY
-                setal
-                CLC
-                TXA
-                ADC #9
-                TAX
-                setas
-                BRA DRAW_NEXT_CHANNEL
                 
 ; ***********************************************************************
-; Always display the first nibble and only display the second nibble if non-zero
+; Display the first nibble and only display the second nibble if non-zero
+; If first nibble is zero and RAD_TEMP is also zero, don't display it.
 ; A contains the value to display
 ; X contains the screen location
 ; ***********************************************************************
@@ -469,8 +469,22 @@ DISPLAY_VALUE_SKIP_LOW_NIBBLE_IF_ZERO
                 PHY
                 PHA
                 TXY
+                LDX #0
+                XBA
+                LDA #0
+                XBA
                 
                 AND #$F0 ; high-nibble
+                BNE DV_DISPLAY_VALUE
+                
+                LDA RAD_TEMP
+                BNE DV_DISPLAY_ZERO
+                INY
+                BRA DV_LOW_NIBBLE
+                
+        DV_DISPLAY_ZERO
+                LDA #0
+        DV_DISPLAY_VALUE
                 LSR
                 LSR
                 LSR
@@ -482,8 +496,9 @@ DISPLAY_VALUE_SKIP_LOW_NIBBLE_IF_ZERO
                 STA [SCREENBEGIN], Y
                 INY
                 
+        DV_LOW_NIBBLE
                 PLA
-                AND #$F ; low-nibble
+                AND #$F ; low-nibble - effect
                 BEQ SKIP_VALUE
                 
                 TAX
@@ -711,6 +726,11 @@ DISPLAY_ORDERS
                 .as
                 
                 LDA @lTuneInfo.songLength
+                CMP #14
+                BCC DO_DISPLAY_ORDERS
+                LDA #14 ; only display up to 14 orders
+                
+        DO_DISPLAY_ORDERS
                 STA TAB_COUNTER
                 LDX #0
                 LDY #128 * 7 + 53

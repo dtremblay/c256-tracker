@@ -16,7 +16,7 @@ HIGH_NIBBLE     .byte 0
 HEX_MAP         .text '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'
 STATE_MACHINE   .byte 0  ; High Nibble is the Mode (inst, order, pattern), Low nibble is state: 0 is record mode, 1 is play mode
 TICK            .byte 0  ; this is used to count the number of 1/60 intervals
-BPM             .byte 60 ; how fast should the lines change - 
+BPM             .byte 125; how fast should the lines change - 
 PATTERN_NUM     .byte 1  ; pattern being displayed/played
 LINE_NUM_DEC    .byte 1  ; line being display/played
 ORDER_EDITOR_SCR = 128 * 7 + 53
