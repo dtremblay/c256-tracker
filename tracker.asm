@@ -211,9 +211,7 @@ RESET_STATE_MACHINE
                 INC A
         PATTN_OK
                 STA PATTERN_NUM
-                
                 JSR DISPLAY_BPM
-                
                 RTS
                 
 INCREMENT_ORDER
@@ -851,6 +849,22 @@ NONOTE
                 setxl
                 PLX
                 PLA
+                RTS
+                
+; *************************************************************************************
+; TURN CHANNELS ON OR OFF
+; *************************************************************************************
+CHANNELS        .byte 1,1,1,1,1,1,1,1,1
+TOGGLE_CHANNEL
+                .as
+                .xs
+                TAX
+                DEX
+                LDA CHANNELS,X
+                EOR #1
+                STA CHANNELS,X
+                ; based on the value, change the background of the channel
+                
                 RTS
                
                 ;      00,  01,  02,  03,  04,  05,  06,  07,  08,  09,  0A,  0B,  0C,  0D,  0E,  0F

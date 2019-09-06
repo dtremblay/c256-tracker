@@ -1,3 +1,7 @@
+Version 0.1.0
+-------------
+I now play music!
+
 Version 0.0.2
 -------------
 Now using 80 columns with 60 lines

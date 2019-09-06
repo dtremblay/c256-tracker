@@ -434,14 +434,30 @@ RAD_PLAYNOTES
             LDA #0
             setas
             STZ OPL2_REG_REGION
-        PN_NEXT_NOTE
+    PN_NEXT_NOTE
             STA @lOPL2_CHANNEL
-            
+            ; check if we're going to play the note for this channel
+            TAX
+            LDA CHANNELS,X
+            BNE PN_PLAY_NOTE
+            INY
+            INY
+            INY
+            BRA PN_CONTINUE
+    
+    PN_PLAY_NOTE
             LDA [RAD_PTN_DEST],Y  ; octave/note
             AND #$7F
             BEQ SKIP_NOTE  ; if the note is 0, don't play anything.
             JSR RAD_WRITE_OCT_NOTE
+            setal
+            PHY
+            JSR OPL2_GET_REG_OFFSET
+            JSL OPL2_PLAYNOTE
+            PLY
+            setas
             
+        SKIP_NOTE
             LDA [RAD_PTN_DEST],Y  ; bit 7 is bit 4 of the instrument number
             AND #$80
             LSR A
@@ -457,6 +473,7 @@ RAD_PLAYNOTES
             LSR A
             LSR A
             ADC RAD_TEMP
+            BEQ SKIP_INSTRUMENT
             DEC A  ; instruments are starting at 0
             STA @lINSTR_NUMBER
      
@@ -468,23 +485,22 @@ RAD_PLAYNOTES
             TAX
             JSR LOAD_INSTRUMENT
             PLY
-     
+            
+        SKIP_INSTRUMENT
             LDA #0
             XBA
             LDA [RAD_PTN_DEST],Y  ; instrument/effect
+            INY
             AND #$F
+            BEQ SKIP_EFFECT
             ASL A ; double bytes
             ; we don't do anything with the effect
             TAX
-            INY
+            
             JSR (RAD_EFFECT_TABLE,X)
+        SKIP_EFFECT
             INY
-            setal
-            PHY
-            JSR OPL2_GET_REG_OFFSET
-            JSL OPL2_PLAYNOTE
-            PLY
-            setas
+            
             
     PN_CONTINUE
             ; increment the channel
@@ -492,13 +508,6 @@ RAD_PLAYNOTES
             INC A
             CMP #9
             BNE PN_NEXT_NOTE
-            BRA PN_END
-    SKIP_NOTE
-            INY
-            INY
-            INY
-            BRA PN_CONTINUE
-    PN_END
             PLY
             RTS
 
@@ -591,6 +600,7 @@ RAD_WRITE_OCT_NOTE
             TAY
             PLA
             JSR WRITE_HEX
+            
             AND #$70 ; octave
             LSR
             LSR
@@ -841,9 +851,19 @@ PlayerInfo .dstruct PlayerVariables
 
 * = $178000
 RAD_FILE_TEMP
-.binary "RAD_Files/action.rad"  ; v1.0
+;.binary "RAD_Files/action.rad"  ; v1.0
 ;.binary "RAD_Files/adlibsp.rad"  ; v1.0
+.binary "RAD_Files/ALLOYRUN.rad"  ; v1.0
+;.binary "RAD_Files/crystal2.rad"  ; v1.0
 ;.binary "RAD_Files/sp2.rad"      ; v1.0
 ;.binary "RAD_Files/backlash.rad" ; v1.0
-;.binary "RAD_Files/burnzone.rad" ; v2.1 file
 ;.binary "RAD_Files/cpw.rad"      ; v1.0
+;.binary "RAD_Files/paybacktime tactics - a1.rad" ; v1.0
+;.binary "RAD_Files/strange.rad"  ; v1.0
+;.binary "RAD_Files/subwave.rad"  ; v1.0
+;.binary "RAD_Files/trimarch.rad"  ; v1.0
+;.binary "RAD_Files/yay.rad"  ; v1.0
+
+;.binary "RAD_Files/burnzone.rad" ; v2.1 file
+;.binary "RAD_Files/raster_v2.rad" ; v2.1 file
+;.binary "RAD_Files/Xcessiv.rad"  ; v2.1

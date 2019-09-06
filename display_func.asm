@@ -99,6 +99,8 @@ SETTEXTCOLOR
                 JSR REVERSE_LUT
                 
                 JSR HIGHLIGHT_MODE
+                
+                JSR DISPLAY_ACTIVE_CHANNELS
 
                 RTS
                 
@@ -658,8 +660,8 @@ REVERSE_LUT_TABS
 ; ***********************************************************************
 INSTR_HL_SCR     = 128 * 5 + 6
 INSTR_NUM_HL_SCR = 128 * 6 + 4
-ORDER_HL_SCR     = 128 * 5 + 54
-PTTRN_HL_SCR     = 128 * 26 + 3
+ORDER_HL_SCR     = 128 * 5 + 53
+PTTRN_HL_SCR     = 128 * 26 + 1
 
 DISPLAY_BPM
                 .as
@@ -677,6 +679,8 @@ HL_CLR_TABLE
                 .byte $20, $20, $40, $20
 HIGHLIGHT_MODE 
                 .as
+                LDA #0
+                XBA
                 ; Read the mode and highlight the proper section
                 LDA STATE_MACHINE
                 AND #$30
@@ -684,7 +688,6 @@ HIGHLIGHT_MODE
                 LSR
                 PHA
                 PHA
-                
                 TAX
                 LDA HL_CLR_TABLE,X
                 LDX #10
@@ -710,13 +713,29 @@ HIGHLIGHT_MODE
                 BNE ORDER_HIGHLIGHT_LOOP
                 
                 
-                ; Highlight the '1' PATTERN
+                ; Highlight the '-' in the PATTERN header
                 PLA
                 TAX
                 LDA HL_CLR_TABLE+2,X
+                LDX #9
                 LDY #$2000 + PTTRN_HL_SCR
-                STA [SCREENBEGIN], Y 
-                                
+    HL_PATTERN_LOOP
+                
+                STA [SCREENBEGIN], Y
+                INY 
+                INY 
+                INY 
+                INY 
+                INY
+                STA [SCREENBEGIN], Y
+                INY 
+                INY 
+                INY 
+                INY
+                DEX 
+                BNE HL_PATTERN_LOOP
+                
+                JSR DISPLAY_ACTIVE_CHANNELS
                 RTS
                 
 ; ***********************************************************************
@@ -765,4 +784,35 @@ DISPLAY_ORDERS
                 setas
                 DEC TAB_COUNTER
                 BNE NEXT_ORDER
+                RTS
+                
+; ************************************************************************
+; Read the values in CHANNELS and highlight (white font) when active
+; ************************************************************************
+DISPLAY_ACTIVE_CHANNELS
+                LDX #9
+                LDY #$2000 + 128 * 26 + 75
+        DAC_LOOP
+                LDA CHANNELS-1,X
+                BEQ INACTIVE_CHANNEL
+                LDA #$40 ; white
+                STA [SCREENBEGIN], Y
+                BRA DAC_CONTINUE
+                
+        INACTIVE_CHANNEL
+                LDA #$20 ; purple
+                STA [SCREENBEGIN], Y
+        DAC_CONTINUE
+                DEY
+                DEY
+                DEY
+                DEY
+                DEY
+                DEY
+                DEY
+                DEY
+                DEY
+                
+                DEX 
+                BNE DAC_LOOP
                 RTS

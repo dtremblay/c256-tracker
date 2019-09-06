@@ -1,5 +1,6 @@
 ; timer values
 ; sixteenths per minute in 69.84ns increments (clock is 14.318Mhz)
+; value = 1/(16 * bpm) * 14.318e6
 SPM_004 .long $CCD215
 SPM_005 .long $A3DB44
 SPM_006 .long $888C0E
@@ -197,3 +198,44 @@ SPM_197 .long $0428A6
 SPM_198 .long $042346
 SPM_199 .long $041DF3
 SPM_200 .long $0418AE
+SPM_201 .long $041376
+SPM_202 .long $040E4C
+SPM_203 .long $04092F
+SPM_204 .long $04041E
+SPM_205 .long $03FF1A
+SPM_206 .long $03FA23
+SPM_207 .long $03F538
+SPM_208 .long $03F059
+SPM_209 .long $03EB85
+SPM_210 .long $03E6BE
+SPM_211 .long $03E202
+SPM_212 .long $03DD52
+SPM_213 .long $03D8AD
+SPM_214 .long $03D413
+SPM_215 .long $03CF84
+SPM_216 .long $03CB00
+SPM_217 .long $03C686
+SPM_218 .long $03C217
+SPM_219 .long $03BDB3
+SPM_220 .long $03B958
+SPM_221 .long $03B508
+SPM_222 .long $03B0C2
+SPM_223 .long $03AC85
+SPM_224 .long $03A852
+SPM_225 .long $03A429
+SPM_226 .long $03A009
+SPM_227 .long $039BF2
+SPM_228 .long $0397E5
+SPM_229 .long $0393E1
+SPM_230 .long $038FE5
+SPM_231 .long $038BF3
+SPM_232 .long $038809
+SPM_233 .long $038427
+SPM_234 .long $03804F
+SPM_235 .long $037C7E
+SPM_236 .long $0378B6
+SPM_237 .long $0374F6
+SPM_238 .long $03713E
+SPM_239 .long $036D8E
+SPM_240 .long $0369E6
+

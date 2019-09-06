@@ -89,8 +89,6 @@ IRQ_HANDLER_FETCH
                 LDY #70
                 JSR WRITE_HEX  ; print the HEX key code at column 70 on the top line
 
-                JSR PLAY_TRACKER_NOTE
-
                 CMP #$1A        ; left bracket
                 BNE NOT_LEFT_BRACKET
                 DEC INSTR_NUMBER
@@ -124,7 +122,7 @@ NOT_RIGHT_BRACKET
     MINUS_DONE
                 JMP KB_WR_2_SCREEN
                 
-NOT_MINUS
+    NOT_MINUS
                 CMP #$0D        ; plus
                 BNE BPM_KEYS
                 
@@ -144,7 +142,8 @@ NOT_MINUS
     PLUS_DONE
                 JMP KB_WR_2_SCREEN
                 
-BPM_KEYS        CMP #$27     ; semi-colon
+    BPM_KEYS    
+                CMP #$27     ; semi-colon
                 BNE NOT_SEMI_COLON
                 ; reduce the BPM by 1 beat
                 LDA BPM
@@ -153,12 +152,12 @@ BPM_KEYS        CMP #$27     ; semi-colon
                 DEC A
                 BRA SETUP_TIMER
 
-NOT_SEMI_COLON
+    NOT_SEMI_COLON
                 CMP #$28     ; quote
                 BNE TRY_GRAVE
                 ; increase the BPM by 1 beat
                 LDA BPM
-                CMP #200
+                CMP #240
                 BEQ PLUS_DONE
                 INC A
                 
@@ -168,10 +167,11 @@ NOT_SEMI_COLON
                 JSR INIT_TIMER0
                 JMP KB_WR_2_SCREEN
 
-TRY_GRAVE
+    TRY_GRAVE
                 CMP #$29
                 BNE SPECIAL_KEYS
-                
+                LDA #0
+                XBA
                 LDA STATE_MACHINE
                 PHA
                 AND #$30
@@ -186,35 +186,35 @@ TRY_GRAVE
                 JSR HIGHLIGHT_MODE
                 JMP KB_WR_2_SCREEN
                 
-SPECIAL_KEYS
+    SPECIAL_KEYS
                 ; Check for Shift Press or Unpressed
                 CMP #$2A                ; Left Shift Pressed
                 BNE NOT_KB_SET_SHIFT
                 BRL KB_SET_SHIFT
-NOT_KB_SET_SHIFT
+    NOT_KB_SET_SHIFT
                 CMP #$AA                ; Left Shift Unpressed
                 BNE NOT_KB_CLR_SHIFT
                 BRL KB_CLR_SHIFT
-NOT_KB_CLR_SHIFT
+    NOT_KB_CLR_SHIFT
                 ; Check for CTRL Press or Unpressed
                 CMP #$1D                ; Left CTRL pressed
                 BNE NOT_KB_SET_CTRL
                 BRL KB_SET_CTRL
-NOT_KB_SET_CTRL
+    NOT_KB_SET_CTRL
                 CMP #$9D                ; Left CTRL Unpressed
                 BNE NOT_KB_CLR_CTRL
                 BRL KB_CLR_CTRL
 
-NOT_KB_CLR_CTRL
+    NOT_KB_CLR_CTRL
                 CMP #$38                ; Left ALT Pressed
                 BNE NOT_KB_SET_ALT
                 BRL KB_SET_ALT
-NOT_KB_SET_ALT
+    NOT_KB_SET_ALT
                 CMP #$B8                ; Left ALT Unpressed
                 BNE NOT_SPECIAL
                 BRL KB_CLR_ALT
 
-NOT_SPECIAL
+    NOT_SPECIAL
                 CMP #$48                ; UP arrow
                 BNE NOT_UP
                 
@@ -227,7 +227,7 @@ NOT_SPECIAL
                 PLA
                 JMP KB_WR_2_SCREEN
                 
-NOT_UP
+    NOT_UP
                 CMP #$50                ; DOWN arrow
                 BNE NOT_DOWN
                 
@@ -240,8 +240,8 @@ NOT_UP
                 PLA
                 JMP KB_WR_2_SCREEN
 
-NOT_DOWN
-KB_UNPRESSED
+    NOT_DOWN
+    KB_UNPRESSED
                 AND #$80                ; See if the Scan Code is press or Depressed
                 CMP #$80                ; Depress Status - We will not do anything at this point
                 BNE KB_NORM_SC
@@ -256,6 +256,7 @@ KB_UNPRESSED
 KB_NORM_SC      
 
                 LDA KEYBOARD_SC_TMP
+                
                 setxs
                 TAX
                 LDA KEYBOARD_SC_FLG     ; Check to See if the SHIFT Key is being Pushed
@@ -272,6 +273,13 @@ KB_NORM_SC
                 AND #$40
                 CMP #$40
                 BEQ ALT_KEY_ON
+                
+                setxl
+                LDA KEYBOARD_SC_TMP
+                JSR PLAY_TRACKER_NOTE
+                setxs
+                
+                LDX KEYBOARD_SC_TMP
                 ; Pick and Choose the Right Bank of Character depending if the Shift/Ctrl/Alt or none are chosen
                 LDA @lScanCode_Press_Set1, x
                 BRL KB_WR_2_SCREEN
@@ -280,8 +288,15 @@ SHIFT_KEY_ON    LDA @lScanCode_Shift_Set1, x
 CTRL_KEY_ON     LDA @lScanCode_Ctrl_Set1, x
                 BRL KB_WR_2_SCREEN
 ALT_KEY_ON      LDA @lScanCode_Alt_Set1, x
-
-                ; Write Character to Screen (Later in the buffer)
+                BEQ KB_WR_2_SCREEN
+                ; turn channels on / off
+                AND #$F
+                JSR TOGGLE_CHANNEL
+                setxl
+                JSR DISPLAY_ACTIVE_CHANNELS
+                setxs
+                RTS ;  early exit
+                
 KB_WR_2_SCREEN
                 setxl
                 LDY #74
@@ -296,13 +311,14 @@ KB_WR_2_SCREEN
                 AND #1
                 BEQ START_SOF
 STOP_SOF
+                LDA @lINT_MASK_REG0 ; stop the timer interrupts
+                ORA #FNX0_INT02_TMR0
+                STA @lINT_MASK_REG0
+                
                 LDA #0  ; record mode
                 STA STATE_MACHINE
                 JSR RAD_ALL_NOTES_OFF
                 
-                LDA @lINT_MASK_REG0
-                ORA #FNX0_INT02_TMR0
-                STA @lINT_MASK_REG0
                 PLA
         KB_CHECK_B_DONE_R
                 JMP KB_CHECK_B_DONE
@@ -401,13 +417,15 @@ INCR_LINE
 INCR_DONE
                 CLD
                 STA @lLINE_NUM_DEC
+                JSR DISPLAY_PATTERN
+                
                 ; if the state is PLAY then play the notes
                 LDA STATE_MACHINE
                 AND #1
                 BEQ EDIT_MODE
                 JSR RAD_PLAYNOTES
         EDIT_MODE
-                JSR DISPLAY_PATTERN
+                
                 LDA #0  ; reset the tick to 0
 
 TICK_DONE
