@@ -1,6 +1,15 @@
+Version 0.1.2
+-------------
+Now using a single 50Hz timer to update the display and play notes.
+This will allow me to handle effects, just like the RAD player.
+
+Version 0.1.1
+-------------
+Added the C (volume) effect
+
 Version 0.1.0
 -------------
-I now play music!
+I now play music!  All 9 channels.
 
 Version 0.0.2
 -------------

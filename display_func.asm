@@ -665,7 +665,7 @@ PTTRN_HL_SCR     = 128 * 26 + 1
 
 DISPLAY_BPM
                 .as
-                LDA BPM
+                LDA @lTuneInfo.InitialSpeed
                 LDY #23*128 + 40
                 JSR WRITE_HEX
                 RTS

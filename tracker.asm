@@ -7,6 +7,7 @@
 
 MOUSE_BUTTONS_REG= $180F00 ; bit 2=middle, bit 1=right, bit 0=left
 INSTR_REC_LEN    = INSTRUMENT_BAGPIPE1 - INSTRUMENT_ACCORDN
+FIFTY_HZ_COUNT   = 286360
 
 * = MOUSE_BUTTONS_REG
                 .byte 0
@@ -125,7 +126,7 @@ TRACKER
                 JSL IOPL2_TONE_TEST
 
                 JSR ENABLE_IRQS
-                JSR INIT_TIMER0  
+                JSR INIT_TIMER0_50HZ
                 JSL RAD_INIT_PLAYER
                 
                 CLI
@@ -236,10 +237,11 @@ INCREMENT_ORDER
                 PLA
                 RTS
                 
-; ***********************************************************************
-; * Initialize the timer
-; ***********************************************************************
-INIT_TIMER0     
+; *************************************************************************
+; * Initialize the timer for BPM
+; * Load the timer counter value from the SPM_004 table based on BPM value
+; *************************************************************************
+INIT_TIMER0_BPM
                 .as
                 PHB
                 
@@ -247,12 +249,12 @@ INIT_TIMER0
                 PHA
                 PLB ; set databank to 0
                 
-                LDA #3
+                LDA #3  ; each timer counter is 24 bits - 3 bytes
                 STA M0_OPERAND_A
                 STZ M0_OPERAND_A + 1
                 STZ M0_OPERAND_B + 1
                 SEC
-                LDA BPM
+                LDA BPM  ; multiply by the BPM, the 4 offset is the lowest BPM
                 SBC #4
                 STA M0_OPERAND_B
                 
@@ -261,7 +263,7 @@ INIT_TIMER0
                 TAX
                 
                 setas
-                LDA #0
+                LDA #0    ; set timer0 charge to 0
                 STA TIMER0_CHARGE_L
                 STA TIMER0_CHARGE_M
                 STA TIMER0_CHARGE_H
@@ -275,7 +277,42 @@ INIT_TIMER0
                 LDA @lSPM_004+2,X
                 STA TIMER0_CMP_H
                 
-                LDA #TMR0_CMP_RECLR
+                LDA #TMR0_CMP_RECLR  ; count up from "CHARGE" value to TIMER_CMP
+                STA TIMER0_CMP_REG
+                
+                LDA #(TMR0_EN | TMR0_UPDWN | TMR0_SCLR)
+                STA TIMER0_CTRL_REG
+                
+                PLB
+                RTS
+                
+; *************************************************************************
+; * Initialize the timer for 50Hz
+; *************************************************************************
+INIT_TIMER0_50HZ
+                .as
+                PHB
+                
+                LDA #0
+                PHA
+                PLB ; set databank to 0
+                
+                setas
+                LDA #0    ; set timer0 charge to 0
+                STA TIMER0_CHARGE_L
+                STA TIMER0_CHARGE_M
+                STA TIMER0_CHARGE_H
+                
+                LDA #<FIFTY_HZ_COUNT
+                STA TIMER0_CMP_L
+                
+                LDA #>FIFTY_HZ_COUNT
+                STA TIMER0_CMP_M
+                
+                LDA #<`FIFTY_HZ_COUNT
+                STA TIMER0_CMP_H
+                
+                LDA #TMR0_CMP_RECLR  ; count up from "CHARGE" value to TIMER_CMP
                 STA TIMER0_CMP_REG
                 
                 LDA #(TMR0_EN | TMR0_UPDWN | TMR0_SCLR)

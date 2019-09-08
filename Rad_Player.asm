@@ -852,8 +852,8 @@ PlayerInfo .dstruct PlayerVariables
 * = $178000
 RAD_FILE_TEMP
 ;.binary "RAD_Files/action.rad"  ; v1.0
-;.binary "RAD_Files/adlibsp.rad"  ; v1.0
-.binary "RAD_Files/ALLOYRUN.rad"  ; v1.0
+.binary "RAD_Files/adlibsp.rad"  ; v1.0
+;.binary "RAD_Files/ALLOYRUN.rad"  ; v1.0
 ;.binary "RAD_Files/crystal2.rad"  ; v1.0
 ;.binary "RAD_Files/sp2.rad"      ; v1.0
 ;.binary "RAD_Files/backlash.rad" ; v1.0

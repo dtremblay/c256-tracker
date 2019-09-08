@@ -164,7 +164,7 @@ NOT_RIGHT_BRACKET
     SETUP_TIMER
                 STA BPM
                 JSR DISPLAY_BPM
-                JSR INIT_TIMER0
+                JSR INIT_TIMER0_BPM
                 JMP KB_WR_2_SCREEN
 
     TRY_GRAVE
@@ -396,7 +396,7 @@ TIMER0_INTERRUPT
                 
                 LDA @lTICK
                 INC A
-                CMP #4
+                CMP @lTuneInfo.InitialSpeed
                 BNE TICK_DONE
                 
                 ; we now have to increment the line count
@@ -430,6 +430,8 @@ INCR_DONE
 
 TICK_DONE
                 STA @lTICK
+                ; TODO deal with effects
+                
                 RTS
 
 ; ///////////////////////////////////////////////////////////////////
