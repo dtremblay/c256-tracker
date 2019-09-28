@@ -212,7 +212,7 @@ RESET_STATE_MACHINE
                 INC A
         PATTN_OK
                 STA PATTERN_NUM
-                JSR DISPLAY_BPM
+                JSR DISPLAY_SPEED
                 RTS
                 
 INCREMENT_ORDER

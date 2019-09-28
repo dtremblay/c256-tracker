@@ -82,7 +82,7 @@ READ_VERSION_10
             JSR PARSER_RAD_FILE_INSTRUMENT_10; Go Parse the Instrument and Order list
             JSR PROCESS_ORDER_LIST_10
             JSR READ_PATTERNS_10
-
+            JSR DISPLAY_SPEED
             RTL  ; End of READ_VERSION_10
 
 ADLIB_OFFSETS .byte 7,1,8,2,9,3,10,4,5,11,6
@@ -415,7 +415,7 @@ RAD_PLAYNOTES
             LDA #<`PATTERNS
             STA RAD_PTN_DEST + 2
             LDY #128 * 2
-            JSR DISPLAY_RAD_PTN_DEST
+            JSR DISPLAY_RAD_PTN_DEST ; display the address of the pattern
             setal
             
             LDA LINE_NUM_HEX
@@ -425,12 +425,11 @@ RAD_PLAYNOTES
             STA @lM0_OPERAND_B
             LDA @lM0_RESULT
             INC A  ; skip the line number byte
-            PHY
+
             LDY #128 + 2
-            JSR WRITE_A_LNG
-            PLY
-            
-            TAY
+            JSR WRITE_A_LNG ; display the line offset from the pattern address
+
+            TAY ; Y contains the line offset
             LDA #0
             setas
             STZ OPL2_REG_REGION
@@ -440,7 +439,8 @@ RAD_PLAYNOTES
             TAX
             LDA CHANNELS,X
             BNE PN_PLAY_NOTE
-            INY
+            
+            INY ; skip the channel data
             INY
             INY
             BRA PN_CONTINUE
@@ -449,6 +449,9 @@ RAD_PLAYNOTES
             LDA [RAD_PTN_DEST],Y  ; octave/note
             AND #$7F
             BEQ SKIP_NOTE  ; if the note is 0, don't play anything.
+            CMP #$0F ; NOTE OFF
+            BEQ RAD_NOTE_OFF
+            
             JSR RAD_WRITE_OCT_NOTE
             setal
             PHY
@@ -504,6 +507,8 @@ RAD_PLAYNOTES
             
     PN_CONTINUE
             ; increment the channel
+            LDA #0  ; clear B
+            XBA
             LDA @lOPL2_CHANNEL
             INC A
             CMP #9
@@ -511,6 +516,19 @@ RAD_PLAYNOTES
             PLY
             RTS
 
+RAD_NOTE_OFF
+            .as
+            TXA
+            CLC
+            ADC #$B0
+            STA OPL2_IND_ADDY_LL
+            LDA #0
+            STA [OPL2_IND_ADDY_LL]
+            INY
+            INY
+            INY
+            BRA PN_CONTINUE
+            
 RAD_EFFECT_TABLE
             .word <>RAD_EFFECT_NONE              ; 00
             .word <>RAD_EFFECT_NOTE_SLIDE_UP     ; 01
@@ -535,13 +553,90 @@ RAD_EFFECT_TABLE
 RAD_NOOP
 RAD_EFFECT_NONE
 RAD_EFFECT_NOTE_SLIDE_UP
-RAD_EFFECT_NOTE_SLIDE_DOWN
 RAD_EFFECT_NOTE_SLIDE_TO
 RAD_EFFECT_NOTE_SLIDE_VOLUME
 RAD_EFFECT_VOLUME_SLIDE
 RAD_EFFECT_PATTERN_BREAK
+            .as
+            RTS
+
 RAD_EFFECT_SET_SPEED
             .as
+            LDA [RAD_PTN_DEST],Y  ; effect parameter
+            STA @lTuneInfo.InitialSpeed
+            
+            JSR DISPLAY_SPEED
+            RTS
+
+; ******************************************************
+; * Y contains the pointer to the effect parameter
+; ******************************************************
+RAD_EFFECT_NOTE_SLIDE_DOWN
+            .as
+            PHY
+            
+            LDA [RAD_PTN_DEST],Y ; store value of the effect in RAD_CHANNE_EFFCT
+            STA RAD_CHANNE_EFFCT
+            
+            setal
+            LDA #<>OPL2_S_BASE
+            STA OPL2_IND_ADDY_LL
+            LDA #`OPL2_S_BASE
+            STA OPL2_IND_ADDY_LL + 2
+            setaxs
+            ; read the current fnumber into accumulator
+            LDA OPL2_CHANNEL
+            CLC
+            ADC #$A0
+            TAY
+            
+            LDA [OPL2_IND_ADDY_LL],Y
+            setxl
+            TYX
+            LDY #128 + 10
+            JSR WRITE_HEX
+            TXY
+            setxs
+            PHA ; store A on the stack
+            TYA
+            CLC
+            ADC #$10
+            TAY
+            
+            LDA [OPL2_IND_ADDY_LL],Y
+            STA RAD_TEMP  ; store the entire value of $B0
+            setxl
+            TYX
+            LDY #256 + 8
+            JSR WRITE_HEX
+            
+            AND #3
+            
+            
+            LDY #128 + 8
+            JSR WRITE_HEX
+            TXY
+            setxs
+            XBA
+            PLA
+            setal
+            SEC
+            SBC RAD_CHANNE_EFFCT  ; substract the effect parameter
+            setas
+            ; now store the value back into fnumber
+            XBA
+            AND #3
+            ORA RAD_TEMP
+            STA [OPL2_IND_ADDY_LL],Y
+            TYA
+            SEC
+            SBC #$10
+            TAY
+            XBA
+            STA [OPL2_IND_ADDY_LL],Y
+            
+            setxl
+            PLY
             RTS
 
 ; ******************************************************
@@ -612,50 +707,6 @@ RAD_WRITE_OCT_NOTE
             STA @lOPL2_NOTE
             PLY
             RTS
-
-RAD_PITCH_ADJUST
-              setal
-              LDA OPL2_PARAMETER2 ;amount = OPL2_PARAMETER2, OPL2_PARAMETER3
-              JSL OPL2_GET_BLOCK
-              STA OPL2_BLOCK
-              JSL OPL2_GET_FNUMBER ;OPL2_PARAMETER0, OPL2_PARAMETER1
-              setal
-              CLC
-              LDA OPL2_PARAMETER2
-              ADC OPL2_PARAMETER0
-              STA OPL2_PARAMETER0
-              AND #$03FF
-              CMP #FNUMBER_MIN ; 0x156
-              BCS IncreaseOneOctave
-              setas
-              LDA OPL2_BLOCK
-              CMP #$00
-              BEQ ExitDropAnOctave
-              DEC OPL2_BLOCK
-;
-;
-;  // Drop one octave (if possible) when the F-number drops below octave minimum.
-;  if (fNumber < FNUMBER_MIN) {
-;    if (block > 0) {
-;      block --;
-;      fNumber = FNUMBER_MAX - (FNUMBER_MIN - fNumber);
-;    }
-
-;  // Increase one octave (if possible) when the F-number reaches above octave maximum.
-;  } else if (fNumber > FNUMBER_MAX) {
-;    if (block < 7) {
-;      block ++;;
-;      fNumber = FNUMBER_MIN + (fNumber - FNUMBER_MAX);;
-;    }
-;  }
-
-
-
-
-ExitDropAnOctave
-IncreaseOneOctave
-
-              RTS
 
 
 RAD_PLAYNOTE_2
@@ -852,13 +903,15 @@ PlayerInfo .dstruct PlayerVariables
 * = $178000
 RAD_FILE_TEMP
 ;.binary "RAD_Files/action.rad"  ; v1.0
-.binary "RAD_Files/adlibsp.rad"  ; v1.0
+;.binary "RAD_Files/adlibsp.rad"  ; v1.0
 ;.binary "RAD_Files/ALLOYRUN.rad"  ; v1.0
-;.binary "RAD_Files/crystal2.rad"  ; v1.0
-;.binary "RAD_Files/sp2.rad"      ; v1.0
-;.binary "RAD_Files/backlash.rad" ; v1.0
+;.binary "RAD_Files/backlash.rad"  ; v1.0
 ;.binary "RAD_Files/cpw.rad"      ; v1.0
+;.binary "RAD_Files/crystal2.rad"  ; v1.0
+;.binary "RAD_Files/island industrial.rad"  ; v1.0
 ;.binary "RAD_Files/paybacktime tactics - a1.rad" ; v1.0
+.binary "RAD_Files/pipkasoft intro 2.rad"
+;.binary "RAD_Files/sp2.rad"      ; v1.0
 ;.binary "RAD_Files/strange.rad"  ; v1.0
 ;.binary "RAD_Files/subwave.rad"  ; v1.0
 ;.binary "RAD_Files/trimarch.rad"  ; v1.0

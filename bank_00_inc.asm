@@ -73,7 +73,7 @@ RAD_Y_POINTER    = $000046 ; 2 Bytes
 RAD_ORDER_NUM    = $000048 ; 2 Bytes
 RAD_CHANNEL_DATA = $00004A ; 2 Bytes
 RAD_CHANNE_EFFCT = $00004C
-RAD_TEMP         = $00004D
+RAD_TEMP         = $00004E
 
 ; BMP File Parser Variables (Can be shared if BMP Parser not used)
 ; Used for Command Parser Mainly

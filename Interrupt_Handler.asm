@@ -431,7 +431,7 @@ INCR_DONE
 TICK_DONE
                 STA @lTICK
                 ; TODO deal with effects
-                
+                ;JSR APPLY_EFFECTS
                 RTS
 
 ; ///////////////////////////////////////////////////////////////////

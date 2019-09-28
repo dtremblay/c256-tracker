@@ -495,7 +495,7 @@ DISPLAY_VALUE_SKIP_LOW_NIBBLE_IF_ZERO
                 TAX
                 LDA HEX_MAP, X
                 
-                STA [SCREENBEGIN], Y
+                STA [SCREENBEGIN],Y
                 INY
                 
         DV_LOW_NIBBLE
@@ -506,7 +506,7 @@ DISPLAY_VALUE_SKIP_LOW_NIBBLE_IF_ZERO
                 TAX
                 LDA HEX_MAP, X
                 
-                STA [SCREENBEGIN], Y
+                STA [SCREENBEGIN],Y
     SKIP_VALUE
                 INY
                 
@@ -529,7 +529,7 @@ DISPLAY_VALUE
                 TAX
                 LDA HEX_MAP, X
                 
-                STA [SCREENBEGIN], Y
+                STA [SCREENBEGIN],Y
                 INY
                 
                 PLA
@@ -537,7 +537,7 @@ DISPLAY_VALUE
                 TAX
                 LDA HEX_MAP, X
                 
-                STA [SCREENBEGIN], Y
+                STA [SCREENBEGIN],Y
                 INY
                 
                 TYX
@@ -663,11 +663,17 @@ INSTR_NUM_HL_SCR = 128 * 6 + 4
 ORDER_HL_SCR     = 128 * 5 + 53
 PTTRN_HL_SCR     = 128 * 26 + 1
 
-DISPLAY_BPM
+DISPLAY_SPEED
                 .as
+                PHY
                 LDA @lTuneInfo.InitialSpeed
                 LDY #23*128 + 40
                 JSR WRITE_HEX
+                PLY
+                RTS
+                
+DISPLAY_BPM
+                .as
                 RTS
                 
 ; ***********************************************************************
