@@ -351,7 +351,7 @@ WAIT_80
                 BNE WAIT_LP
                 RTS
                 
-; X contains the channel
+; X contains the channel offset
 LOAD_INSTRUMENT
                 .as
                 LDA @lINSTR_NUMBER
@@ -412,7 +412,10 @@ LOAD_INSTRUMENT
                 BNE LD_INST_5
                 INC INSTR_ADDR+1
     LD_INST_5
+                PHX
+                LDX OPL2_CHANNEL
                 JSR LOAD_FEEDBACK_ALGO
+                PLX
                 
                 ; $E0 Waveform Selection
                 INC INSTR_ADDR
@@ -433,7 +436,7 @@ LOAD_INSTRUMENT
 DRUM_SET
                 RTS
 
-; X contains the OPL2 register
+; X contains the OPL2 register offset
 LOAD_AM_VIB_MULT
                 LDA [INSTR_ADDR]
                 PHA

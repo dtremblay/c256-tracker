@@ -448,19 +448,8 @@ RAD_PLAYNOTES
     PN_PLAY_NOTE
             LDA [RAD_PTN_DEST],Y  ; octave/note
             AND #$7F
-            BEQ SKIP_NOTE  ; if the note is 0, don't play anything.
-            CMP #$0F ; NOTE OFF
-            BEQ RAD_NOTE_OFF
-            
             JSR RAD_WRITE_OCT_NOTE
-            setal
-            PHY
-            JSR OPL2_GET_REG_OFFSET
-            JSL OPL2_PLAYNOTE
-            PLY
-            setas
             
-        SKIP_NOTE
             LDA [RAD_PTN_DEST],Y  ; bit 7 is bit 4 of the instrument number
             AND #$80
             LSR A
@@ -490,6 +479,19 @@ RAD_PLAYNOTES
             PLY
             
         SKIP_INSTRUMENT
+            LDA @lOPL2_NOTE
+            BEQ SKIP_NOTE  ; if the note is 0, don't play anything.
+            CMP #$0F ; NOTE OFF
+            BEQ RAD_NOTE_OFF
+            
+            setal
+            PHY
+            JSR OPL2_GET_REG_OFFSET
+            JSL OPL2_PLAYNOTE
+            PLY
+            setas
+            
+        SKIP_NOTE
             LDA #0
             XBA
             LDA [RAD_PTN_DEST],Y  ; instrument/effect
@@ -518,14 +520,14 @@ RAD_PLAYNOTES
 
 RAD_NOTE_OFF
             .as
-            TXA
+            LDA @lOPL2_CHANNEL
             CLC
             ADC #$B0
             STA OPL2_IND_ADDY_LL
             LDA #0
             STA [OPL2_IND_ADDY_LL]
             INY
-            INY
+            ;INY
             INY
             BRA PN_CONTINUE
             
@@ -691,7 +693,7 @@ RAD_WRITE_OCT_NOTE
             PHA
             PHA
             LDA @lOPL2_CHANNEL
-            ASL A
+            ASL A ; multiply the channel by 2 for the screen position
             TAY
             PLA
             JSR WRITE_HEX
@@ -707,47 +709,6 @@ RAD_WRITE_OCT_NOTE
             STA @lOPL2_NOTE
             PLY
             RTS
-
-
-RAD_PLAYNOTE_2
-              setas
-              LDA #$00
-              STA OPL2_PARAMETER0 ; Set Keyon False
-              JSL OPL2_SET_KEYON
-              ; Set Octave
-              LDA OPL2_NOTE    ;Divide Note/12
-              STA D0_OPERAND_A
-              LDA #$00
-              STA D0_OPERAND_A+1
-              STA D0_OPERAND_B+1
-              LDA #$0C
-              STA D0_OPERAND_B
-              CLC
-              LDA OPL2_OCTAVE
-              PHA
-              ADC D0_RESULT
-              STA OPL2_OCTAVE
-              JSL OPL2_SET_BLOCK  ; OPL2_SET_BLOCK Already to OPL2_OCTAVE
-              ; Now lets go pick the FNumber for the note we want
-              PLA
-              STA OPL2_OCTAVE
-              setal
-              CLC
-              LDA OPL2_NOTE
-              AND #$00FF
-              ADC D0_REMAINDER    ; Remainder of the Division Modulo
-              ASL A ;<<<<<<<<<<<<<<<<<<<<<<<<<
-              TAX
-              LDA @lnoteFNumbers,X
-              ADC D0_REMAINDER    ; Remainder of the Division Modulo
-              STA OPL2_PARAMETER0 ; Store the 16bit in Param OPL2_PARAMETER0 & OPL2_PARAMETER1
-              JSL OPL2_SET_FNUMBER
-              setas
-              LDA #$01
-              STA OPL2_PARAMETER0 ; Set Keyon False
-              JSL OPL2_SET_KEYON
-              setxl
-              RTS
 
 ;
 RAD_SETINSTRUMENT
@@ -903,14 +864,14 @@ PlayerInfo .dstruct PlayerVariables
 * = $178000
 RAD_FILE_TEMP
 ;.binary "RAD_Files/action.rad"  ; v1.0
-;.binary "RAD_Files/adlibsp.rad"  ; v1.0
+;.binary "RAD_Files/adlibsp.rad"  ; v1.0 - fav!
 ;.binary "RAD_Files/ALLOYRUN.rad"  ; v1.0
 ;.binary "RAD_Files/backlash.rad"  ; v1.0
 ;.binary "RAD_Files/cpw.rad"      ; v1.0
 ;.binary "RAD_Files/crystal2.rad"  ; v1.0
-;.binary "RAD_Files/island industrial.rad"  ; v1.0
-;.binary "RAD_Files/paybacktime tactics - a1.rad" ; v1.0
-.binary "RAD_Files/pipkasoft intro 2.rad"
+.binary "RAD_Files/island industrial.rad"  ; v1.0 - fun!
+;.binary "RAD_Files/paybacktime tactics-a1.rad" ; v1.0
+;.binary "RAD_Files/pipkasoft intro 2.rad"
 ;.binary "RAD_Files/sp2.rad"      ; v1.0
 ;.binary "RAD_Files/strange.rad"  ; v1.0
 ;.binary "RAD_Files/subwave.rad"  ; v1.0
