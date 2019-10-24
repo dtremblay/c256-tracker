@@ -622,6 +622,7 @@ RAD_EFFECT_VOLUME_SLIDE
 RAD_EFFECT_PATTERN_BREAK
             .as
             LDA [RAD_PTN_DEST],Y  ; effect parameter
+            DEC A ; DECREMENT by 1, because the next timer interrupt will increment at the beginning
             STA LINE_NUM_HEX
             LDA #0 ; convert the effect to a decimal line number
             STA @lLINE_NUM_DEC
