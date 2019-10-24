@@ -286,7 +286,16 @@ KB_NORM_SC
 SHIFT_KEY_ON    LDA @lScanCode_Shift_Set1, x
                 BRL KB_WR_2_SCREEN
 CTRL_KEY_ON     LDA @lScanCode_Ctrl_Set1, x
-                BRL KB_WR_2_SCREEN
+                BEQ KB_WR_2_SCREEN
+                CMP #2
+                BNE CONTINUE_KEY
+                ; load a file
+                ;JSR LOAD_FILE
+                RTS
+                
+        CONTINUE_KEY
+                BRA KB_WR_2_SCREEN
+                
 ALT_KEY_ON      LDA @lScanCode_Alt_Set1, x
                 BEQ KB_WR_2_SCREEN
                 ; turn channels on / off

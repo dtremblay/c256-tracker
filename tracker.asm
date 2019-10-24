@@ -1,6 +1,7 @@
 .cpu "65816"
 .include "macros_inc.asm"
 .include "bank_00_inc.asm"
+.include "io_def.asm"
 .include "super_io_def.asm"
 .include "vicky_def.asm"
 .include "interrupt_def.asm"
@@ -941,3 +942,4 @@ ORDERS    .fill 120, 0
 
 * = $1A0000
 .include "bpm.asm"
+;.include "SDOS.asm"

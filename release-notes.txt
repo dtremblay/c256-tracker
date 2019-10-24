@@ -1,3 +1,7 @@
+Version 0.1.3
+-------------
+Handling slide up and pattern break.
+
 Version 0.1.2
 -------------
 Now using a single 50Hz timer to update the display and play notes.

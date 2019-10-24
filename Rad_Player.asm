@@ -449,7 +449,6 @@ RAD_PLAYNOTES
             LDA [RAD_PTN_DEST],Y  ; octave/note
             AND #$7F
             JSR RAD_WRITE_OCT_NOTE
-            
             LDA [RAD_PTN_DEST],Y  ; bit 7 is bit 4 of the instrument number
             AND #$80
             LSR A
@@ -499,9 +498,7 @@ RAD_PLAYNOTES
             AND #$F
             BEQ SKIP_EFFECT
             ASL A ; double bytes
-            ; we don't do anything with the effect
             TAX
-            
             JSR (RAD_EFFECT_TABLE,X)
         SKIP_EFFECT
             INY
@@ -554,12 +551,83 @@ RAD_EFFECT_TABLE
 ; ******************************************************
 RAD_NOOP
 RAD_EFFECT_NONE
-RAD_EFFECT_NOTE_SLIDE_UP
 RAD_EFFECT_NOTE_SLIDE_TO
 RAD_EFFECT_NOTE_SLIDE_VOLUME
+            .as
+            RTS
+            
 RAD_EFFECT_VOLUME_SLIDE
+            .as
+            PHY
+            
+            LDA [RAD_PTN_DEST],Y ; store value of the effect in RAD_CHANNE_EFFCT
+            STA RAD_CHANNE_EFFCT
+            
+            setal
+            LDA #<>OPL2_S_BASE
+            STA OPL2_IND_ADDY_LL
+            LDA #`OPL2_S_BASE
+            STA OPL2_IND_ADDY_LL + 2
+            setaxs
+            
+            ; READ the current volume, offset $40, 00 is loud, 63 is
+            LDA OPL2_CHANNEL
+            TAX
+            LDA @lregisterOffsets_operator0,X
+            CLC
+            ADC #$40
+            TAY
+            
+            ; first operator
+            LDA [OPL2_IND_ADDY_LL],Y ; volume
+            PHA
+            AND #$3F
+            CLC
+            ADC RAD_CHANNE_EFFCT ; check for values greater than 50
+            CMP #$40 ; if there's an overflow, use #$3F (low volume)
+            BCC NO_OVERFLOW_0
+            LDA #$3F
+    NO_OVERFLOW_0
+            AND #$3F
+            STA RAD_TEMP
+            PLA 
+            AND #$C0
+            ORA RAD_TEMP
+            STA [OPL2_IND_ADDY_LL],Y
+            INY
+            INY
+            INY
+            
+            ; second operator
+            LDA [OPL2_IND_ADDY_LL],Y ; volume
+            PHA
+            AND #$3F
+            CLC
+            ADC RAD_CHANNE_EFFCT
+            CMP #$40 ; if there's an overflow, use #$3F (low volume)
+            BCC NO_OVERFLOW_1
+            LDA #$3F
+    NO_OVERFLOW_1
+            AND #$3F
+            STA RAD_TEMP
+            PLA 
+            AND #$C0
+            ORA RAD_TEMP
+            STA [OPL2_IND_ADDY_LL],Y
+            
+            setxl
+            PLY
+            RTS
+            
 RAD_EFFECT_PATTERN_BREAK
             .as
+            LDA [RAD_PTN_DEST],Y  ; effect parameter
+            STA LINE_NUM_HEX
+            LDA #0 ; convert the effect to a decimal line number
+            STA @lLINE_NUM_DEC
+            JSR INCREMENT_ORDER
+            PLY ; don't return to the calling method, return to the parent
+            PLY
             RTS
 
 RAD_EFFECT_SET_SPEED
@@ -573,9 +641,12 @@ RAD_EFFECT_SET_SPEED
 ; ******************************************************
 ; * Y contains the pointer to the effect parameter
 ; ******************************************************
+RAD_EFFECT_NOTE_SLIDE_UP
 RAD_EFFECT_NOTE_SLIDE_DOWN
             .as
             PHY
+            LSR
+            STA RAD_EFFECT ; 1 slide down, 2 slide up
             
             LDA [RAD_PTN_DEST],Y ; store value of the effect in RAD_CHANNE_EFFCT
             STA RAD_CHANNE_EFFCT
@@ -592,20 +663,20 @@ RAD_EFFECT_NOTE_SLIDE_DOWN
             ADC #$A0
             TAY
             
-            LDA [OPL2_IND_ADDY_LL],Y
+            LDA [OPL2_IND_ADDY_LL],Y ; read low fnumber byte
             setxl
             TYX
             LDY #128 + 10
             JSR WRITE_HEX
             TXY
             setxs
-            PHA ; store A on the stack
+        PHA ; store A on the stack
             TYA
             CLC
             ADC #$10
             TAY
             
-            LDA [OPL2_IND_ADDY_LL],Y
+            LDA [OPL2_IND_ADDY_LL],Y ; read bits 0,1 of high fnumber
             STA RAD_TEMP  ; store the entire value of $B0
             setxl
             TYX
@@ -613,19 +684,36 @@ RAD_EFFECT_NOTE_SLIDE_DOWN
             JSR WRITE_HEX
             
             AND #3
-            
-            
             LDY #128 + 8
             JSR WRITE_HEX
             TXY
-            setxs
+            
             XBA
-            PLA
+        PLA ; A is now the FNUMBER
+            TAX ; X is now the FNUMBER
+            
+            ; if effect is 1, then decrease fnumber, otherwise, increase
+            LDA RAD_EFFECT
+            BIT #2
+            BEQ SLIDE_UP
+            
             setal
+            TXA
             SEC
             SBC RAD_CHANNE_EFFCT  ; substract the effect parameter
             setas
+            BRA FINISH_SLIDE
+    
+    SLIDE_UP
+            setal
+            TXA
+            CLC
+            ADC RAD_CHANNE_EFFCT  ; substract the effect parameter
+            setas
+            
+    FINISH_SLIDE
             ; now store the value back into fnumber
+            setxs
             XBA
             AND #3
             ORA RAD_TEMP
@@ -696,8 +784,10 @@ RAD_WRITE_OCT_NOTE
             ASL A ; multiply the channel by 2 for the screen position
             TAY
             PLA
+            BEQ DONT_DISPLAY_00
             JSR WRITE_HEX
             
+    DONT_DISPLAY_00
             AND #$70 ; octave
             LSR
             LSR
@@ -865,7 +955,7 @@ PlayerInfo .dstruct PlayerVariables
 RAD_FILE_TEMP
 ;.binary "RAD_Files/action.rad"  ; v1.0
 ;.binary "RAD_Files/adlibsp.rad"  ; v1.0 - fav!
-;.binary "RAD_Files/ALLOYRUN.rad"  ; v1.0
+;.binary "RAD_Files/ALLOYRUN.RAD"  ; v1.0
 ;.binary "RAD_Files/backlash.rad"  ; v1.0
 ;.binary "RAD_Files/cpw.rad"      ; v1.0
 ;.binary "RAD_Files/crystal2.rad"  ; v1.0
