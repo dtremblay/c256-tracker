@@ -290,7 +290,7 @@ CTRL_KEY_ON     LDA @lScanCode_Ctrl_Set1, x
                 CMP #2
                 BNE CONTINUE_KEY
                 ; load a file
-                ;JSR LOAD_FILE
+                JSL LOAD_FILE
                 RTS
                 
         CONTINUE_KEY

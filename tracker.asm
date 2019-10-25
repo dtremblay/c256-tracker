@@ -21,6 +21,7 @@ TICK            .byte 0  ; this is used to count the number of 1/60 intervals
 BPM             .byte 125; how fast should the lines change - 
 PATTERN_NUM     .byte 1  ; pattern being displayed/played
 LINE_NUM_DEC    .byte 1  ; line being display/played
+LOAD_SCREEN     .byte 1  ; if the load screen is open, this is set to 1.
 ORDER_EDITOR_SCR = 128 * 7 + 53
 PTRN_EDITOR_SCR  = 128 * 27 + 4
 
@@ -917,13 +918,15 @@ SCAN_TO_NOTE    .text $80, $80, $80, $31, $33, $80, $36, $38, $3A, $80, $41, $80
                 .text $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80, $80
                 
 MIDI_COMMAND_TABLE
-                 .word <>NOTE_OFF, <>NOTE_ON
-                 .word <>POLY_PRESSURE, <>CONTROL_CHANGE
-                 .word <>PROGRAM_CHANGE, <>CHANNEL_PRESSURE  ; these two command expect 1 datat byte only - no running status
-                 .word <>PITCH_BEND, <>SYSTEM_COMMAND
-                 .word <>INVALID_COMMAND
+                .word <>NOTE_OFF, <>NOTE_ON
+                .word <>POLY_PRESSURE, <>CONTROL_CHANGE
+                .word <>PROGRAM_CHANGE, <>CHANNEL_PRESSURE  ; these two command expect 1 datat byte only - no running status
+                .word <>PITCH_BEND, <>SYSTEM_COMMAND
+                .word <>INVALID_COMMAND
                  
+.include "file_load.asm"
 .include "Rad_Player.asm"
+
 
 * = $190000 ; pattern memory - reserving memory is kind of inefficient, but it's easier right now
 PATTERN_BYTES = 1793
