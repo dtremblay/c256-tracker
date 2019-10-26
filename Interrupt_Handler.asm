@@ -89,10 +89,18 @@ IRQ_HANDLER_FETCH
                 LDY #70
                 JSR WRITE_HEX  ; print the HEX key code at column 70 on the top line
 
+                CMP #1          ; ESC
+                BNE NOT_ESCAPE
+                LDA LOAD_SCREEN
+                BEQ NOT_ESCAPE
+                JSL EXIT_FILE
+                JMP KB_WR_2_SCREEN
+                
+NOT_ESCAPE
                 CMP #$1A        ; left bracket
                 BNE NOT_LEFT_BRACKET
                 DEC INSTR_NUMBER
-                JSR LOAD_INSTRUMENT  ; X is already set to 0
+                JSL LOAD_INSTRUMENT  ; X is already set to 0
                 JMP KB_WR_2_SCREEN
                 
 NOT_LEFT_BRACKET
@@ -290,8 +298,9 @@ CTRL_KEY_ON     LDA @lScanCode_Ctrl_Set1, x
                 CMP #2
                 BNE CONTINUE_KEY
                 ; load a file
+                LDA LOAD_SCREEN
+                BNE CONTINUE_KEY
                 JSL LOAD_FILE
-                RTS
                 
         CONTINUE_KEY
                 BRA KB_WR_2_SCREEN

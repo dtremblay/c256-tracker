@@ -9,6 +9,8 @@
 MOUSE_BUTTONS_REG= $180F00 ; bit 2=middle, bit 1=right, bit 0=left
 INSTR_REC_LEN    = INSTRUMENT_BAGPIPE1 - INSTRUMENT_ACCORDN
 FIFTY_HZ_COUNT   = 286360
+SCRN_COPY        = $001000
+SCRN_COPY_CLR    = $001000 + 800
 
 * = MOUSE_BUTTONS_REG
                 .byte 0
@@ -21,7 +23,10 @@ TICK            .byte 0  ; this is used to count the number of 1/60 intervals
 BPM             .byte 125; how fast should the lines change - 
 PATTERN_NUM     .byte 1  ; pattern being displayed/played
 LINE_NUM_DEC    .byte 1  ; line being display/played
-LOAD_SCREEN     .byte 1  ; if the load screen is open, this is set to 1.
+LOAD_SCREEN     .byte 0  ; if the load screen is open, this is set to 1.
+LINE_COPY       = $80
+CHAR_COPY       = $81
+
 ORDER_EDITOR_SCR = 128 * 7 + 53
 PTRN_EDITOR_SCR  = 128 * 27 + 4
 
