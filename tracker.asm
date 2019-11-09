@@ -208,6 +208,8 @@ RESET_STATE_MACHINE
                 LDA #0
                 STA STATE_MACHINE
                 STA RAD_ORDER_NUM
+                STA LOAD_SCREEN
+                
                 STZ LINE_NUM_HEX
                 STZ RAD_ORDER_NUM + 1
                 
@@ -950,4 +952,4 @@ ORDERS    .fill 120, 0
 
 * = $1A0000
 .include "bpm.asm"
-;.include "SDOS.asm"
+.include "SDOS.asm"

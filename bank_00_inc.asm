@@ -157,7 +157,9 @@ D1_RESULT        = $00011C ;2 Bytes Quotient result of A/B ex: 7/2 = 3 r 1
 D1_REMAINDER     = $00011E ;2 Bytes Remainder of A/B ex: 1 in 7/2=3 r 1
 
 ; Reserved
-ADDER_SIGNED_32  = $000120 ; The 32 Bit Adders takes 12Byte that are NOT RAM Location
+ADDER_A          = $000120 ; 4 bytes (32 bit) Accumulator A
+ADDER_B          = $000124 ; 4 bytes (32 bit) Accumulator B
+ADDER_R          = $000128 ; 4 bytes (32 bit) Result
 ; Reserved
 INT_CONTROLLER   = $000140 ; $000140...$00015F Interrupt Controller
 

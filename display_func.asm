@@ -822,3 +822,48 @@ DISPLAY_ACTIVE_CHANNELS
                 DEX 
                 BNE DAC_LOOP
                 RTS
+                
+; ************************************************************************
+; * Accumulator contains the character to display.
+; * Address CURSORX contains the position to write to.
+; ************************************************************************
+DISPLAY_CHAR
+                .as
+                .xl
+                LDY CURSORX
+                STA [SCREENBEGIN],Y
+                INY
+                STY CURSORX
+                RTL
+
+DISPLAY_NEXT_LINE
+                .as
+                .xl
+                setal
+                LDA CURSORX
+                AND #$FF80   ; lines are $0, $80, etc
+                CLC
+                ADC #32     ; offset to the file box
+                STA CURSORX
+                setas
+                RTL
+                
+; ****************************************************
+; * X contains the address of the message in the bank
+; ****************************************************
+DISPLAY_MSG
+                .as
+                .xl
+                PHB
+                .setdbr `<sd_card_dir_string
+    MSG_LOOP
+                LDA $0,b,x      ; read from the string
+                BEQ MSG_DONE
+                JSL DISPLAY_CHAR
+                INX
+                BRA MSG_LOOP
+    MSG_DONE    JSR DISPLAY_NEXT_LINE
+                
+                PLB
+                
+                RTL

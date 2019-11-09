@@ -1,3 +1,7 @@
+Version 0.1.5
+-------------
+Load files from SD Card.
+
 Version 0.1.4
 -------------
 Handling slide up and pattern break.

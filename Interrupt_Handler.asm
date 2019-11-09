@@ -76,7 +76,8 @@ EXIT_IRQ_HANDLE
 ;
 ; ****************************************************************
 ; ****************************************************************
-; * Todo: rewrite this to use indirect or indexed jumps
+; * Todo: Rewrite this to use indirect or indexed jumps.
+; *       This is otherwise impossible to read.
 KEYBOARD_INTERRUPT
                 .as
                 ldx #$0000
@@ -298,7 +299,7 @@ CTRL_KEY_ON     LDA @lScanCode_Ctrl_Set1, x
                 CMP #2
                 BNE CONTINUE_KEY
                 ; load a file
-                LDA LOAD_SCREEN
+                LDA LOAD_SCREEN  ; check if the load file screen is already opened
                 BNE CONTINUE_KEY
                 JSL LOAD_FILE
                 

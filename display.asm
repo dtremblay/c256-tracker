@@ -17,7 +17,7 @@ line3     .byte $c2
           .fill (SCREEN_WIDTH - 40) / 2, 0
           .text 'C256 Foenix Tracker' ; 19 characters
           .fill 4, 0
-          .text '[Version 0.1.3]' ; 15 characters
+          .text '[Version 0.1.5]' ; 15 characters
           .fill (SCREEN_WIDTH - 40) / 2, 0
           .byte $c2
           .fill UNUSED_SCR, 0
@@ -536,6 +536,21 @@ MOUSE_POINTER_PTR     .text $00,$01,$01,$00,$00,$00,$00,$00,$01,$01,$01,$00,$00,
                       .text $00,$00,$00,$00,$00,$00,$00,$00,$01,$55,$55,$01,$00,$00,$00,$00
                       .text $00,$00,$00,$00,$00,$00,$00,$00,$00,$01,$01,$00,$00,$00,$00,$00
                       .text $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+                      
+FILE_LOAD_SCREEN  ; 20 x 40 array
+        .byte $D5
+        .fill 18, $C3
+        .byte $C9
+    FL_ROW
+      .rept 38
+        .byte $c2
+        .fill 18, 0
+        .byte $c2
+      .next
+    FL_END
+       .byte $ca
+       .fill 18, $C3  
+       .byte $cb
 
 ; when the arrow keys are used to navigate on screen
 FIELD_ORDER     .word 6 * 128 + 8

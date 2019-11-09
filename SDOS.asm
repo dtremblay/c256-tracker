@@ -3,7 +3,6 @@
 ; SD Card OS
 ;SDOS.asm
 ;Jump Table
-* = $192000
 .include "ch376s_inc.asm"
 
 ; Low-Level Command for the SD Card OS
@@ -29,7 +28,7 @@ SDOS_EXEC     JML ISDOS_EXEC
 ; Affects:
 ;   None
 ISDOS_INIT    setas
-              LDA @lINT_PENDING_REG1  ; Read the Pending Register &
+              LDA @lINT_PENDING_REG1    ; Read the Pending Register &
               AND #~FNX1_INT07_SDCARD   ; Enable
               STA @lINT_PENDING_REG1
 
@@ -58,7 +57,7 @@ ISDOS_INIT    setas
               LDA #$03            ; Mode 3 - SDCARD
               STA SDCARD_DATA     ; Write the MODE and Wait for around ~10us
 
-ISDOS_WAIT_FOR_MODE_SW
+    ISDOS_WAIT_FOR_MODE_SW
               JSR DLYDTA_2_DTA ; Wait 0.6us
               LDA SDCARD_DATA
               CMP #$51   ; CMD_RET_SUCCESS		EQU		051H, CMD_RET_ABORT		EQU		05FH
@@ -68,14 +67,13 @@ ISDOS_WAIT_FOR_MODE_SW
               RTL
 
 ;////////////////////////////////////////////////////////
-; ISDOS_MOUNT_CARD
-; Check to see if Card exist, then Mount the SDCArd
+; ISDOS_DIR
+;   Upon the Call of this Routine Display the Files on the SDCARD
 ; Inputs:
 ;   Pointer to the ASCII File name by
 ; Located @ $000030..$000032 - SDCARD_FLNMPTR_L
 ; Affects:
 ;   None
-; Upon the Call of this Routine Display the Files on the SDCARD
 ISDOS_DIR
               setas
               setxl
@@ -84,7 +82,7 @@ ISDOS_DIR
 ;              BEQ NO_SDCARD_PRESENT     ; No SD Card Present
               ; Transfer the "/*\0" String
               LDX #$0000
-ISDOS_DIR_TRF
+    ISDOS_DIR_TRF
               LDA sd_card_dir_string,X    ; /
               STA @lSDOS_FILE_NAME,X
               INX
@@ -95,11 +93,11 @@ ISDOS_DIR_TRF
               CMP #CH376S_STAT_DSK_RD
               BEQ ISDOS_DIR_CONT0
               BRL ISDOS_MISS_FILE
-ISDOS_DIR_CONT0
+    ISDOS_DIR_CONT0
 
 ;              LDX #<>sd_card_msg4         ; Print Screen the Message "FILE OPENED";
-;              JSL IPRINT       ; print the first line
-ISDOS_NEXT_ENTRY
+;              JSL DISPLAY_MSG       ; print the first line
+    ISDOS_NEXT_ENTRY
               LDA #CH_CMD_RD_DATA0
               STA SDCARD_CMD
               JSR DLYCMD_2_DTA;
@@ -108,39 +106,39 @@ ISDOS_NEXT_ENTRY
               LDX #$0000
               TAY              ; GET Size (Save in Case we need it)
 ;#1 Display File Name @ Empty the buffer, since we don't need info for now.
-ISDOS_DIR_GET_CHAR
+    ISDOS_DIR_GET_CHAR
               JSR DLYDTA_2_DTA ; Wait 0.6us
               LDA SDCARD_DATA  ;
-              JSL IPUTC        ; Print the character
+              JSL DISPLAY_CHAR        ; Print the character
               INX
               CPX #$0008
               BNE ISDOS_DIR_CONT1
               JSR ISDOS_DISPLAY_DOT
-ISDOS_DIR_CONT1
-              CPX #$000B          ; the First 11th Character is the file name
+    ISDOS_DIR_CONT1
+              CPX #$000B       ; the First 11th Character is the file name
               BNE ISDOS_DIR_GET_CHAR
               LDA #$20
-              JSL IPUTC        ; Print the character
+              JSL DISPLAY_CHAR        ; Print the character
               LDA #'('
-              JSL IPUTC        ; Print the character
+              JSL DISPLAY_CHAR        ; Print the character
               LDA SDCARD_DATA  ;
               AND #$10
               CMP #$10
               BEQ ISDOS_DIR_ATTR0
               LDA #'F'
               BRA ISDOS_DIR_ATTR1
-ISDOS_DIR_ATTR0
+    ISDOS_DIR_ATTR0
               LDA #'D'
-ISDOS_DIR_ATTR1
-              JSL IPUTC        ; Print the character
+    ISDOS_DIR_ATTR1
+              JSL DISPLAY_CHAR        ; Print the character
               LDA #')'
-              JSL IPUTC        ; Print the character
-              LDA #$0D         ; Carriage Return
-              JSL IPUTC        ; Print the character
-ISDOS_DIR_GET_CHAR_FINISH
+              JSL DISPLAY_CHAR        ; Print the character
+              
+              JSL DISPLAY_NEXT_LINE   ; Print the character
+    ISDOS_DIR_GET_CHAR_FINISH
               JSR DLYDTA_2_DTA ; Wait 0.6us
               LDA SDCARD_DATA  ; After the name Just empty the buffer
-;             JSL IPUTC        ; Print the character
+;             JSL DISPLAY_CHAR        ; Print the character
               INX
               CPX #$0020
               BNE ISDOS_DIR_GET_CHAR_FINISH
@@ -155,22 +153,28 @@ ISDOS_DIR_GET_CHAR_FINISH
               BNE  ISDOS_MISS_FILE
               LDX #<>sd_card_msg5   ; End of File
               BRL ISDOS_DIR_DONE
-ISDOS_MISS_FILE
+    ISDOS_MISS_FILE
               LDX #<>sd_card_err0
               BRL ISDOS_DIR_DONE
-NO_SDCARD_PRESENT
+    NO_SDCARD_PRESENT
               LDX #<>sd_no_card_msg
-ISDOS_DIR_DONE
-              JSL IPRINT       ; print the first line
+    ISDOS_DIR_DONE
+              JSL DISPLAY_MSG       ; print the first line
               JSR SDOS_FILE_CLOSE
               ; There should be an Error Code Displayed here...
-              RTL;
+              RTL
+
+; *******************************************************************
+; * Display a dot '.'
+; *******************************************************************
 ISDOS_DISPLAY_DOT
               LDA #'.'
-              JSL IPUTC        ; Print the character
-              RTS;
+              JSL DISPLAY_CHAR        ; Print the character
+              RTS
+
 ; Upon the Call of this Routine will Change the pointer to a new Sub-Directory
 ISDOS_CHDIR   BRK;
+
 ;/////////////////////////////////////////////////////////
 ;////////////////////////////////////////////////////////
 ; ISDOS_LOAD
@@ -192,7 +196,7 @@ ISDOS_EXEC    BRK;
 ;/////////////////////////////////////////////////////////
 ;////////////////////////////////////////////////////////
 ; ISDOS_MOUNT_CARD
-; Check to see if Card exist, then Mount the SDCArd
+; Check to see if Card exist, then Mount the SD Card
 ; Inputs:
 ;   Pointer to the ASCII File name by
 ; Located @ $000030..$000032 - SDCARD_FLNMPTR_L
@@ -203,8 +207,8 @@ ISDOS_MOUNT_CARD
 ;              JSR ISDOS_CHK_CD            ; Check to See if a Card is present
 ;              BCC ISDOS_NO_CARD           ;
               setxl
-              ;LDX #<>sd_card_msg1         ; Print Screen the Message "Card Detected"
-              ;JSL IPRINT       ; print the first line
+;              LDX #<>sd_card_msg1         ; Print Screen the Message "Card Detected"
+;              JSL DISPLAY_MSG       ; print the first line
 ;              LDA SDCARD_PRSNT_MNT        ; Load Presence Status
 ;              AND #$05
 ;              CMP #$05
@@ -212,7 +216,7 @@ ISDOS_MOUNT_CARD
               LDY #$0000
               LDA #$01
               STA SDCARD_PRSNT_MNT        ; Bit[0] = Card Present
-TRY_MOUNT_AGAIN
+    TRY_MOUNT_AGAIN
               LDA #CH_CMD_DISK_MOUNT      ; If Present, go Mount it.
               STA SDCARD_CMD              ;
               JSR SDCARD_WAIT_4_INT       ;
@@ -222,21 +226,22 @@ TRY_MOUNT_AGAIN
               CPY #$0005
               BNE TRY_MOUNT_AGAIN
               JMP SDCARD_ERROR_MOUNT
-ISDOS_MOUNTED ; The Card is already mounted
+    ISDOS_MOUNTED ; The Card is already mounted
 ;              LDX #<>sd_card_msg2         ; Print Screen the Message "Card Detected"
-;              JSL IPRINT       ; print the first line
+;              JSL DISPLAY_MSG       ; print the first line
 
               LDA SDCARD_PRSNT_MNT
               AND #~SDCARD_PRSNT_MNTED
               ORA #SDCARD_PRSNT_MNTED     ; Set Bit to Indicate that is mounted
               RTS
 
-SDCARD_ERROR_MOUNT
+    SDCARD_ERROR_MOUNT
               LDX #<>sd_card_msg3         ; Print Screen the Message "Card Detected"
-              JSL IPRINT       ; print the first line
+              JSL DISPLAY_MSG       ; print the first line
               RTS
 
-ISDOS_NO_CARD LDA #SDCARD_PRSNT_NO_CARD
+    ISDOS_NO_CARD 
+              LDA #SDCARD_PRSNT_NO_CARD
               STA SDCARD_PRSNT_MNT
               RTS
 
@@ -265,6 +270,7 @@ SDOS_FILE_CLOSE
               STA SDCARD_DATA         ; Store into the Data Register of the CH376s
               JSR SDCARD_WAIT_4_INT   ; A Interrupt is Generated, so go polling it
               RTS
+
 ; SDOS_SET_FILE_NAME
 ; Set the Filename to the Controller CH376D
 ; Inputs:
@@ -276,7 +282,7 @@ SDOS_SET_FILE_NAME
               STA SDCARD_CMD
               JSR DLYCMD_2_DTA
               LDX #$0000
-SDOS_SET_FILE_LOOP
+    SDOS_SET_FILE_LOOP
               LDA @lSDOS_FILE_NAME, X   ; This is where the FileName ought to be.
               STA SDCARD_DATA         ; Store into the Data Register of the CH376s
               JSR DLYDTA_2_DTA
@@ -362,7 +368,8 @@ ISDOS_CHK_CD  setas
               CMP #$01
               BEQ SDCD_NOT_PRST;
               SEC
-SDCD_NOT_PRST RTS
+    SDCD_NOT_PRST 
+              RTS
 ;
 ; ISDOS_CHK_WP
 ; Return the Value of WP Card Present Status
@@ -376,36 +383,38 @@ ISDOS_CHK_WP  setas
               AND #$02
               BNE SDCD_NOT_WP;
               SEC
-SDCD_NOT_WP   RTS
+    SDCD_NOT_WP   
+              RTS
 
 ISDOS_GET_FILE_SIZE
               setas
               LDA #CH_CMD_RD_VAR32
               STA SDCARD_CMD;
-              JSR DLYCMD_2_DTA;   ; 3us Delay to get the Value Return
+              JSR DLYCMD_2_DTA   ;    ; 3us Delay to get the Value Return
               LDA #CH_VAR_FILE_SIZE
               STA SDCARD_DATA;
               JSR DLYCMD_2_DTA
               LDA SDCARD_DATA         ;LSB First
               STA @lSDOS_FILE_SIZE+0
-              STA @lADDER32_A_LL;     ; Store in ADDER32 REgister A
+              STA @lADDER_A     ;     ; Store in ADDER32 REgister A
               JSR DLYDTA_2_DTA
               LDA SDCARD_DATA
               STA @lSDOS_FILE_SIZE+1
-              STA @lADDER32_A_LH;     ; Store in ADDER32 REgister A
+              STA @lADDER_A+1   ;     ; Store in ADDER32 REgister A
               JSR DLYDTA_2_DTA
               LDA SDCARD_DATA
               STA @lSDOS_FILE_SIZE+2
-              STA @lADDER32_A_HL;     ; Store in ADDER32 REgister A
+              STA @lADDER_A+2   ;     ; Store in ADDER32 REgister A
               JSR DLYDTA_2_DTA
               LDA SDCARD_DATA
               STA @lSDOS_FILE_SIZE+3   ;MSB Last
-              STA @lADDER32_A_HH;     ; Store in ADDER32 REgister A
+              STA @lADDER_A+3   ;     ; Store in ADDER32 REgister A
               JSR DLYDTA_2_DTA
-              LDA @lADDER32_R_LL;
-              LDA @lADDER32_R_LH;
-              LDA @lADDER32_R_HL;
-              LDA @lADDER32_R_HH;
+              ; it appears that the value is not read...
+              LDA @lADDER_R     ;
+              LDA @lADDER_R+1   ;
+              LDA @lADDER_R+2   ;
+              LDA @lADDER_R+3   ;
               RTS
 
 
@@ -428,10 +437,10 @@ SDOS_READ_FILE
               CMP #CH376S_STAT_SUCCESS ; if the file open successfully, let's go on.
               BEQ SDOS_READ_FILE_KEEP_GOING
               BRL SDOS_READ_END
-SDOS_READ_FILE_KEEP_GOING
+    SDOS_READ_FILE_KEEP_GOING
               ; Then go read the file
               LDX #<>sd_card_msg6         ; Print Screen the Message "FILE FOUND, LOADING..."
-              JSL IPRINT       ; print the first line
+              JSL DISPLAY_MSG       ; print the first line
               ;
               JSR ISDOS_GET_FILE_SIZE   ; Get the File Size in 32Bits
               setal
@@ -457,7 +466,7 @@ SDOS_READ_FILE_GO_FETCH_A_NEW_64KBlock
               CMP #CH376S_STAT_DSK_RD ;
               BEQ SDOS_READ_FILE_GO_FETCH_A_NEW_BLOCK
               BRL SDOS_READ_END
-SDOS_READ_FILE_GO_FETCH_A_NEW_BLOCK
+    SDOS_READ_FILE_GO_FETCH_A_NEW_BLOCK
               ; Go Read 1 Block and Store it @ ($00:0030)
               JSR SDOS_READ_BLOCK
               LDA #CH_CMD_BYTE_RD_GO
@@ -468,16 +477,16 @@ SDOS_READ_FILE_GO_FETCH_A_NEW_BLOCK
               BNE SDOS_READ_PROC_DONE
               JSR SDOS_ADJUST_POINTER  ; Go Adjust the Address
               BRA SDOS_READ_FILE_GO_FETCH_A_NEW_BLOCK
-SDOS_READ_PROC_DONE
+    SDOS_READ_PROC_DONE
               setal
               LDA @lSDOS_BYTE_NUMBER  ; Load the Previously number of Byte
               CMP #$FFFF
-              BNE SDOS_READ_DONE1                  ; if it equal 64K, then the file is bugger than 64K
+              BNE SDOS_READ_DONE1                  ; if it equal 64K, then the file is bigger than 64K
               ; Now let's go compute the Nu Value for the Next Batch
-              LDA @lADDER32_R_LL
-              STA @lADDER32_A_LL
-              LDA @lADDER32_R_HL
-              STA @lADDER32_A_HL
+              LDA @lADDER_R
+              STA @lADDER_A
+              LDA @lADDER_R+2
+              STA @lADDER_A+2
               JSR SDOS_SETUP_CH376S_BUFFER_SIZE ;
               JSR SDOS_COMPUTE_LOCATE_POINTER
               setas
@@ -490,15 +499,15 @@ SDOS_READ_PROC_DONE
 ;SDOS_READ_DONE
 ;              CMP #CH376S_STAT_SUCCESS
 ;              BNE SDOS_READ_END
-SDOS_READ_DONE1
+    SDOS_READ_DONE1
               LDA #$00
               LDX #<>sd_card_msg7         ; Print Screen the Message "FILE LOADED"
               BRA SDOS_READ_PROC_DONE1
-SDOS_READ_END
+    SDOS_READ_END
               LDA #$FF
               LDX #<>sd_card_err1         ;"ERROR LOADING FILE"
-SDOS_READ_PROC_DONE1
-              JSL IPRINT       ; print the first line
+    SDOS_READ_PROC_DONE1
+              JSL DISPLAY_MSG       ; print the first line
               RTS;
 
 SDOS_ADJUST_POINTER
@@ -511,7 +520,7 @@ SDOS_ADJUST_POINTER
               LDA SDCARD_FILE_PTR+2;
               ADC #$00          ; This is just add up the Carry
               STA SDCARD_FILE_PTR+2;
-SDOS_ADJ_DONE
+    SDOS_ADJ_DONE
               RTS
 
 SDOS_BYTE_LOCATE  ; Reposition the Pointer of the CH376S when the File is > 64K
@@ -531,6 +540,7 @@ SDOS_BYTE_LOCATE  ; Reposition the Pointer of the CH376S when the File is > 64K
               LDA @lSDOS_BYTE_PTR+3
               STA SDCARD_DATA
               RTS
+
 ; This will increment the pointer for the CH376S
 SDOS_COMPUTE_LOCATE_POINTER
               setal
@@ -542,36 +552,39 @@ SDOS_COMPUTE_LOCATE_POINTER
               ADC #$0000          ; this is to Add the Carry
               STA @lSDOS_BYTE_PTR+2
               RTS
+
 ; Load Register B of the 32Bit Adder with the Value -65535 (size of the CH376S Buffer)
 SDOS_SETUP_ADDER_B
               setal
               LDA #$0001
-              STA @lADDER32_B_LL
+              STA @lADDER_B
               LDA #$FFFF
-              STA @lADDER32_B_HL
+              STA @lADDER_B+2
               RTS
+
 ; Load Register A with the Size of the File
 SDOS_LOAD_ADDER_A_WITH_SIZE
               setal
               LDA @lSDOS_FILE_SIZE;
-              STA @lADDER32_A_LL;
+              STA @lADDER_A ;
               LDA @lSDOS_FILE_SIZE+2;
-              STA @lADDER32_A_HL;
+              STA @lADDER_A+2;
               RTS
 
 SDOS_SETUP_CH376S_BUFFER_SIZE
               setal
-              LDA  @lADDER32_R_HL
+              LDA  @lADDER_R+2
               AND #$8000          ; Check if it is negative
               CMP #$8000          ; if it is then just put the Size of the file in ByteNumber
               BEQ SDOS_SETUP_SMALLR_THAN64K
               LDA #$FFFF
               STA @lSDOS_BYTE_NUMBER
               RTS
-SDOS_SETUP_SMALLR_THAN64K
-              LDA @lADDER32_A_LL
+    SDOS_SETUP_SMALLR_THAN64K
+              LDA @lADDER_A
               STA @lSDOS_BYTE_NUMBER
               RTS
+
 ; SDOS_READ_BLOCK (A needs to be short)
 ; Read a Block of Data from Controller
 ; Inputs:
@@ -590,14 +603,14 @@ SDOS_READ_BLOCK
               STA SDCARD_BYTE_NUM  ; Store the Number of byte to be read
               JSR DLYDTA_2_DTA;   ; 3us Delay to get the Value Return
               LDY #$0000
-SDOS_READ_MORE
+    SDOS_READ_MORE
               LDA SDCARD_DATA
               STA [SDCARD_FILE_PTR], Y        ; Store Block Data Sector Begin
               INY
               CPY SDCARD_BYTE_NUM
               BNE SDOS_READ_MORE
 ;              LDA #'.'
-;              JSL IPUTC        ; Print the character
+;              JSL DISPLAY_CHAR        ; Print the character
               LDA SDCARD_BYTE_NUM  ; Reload the Number of Byte Read
               RTS
 ;
