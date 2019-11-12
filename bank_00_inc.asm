@@ -249,15 +249,19 @@ BLOCK_BANK       = $000311 ;1 Byte  (temp) Bank of block being loaded
 BLOCK_COUNT      = $000312 ;2 Bytes (temp) Counter of bytes read as file is loaded
 
 ; $00:0320 to $00:06FF - Reserved for CH376S SDCard Controller
-SDOS_BLOCK_BEGIN = $000320 ;
-SDOS_LOAD_ADDY   = $000324 ; 4 Bytes (Uses 3 Only)
+SDOS_LINE_SELECT = $000320 ;
+
+; TODO - Fix the following - do we really need them?
 SDOS_FILE_SIZE   = $000328 ;
 SDOS_BYTE_NUMBER = $00032C ; Number of Byte to Read or Write before changing the Pointer
-SDOS_REG_WR32_AD = $000330 ; 4 Bytes (Used to read and Write Values in/from CH376S)
+
 SDOS_BYTE_PTR    = $000334
 SDOS_FILE_NAME   = $000380 ; // Max of 128 Chars
-SDOS_BLK_BEGIN   = $000400 ; 512 Bytes to Store SD Card Incoming or Outcoming Block
-SDOS_BLK_END     = $0006FF ;
+
+
+
+* = $700
+current_fat_record .dstruct fatrec
 
 ; COMMAND PARSER Variables
 ; Command Parser Stuff between $000F00 -> $000F84 (see CMD_Parser.asm)

@@ -1,6 +1,6 @@
 Version 0.1.5
 -------------
-Load files from SD Card.
+Load file names from SD Card and display in a selection box.
 
 Version 0.1.4
 -------------

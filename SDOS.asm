@@ -5,6 +5,15 @@
 ;Jump Table
 .include "ch376s_inc.asm"
 
+fatrec  .struct
+  name      .fill 8
+  extension .fill 3
+  type      .byte 1
+  reserved  .fill 16
+  size_l    .word 0
+  size_h    .word 0
+.ends
+
 ; Low-Level Command for the SD Card OS
 ; CH376S Controller Commands
 
@@ -32,22 +41,18 @@ ISDOS_INIT    setas
               AND #~FNX1_INT07_SDCARD   ; Enable
               STA @lINT_PENDING_REG1
 
-              ;LDA @lINT_POL_REG1
-              ;ORA #FNX1_INT07_SDCARD
-              ;STA @lINT_POL_REG1
-              ;LDA @lINT_MASK_REG1
-              ;AND #~FNX1_INT07_SDCARD   ; Enable
-              ;STA @lINT_MASK_REG1
-
-              LDA #$06
+              LDA #CH_CMD_CHECK_EXIST
               STA SDCARD_CMD
               JSR DLYCMD_2_DTA
               LDA #$A8
               STA SDCARD_DATA
+    CHK_LOOP
               JSR DLYDTA_2_DTA
               JSR DLYDTA_2_DTA
               JSR DLYDTA_2_DTA
-              LDA SDCARD_DATA
+              LDA SDCARD_DATA  ; the data returned must be the complement
+              CMP #~$A8;  $57
+              BNE CHK_LOOP
               JSR DLYCMD_2_DTA
 
               LDA #CH_CMD_SET_MODE
@@ -60,12 +65,36 @@ ISDOS_INIT    setas
     ISDOS_WAIT_FOR_MODE_SW
               JSR DLYDTA_2_DTA ; Wait 0.6us
               LDA SDCARD_DATA
-              CMP #$51   ; CMD_RET_SUCCESS		EQU		051H, CMD_RET_ABORT		EQU		05FH
+              CMP #$51         ; CMD_RET_SUCCESS = 051H, CMD_RET_ABORT = 05FH
+              BEQ CHK_SET_OK
+              CMP #$5F
+              BEQ CHK_SET_NOK
+              
               BNE ISDOS_WAIT_FOR_MODE_SW
-
-              LDA SDCARD_DATA     ; See the Status Output
+    CHK_SET_OK
+              LDA #SDCARD_PRSNT_CD
+              STA SDCARD_PRSNT_MNT
+              BRA SD_INIT_DONE
+    CHK_SET_NOK
+              LDA #SDCARD_PRSNT_NO_CARD
+              STA SDCARD_PRSNT_MNT
+              BRA SD_INIT_DONE
+              
+    SD_INIT_DONE
               RTL
 
+; ***************************************************************
+; * Clear the current FAT record
+; ***************************************************************
+ISDOS_CLEAR_FAT_REC
+              LDX #0
+    CLEAR_LOOP
+              STZ current_fat_record,X
+              INX
+              CPX #32
+              BNE CLEAR_LOOP
+              RTS
+              
 ;////////////////////////////////////////////////////////
 ; ISDOS_DIR
 ;   Upon the Call of this Routine Display the Files on the SDCARD
@@ -81,7 +110,11 @@ ISDOS_DIR
 ;              LDA SDCARD_PRSNT_MNT;
 ;              BEQ NO_SDCARD_PRESENT     ; No SD Card Present
               ; Transfer the "/*\0" String
-              LDX #$0000
+              JSR ISDOS_CLEAR_FAT_REC
+              
+              LDX #0
+              STZ SDOS_LINE_SELECT
+              LDY #0 ; count the number of items displayed - limit to 38
     ISDOS_DIR_TRF
               LDA sd_card_dir_string,X    ; /
               STA @lSDOS_FILE_NAME,X
@@ -89,60 +122,36 @@ ISDOS_DIR
               CPX #$0003
               BNE ISDOS_DIR_TRF
 
-              JSR SDOS_FILE_OPEN         ; Now that the file name is set, go open File
+              JSR SDOS_FILE_OPEN     ; Now that the file name is set, go open File
               CMP #CH376S_STAT_DSK_RD
-              BEQ ISDOS_DIR_CONT0
+              BEQ ISDOS_NEXT_ENTRY
               BRL ISDOS_MISS_FILE
-    ISDOS_DIR_CONT0
 
-;              LDX #<>sd_card_msg4         ; Print Screen the Message "FILE OPENED";
-;              JSL DISPLAY_MSG       ; print the first line
     ISDOS_NEXT_ENTRY
               LDA #CH_CMD_RD_DATA0
               STA SDCARD_CMD
-              JSR DLYCMD_2_DTA;
-              LDA SDCARD_DATA  ;  Load First Data
-              LDY #$0000
-              LDX #$0000
-              TAY              ; GET Size (Save in Case we need it)
-;#1 Display File Name @ Empty the buffer, since we don't need info for now.
-    ISDOS_DIR_GET_CHAR
-              JSR DLYDTA_2_DTA ; Wait 0.6us
-              LDA SDCARD_DATA  ;
-              JSL DISPLAY_CHAR        ; Print the character
-              INX
-              CPX #$0008
-              BNE ISDOS_DIR_CONT1
-              JSR ISDOS_DISPLAY_DOT
-    ISDOS_DIR_CONT1
-              CPX #$000B       ; the First 11th Character is the file name
-              BNE ISDOS_DIR_GET_CHAR
-              LDA #$20
-              JSL DISPLAY_CHAR        ; Print the character
-              LDA #'('
-              JSL DISPLAY_CHAR        ; Print the character
-              LDA SDCARD_DATA  ;
-              AND #$10
-              CMP #$10
-              BEQ ISDOS_DIR_ATTR0
-              LDA #'F'
-              BRA ISDOS_DIR_ATTR1
-    ISDOS_DIR_ATTR0
-              LDA #'D'
-    ISDOS_DIR_ATTR1
-              JSL DISPLAY_CHAR        ; Print the character
-              LDA #')'
-              JSL DISPLAY_CHAR        ; Print the character
+              JSR DLYCMD_2_DTA;      ; Wait 1.5us
+              LDA SDCARD_DATA        ;  Load Data Length - should be 32 - we don't care.
               
-              JSL DISPLAY_NEXT_LINE   ; Print the character
-    ISDOS_DIR_GET_CHAR_FINISH
-              JSR DLYDTA_2_DTA ; Wait 0.6us
-              LDA SDCARD_DATA  ; After the name Just empty the buffer
-;             JSL DISPLAY_CHAR        ; Print the character
+              ; populate the FAT record
+              LDX #0
+    FAT_REC_LOOP
+              JSR DLYDTA_2_DTA       ; Wait 0.6us
+              LDA SDCARD_DATA
+              STA current_fat_record,X
               INX
-              CPX #$0020
-              BNE ISDOS_DIR_GET_CHAR_FINISH
-              JSR DLYCMD_2_DTA
+              CPX #32
+              BNE FAT_REC_LOOP
+              
+              JSL DISPLAY_FAT_RECORD
+              INY
+              CPY #38
+              BEQ ISDOS_DIR_DONE
+              
+              JSL DISPLAY_NEXT_LINE  ; Print the character
+              
+              JSR DLYCMD_2_DTA;      ; Wait 1.5us
+              
               ; Ask Controller to go fetch the next entry in the Directory
               LDA #CH_CMD_FILE_ENUM_GO
               STA SDCARD_CMD
@@ -159,18 +168,12 @@ ISDOS_DIR
     NO_SDCARD_PRESENT
               LDX #<>sd_no_card_msg
     ISDOS_DIR_DONE
-              JSL DISPLAY_MSG       ; print the first line
               JSR SDOS_FILE_CLOSE
-              ; There should be an Error Code Displayed here...
+              
+              ; Highlight the currently selected items
+              LDA #5   ; Yellow Background
+              JSL TEXT_COLOUR_SELECTED
               RTL
-
-; *******************************************************************
-; * Display a dot '.'
-; *******************************************************************
-ISDOS_DISPLAY_DOT
-              LDA #'.'
-              JSL DISPLAY_CHAR        ; Print the character
-              RTS
 
 ; Upon the Call of this Routine will Change the pointer to a new Sub-Directory
 ISDOS_CHDIR   BRK;
@@ -308,45 +311,27 @@ DLYDTA_2_DTA
               NOP
               NOP
               RTS;
-;
+
+
 ; SDCARD_WAIT_4_INT
 ; Blocking - Wait for the CH376S Interrupt
 ; Inputs:
 ;
 ; Outputs:
 ;   A = Interrupt Status
-;SDCARD_WAIT_4_INT
-;              setas             ; This is for security
-;              SEI                 ; There is no time out on this, so let's
-                                  ; make sure it is not going to be interrupted
-;SDCARD_BUSY_INT
-;              LDA SDCARD_CMD    ; Read Status of Interrupt and
-;              AND #$80          ; Bit[7] = !INT if Zero = Busy
-;              CMP #$80          ;
-;              BEQ SDCARD_BUSY_INT
-;              CLI
-              ; Fetch the Status
-;              JSR DLYCMD_2_DTA ;
-;              JSR DLYCMD_2_DTA ;
-;              LDA #CH_CMD_GET_STATUS
-;              STA SDCARD_CMD;
-;              JSR DLYCMD_2_DTA;   ; 1.5us Delay to get the Value Return
-;              LDA SDCARD_DATA;
-;              RTS           ;
-
 SDCARD_WAIT_4_INT
-              setas             ; This is for security
-;              SEI                 ; There is no time out on this, so let's
-                                                ; make sure it is not going to be interrupted
+              setas                    ; This is for security
+;              SEI                     ; There is no time out on this, so let's
+                                       ; make sure it is not going to be interrupted
 ;              LDA @lINT_PENDING_REG1  ; Read the Pending Register &
 ;              AND #$7F   ; Enable
 ;              STA @lINT_PENDING_REG1
-SDCARD_BUSY_INT
-              LDA @lINT_PENDING_REG1  ; Check to See if the Pending Register for the SD_INT is Set
-              AND #FNX1_INT07_SDCARD  ;
+    SDCARD_BUSY_INT
+              LDA @lINT_PENDING_REG1   ; Check to See if the Pending Register for the SD_INT is Set
+              AND #FNX1_INT07_SDCARD   ;
               CMP #FNX1_INT07_SDCARD
-              BNE SDCARD_BUSY_INT   ; Go Check again to see if it is checked
-              STA @lINT_PENDING_REG1    ;Interrupt as occured, clear the Pending Register for next time.
+              BNE SDCARD_BUSY_INT      ; Go Check again to see if it is checked
+              STA @lINT_PENDING_REG1   ;Interrupt as occured, clear the Pending Register for next time.
               ; Fetch the Status
               JSR DLYCMD_2_DTA ;
               JSR DLYCMD_2_DTA ;
@@ -372,7 +357,7 @@ ISDOS_CHK_CD  setas
               RTS
 ;
 ; ISDOS_CHK_WP
-; Return the Value of WP Card Present Status
+; Return the Value of Write Protection Status
 ; Inputs:
 ;   None
 ; Affects:
@@ -388,7 +373,7 @@ ISDOS_CHK_WP  setas
 
 ISDOS_GET_FILE_SIZE
               setas
-              LDA #CH_CMD_RD_VAR32
+              LDA #CH_CMD_GET_FILE_SIZE
               STA SDCARD_CMD;
               JSR DLYCMD_2_DTA   ;    ; 3us Delay to get the Value Return
               LDA #CH_VAR_FILE_SIZE
@@ -453,7 +438,7 @@ SDOS_READ_FILE
               ; Second Step, Setup the Amount of Data to Send
               ; Set the Transfer Size, I will try 256 bytes
               setas
-SDOS_READ_FILE_GO_FETCH_A_NEW_64KBlock
+    SDOS_READ_FILE_GO_FETCH_A_NEW_64KBlock
               LDA #CH_CMD_BYTE_READ
               STA SDCARD_CMD;
               JSR DLYCMD_2_DTA;   ; 3us Delay to get the Value Return

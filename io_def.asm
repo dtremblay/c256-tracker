@@ -9,7 +9,7 @@ DIPSWITCH     = $AFE804  ;(R) $AFE804...$AFE807
 SDCARD_DATA   = $AFE808  ;(R/W) SDCARD (CH376S) Data PORT_A (A0 = 0)
 SDCARD_CMD    = $AFE809  ;(R/W) SDCARD (CH376S) CMD/STATUS Port (A0 = 1)
 ; SD Card Card Presence / Write Protect Status Reg
-SDCARD_STAT   = $AFE810  ;(R) SDCARD (Bit[0] = CD, Bit[1] = WP)
+SDCARD_STAT   = $AFE810  ;(R) SDCARD (Bit[0] = CD, Bit[1] = WriteProtect)
 ; Audio WM8776 CODEC Control Interface (Write Only)
 CODEC_DATA_LO = $AFE820  ;(W) LSB of Add/Data Reg to Control CODEC See WM8776 Spec
 CODEC_DATA_HI = $AFE821  ;(W) MSB od Add/Data Reg to Control CODEC See WM8776 Spec

@@ -1,8 +1,8 @@
-LOAD_FILE
+LOAD_FILE_DISPLAY
             .as
             .xs
-            LDA #1
-            STA LOAD_SCREEN
+            LDA #2
+            STA STATE_MACHINE
             
             JSL ISDOS_INIT
             
@@ -21,7 +21,7 @@ LOAD_FILE
             LDY #128 * 10 + 30
             LDA #40 ; lines to copy
             STA LINE_COPY
-            LDX #128 * 11 + 32  ; initialize the cursor position for file display
+            LDX #128 * 11 + 31  ; initialize the cursor position for file display
             STX CURSORX
             
             LDX #0
@@ -49,9 +49,13 @@ COPY_CHAR   LDA FILE_LOAD_SCREEN,X
             DEC LINE_COPY
             BNE COPY_LINE
             
+            LDA SDCARD_PRSNT_MNT
+            BEQ LD_FILE_DONE ; if SD not present, exit
+            
             ; show files from the SDRAM
             JSL ISDOS_DIR
             
+    LD_FILE_DONE
             setxs
             RTL
         
@@ -62,7 +66,7 @@ EXIT_FILE
             .as
             .xs
             LDA #0
-            STA LOAD_SCREEN
+            STA STATE_MACHINE
             
             setxl
             
@@ -70,5 +74,17 @@ EXIT_FILE
             JSR DISPLAY_PATTERN
             
             setxs
+            
+            RTL
+            
+LOAD_FILE
+            .as
+            .xs
+            ; check if the selection is a directory or file
+            
+            ; Load the file pointed to by SDOS_LINE_SELECT
+            
+            ; Close the load file display
+            JSL EXIT_FILE
             
             RTL

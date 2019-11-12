@@ -92,8 +92,9 @@ IRQ_HANDLER_FETCH
 
                 CMP #1          ; ESC
                 BNE NOT_ESCAPE
-                LDA LOAD_SCREEN
-                BEQ NOT_ESCAPE
+                LDA STATE_MACHINE
+                CMP #2
+                BNE NOT_ESCAPE
                 JSL EXIT_FILE
                 JMP KB_WR_2_SCREEN
                 
@@ -233,6 +234,12 @@ NOT_RIGHT_BRACKET
                 BNE UP_WRONG_STATE
                 JSR DECR_LINE
     UP_WRONG_STATE
+                CMP #2
+                BNE UP_WRG_DONE
+                
+                JSL SELECT_PREVIOUS_FILE
+                
+        UP_WRG_DONE
                 PLA
                 JMP KB_WR_2_SCREEN
                 
@@ -246,6 +253,12 @@ NOT_RIGHT_BRACKET
                 BNE DOWN_WRONG_STATE
                 JSR INCR_LINE
     DOWN_WRONG_STATE
+                CMP #2
+                BNE DOWN_WRG_DONE
+                
+                JSL SELECT_NEXT_FILE
+                
+        DOWN_WRG_DONE
                 PLA
                 JMP KB_WR_2_SCREEN
 
@@ -298,10 +311,13 @@ CTRL_KEY_ON     LDA @lScanCode_Ctrl_Set1, x
                 BEQ KB_WR_2_SCREEN
                 CMP #2
                 BNE CONTINUE_KEY
+                
                 ; load a file
-                LDA LOAD_SCREEN  ; check if the load file screen is already opened
-                BNE CONTINUE_KEY
-                JSL LOAD_FILE
+                LDA STATE_MACHINE  ; check if the load file screen is already opened
+                AND #$F
+                CMP #2
+                BEQ CONTINUE_KEY
+                JSL LOAD_FILE_DISPLAY
                 
         CONTINUE_KEY
                 BRA KB_WR_2_SCREEN
@@ -327,8 +343,11 @@ KB_WR_2_SCREEN
                 PHA
                 ; start or stop scrolling
                 LDA STATE_MACHINE
-                AND #1
+                CMP #1
                 BEQ START_SOF
+                CMP #2
+                BEQ GO_LOAD_FILE
+                
 STOP_SOF
                 LDA @lINT_MASK_REG0 ; stop the timer interrupts
                 ORA #FNX0_INT02_TMR0
@@ -359,6 +378,11 @@ START_SOF
                 AND #~(FNX0_INT02_TMR0)
                 STA @lINT_MASK_REG0
                 PLA
+                JMP KB_CHECK_B_DONE
+                
+GO_LOAD_FILE
+                PLA
+                JSL LOAD_FILE
                 JMP KB_CHECK_B_DONE
 
 KB_SET_SHIFT    LDA KEYBOARD_SC_FLG

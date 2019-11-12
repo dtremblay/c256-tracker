@@ -843,7 +843,7 @@ DISPLAY_NEXT_LINE
                 LDA CURSORX
                 AND #$FF80   ; lines are $0, $80, etc
                 CLC
-                ADC #32     ; offset to the file box
+                ADC #128+31     ; move to the next line and offset to the file box
                 STA CURSORX
                 setas
                 RTL
@@ -862,8 +862,136 @@ DISPLAY_MSG
                 JSL DISPLAY_CHAR
                 INX
                 BRA MSG_LOOP
-    MSG_DONE    JSR DISPLAY_NEXT_LINE
+    MSG_DONE    JSL DISPLAY_NEXT_LINE
                 
                 PLB
                 
+                RTL
+                
+; ****************************************************
+; * Display data stored in "current_fat_record".
+; ****************************************************
+DISPLAY_FAT_RECORD
+                .as
+                PHY
+                LDX #0
+                LDA current_fat_record.type
+                CMP #$10 ; directory
+                BNE DISPLAY_FILE
+                
+                LDA #$E0   ; directory char
+                JSL DISPLAY_CHAR
+        DIR_LOOP
+                LDA current_fat_record.name,X
+                JSL DISPLAY_CHAR
+                INX
+                CPX #8
+                BNE DIR_LOOP
+                
+        DIR_BLANK_LOOP
+                LDA #$20
+                JSL DISPLAY_CHAR
+                INX
+                CPX #17
+                BNE DIR_BLANK_LOOP
+                
+                BRA DISPLAY_FR_DONE
+                
+    DISPLAY_FILE
+                LDA #$20   ; space char
+                JSL DISPLAY_CHAR
+        FILENAME_LOOP
+                LDA current_fat_record.name,X
+                JSL DISPLAY_CHAR
+                INX
+                CPX #8
+                BNE FILENAME_LOOP
+                LDA #'.'
+                JSL DISPLAY_CHAR
+        EXT_LOOP
+                LDA current_fat_record.name,X
+                JSL DISPLAY_CHAR
+                INX
+                CPX #11
+                BNE EXT_LOOP
+                
+        FL_BLANK_LOOP
+                LDA #$20
+                JSL DISPLAY_CHAR
+                INX
+                CPX #16
+                BNE FL_BLANK_LOOP
+                
+    DISPLAY_FR_DONE
+                PLY
+                RTL
+                
+; ***********************************************************
+; * Highlight the current item - i.e. reverse the background
+; * Accumulator A contains the color to display.
+; ***********************************************************
+TEXT_COLOUR_SELECTED
+                .as
+                PHA
+                setal
+                LDA #<>CS_COLOR_MEM_PTR     ; store the initial colour buffer location
+                STA CURSORPOS
+                
+                LDA SDOS_LINE_SELECT
+                STA M0_OPERAND_A
+                LDA #128
+                STA M0_OPERAND_B
+                LDA M0_RESULT
+                CLC
+                ADC #128 * 11 + 31
+                TAY
+                setas
+            
+                LDA #`CS_TEXT_MEM_PTR
+                STA CURSORPOS+2
+                
+                LDX #18
+                PLA
+        HS_LOOP
+                STA [CURSORPOS],Y
+                INY
+                DEX
+                BNE HS_LOOP
+                
+                RTL
+                
+SELECT_NEXT_FILE
+                .as
+                CLC
+                LDA SDOS_LINE_SELECT
+                INC A
+                CMP #38
+                BCS DO_NOT_SELECT
+                
+                LDA #$50 ; black background
+                JSL TEXT_COLOUR_SELECTED
+                
+                INC SDOS_LINE_SELECT
+                
+                LDA #5 ; yellow background
+                JSL TEXT_COLOUR_SELECTED
+                
+    DO_NOT_SELECT
+                RTL
+                
+SELECT_PREVIOUS_FILE
+                .as
+                CLC
+                LDA SDOS_LINE_SELECT
+                DEC A
+                BMI DO_NOT_SELECT
+                
+                LDA #$50 ; black background
+                JSL TEXT_COLOUR_SELECTED
+                
+                DEC SDOS_LINE_SELECT
+                
+                LDA #5 ; yellow background
+                JSL TEXT_COLOUR_SELECTED
+
                 RTL

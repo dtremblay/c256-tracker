@@ -541,8 +541,12 @@ FILE_LOAD_SCREEN  ; 20 x 40 array
         .byte $D5
         .fill 18, $C3
         .byte $C9
+    FL_ROW_TOP
+        .byte $c2
+        .text '-NO SD CARD FOUND-'
+        .byte $c2
     FL_ROW
-      .rept 38
+      .rept 37
         .byte $c2
         .fill 18, 0
         .byte $c2

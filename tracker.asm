@@ -18,12 +18,11 @@ TEMP_STORAGE    .byte 0,0
 LOW_NIBBLE      .byte 0
 HIGH_NIBBLE     .byte 0
 HEX_MAP         .text '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'
-STATE_MACHINE   .byte 0  ; High Nibble is the Mode (inst, order, pattern), Low nibble is state: 0 is record mode, 1 is play mode
+STATE_MACHINE   .byte 0  ; High Nibble is the Mode (inst, order, pattern), Low nibble is state: 0 is record mode, 1 is play mode, 2 is file loading
 TICK            .byte 0  ; this is used to count the number of 1/60 intervals
 BPM             .byte 125; how fast should the lines change - 
 PATTERN_NUM     .byte 1  ; pattern being displayed/played
 LINE_NUM_DEC    .byte 1  ; line being display/played
-LOAD_SCREEN     .byte 0  ; if the load screen is open, this is set to 1.
 LINE_COPY       = $80
 CHAR_COPY       = $81
 
@@ -180,7 +179,7 @@ ENABLE_IRQS
                 STA @lINT_PENDING_REG0  ; Writing it back will clear the Active Bit
                 
                 LDA @lINT_PENDING_REG1
-                AND #FNX1_INT00_KBD | FNX1_INT05_MPU401
+                AND #FNX1_INT00_KBD | FNX1_INT05_MPU401 | FNX1_INT07_SDCARD
                 STA @lINT_PENDING_REG1  ; Writing it back will clear the Active Bit
                 
                 ;LDA @lINT_PENDING_REG2
@@ -192,7 +191,7 @@ ENABLE_IRQS
                 STA @lINT_MASK_REG0
                 
                 ; Enable Keyboard
-                LDA #~(FNX1_INT00_KBD | FNX1_INT05_MPU401)
+                LDA #~(FNX1_INT00_KBD | FNX1_INT05_MPU401 | FNX1_INT07_SDCARD)
                 STA @lINT_MASK_REG1
                 
                 ; Enable OPL2 Interrupts
@@ -208,7 +207,6 @@ RESET_STATE_MACHINE
                 LDA #0
                 STA STATE_MACHINE
                 STA RAD_ORDER_NUM
-                STA LOAD_SCREEN
                 
                 STZ LINE_NUM_HEX
                 STZ RAD_ORDER_NUM + 1
