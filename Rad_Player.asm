@@ -959,8 +959,8 @@ RAD_FILE_TEMP
 ;.binary "RAD_Files/ALLOYRUN.RAD"  ; v1.0
 ;.binary "RAD_Files/backlash.rad"  ; v1.0
 ;.binary "RAD_Files/cpw.rad"      ; v1.0
-;.binary "RAD_Files/crystal2.rad"  ; v1.0
-.binary "RAD_Files/island industrial.rad"  ; v1.0 - fun!
+.binary "RAD_Files/crystal2.rad"  ; v1.0
+;.binary "RAD_Files/island industrial.rad"  ; v1.0 - fun!
 ;.binary "RAD_Files/paybacktime tactics-a1.rad" ; v1.0
 ;.binary "RAD_Files/pipkasoft intro 2.rad"
 ;.binary "RAD_Files/sp2.rad"      ; v1.0

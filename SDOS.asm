@@ -107,14 +107,13 @@ ISDOS_DIR
               setas
               setxl
               JSR ISDOS_MOUNT_CARD;     First to See if the Card is Present
-;              LDA SDCARD_PRSNT_MNT;
-;              BEQ NO_SDCARD_PRESENT     ; No SD Card Present
-              ; Transfer the "/*\0" String
+              
               JSR ISDOS_CLEAR_FAT_REC
               
               LDX #0
               STZ SDOS_LINE_SELECT
               LDY #0 ; count the number of items displayed - limit to 38
+              ; Transfer the "/*\0" String
     ISDOS_DIR_TRF
               LDA sd_card_dir_string,X    ; /
               STA @lSDOS_FILE_NAME,X
@@ -125,7 +124,7 @@ ISDOS_DIR
               JSR SDOS_FILE_OPEN     ; Now that the file name is set, go open File
               CMP #CH376S_STAT_DSK_RD
               BEQ ISDOS_NEXT_ENTRY
-              BRL ISDOS_MISS_FILE
+              BRL ISDOS_DIR_DONE
 
     ISDOS_NEXT_ENTRY
               LDA #CH_CMD_RD_DATA0
@@ -158,15 +157,7 @@ ISDOS_DIR
               JSR SDCARD_WAIT_4_INT       ; Go Wait for Interrupt
               CMP #CH376S_STAT_DSK_RD
               BEQ ISDOS_NEXT_ENTRY
-              CMP #CH376S_ERR_MISS_FIL
-              BNE  ISDOS_MISS_FILE
-              LDX #<>sd_card_msg5   ; End of File
-              BRL ISDOS_DIR_DONE
-    ISDOS_MISS_FILE
-              LDX #<>sd_card_err0
-              BRL ISDOS_DIR_DONE
-    NO_SDCARD_PRESENT
-              LDX #<>sd_no_card_msg
+
     ISDOS_DIR_DONE
               JSR SDOS_FILE_CLOSE
               

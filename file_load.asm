@@ -69,10 +69,10 @@ EXIT_FILE
             STA STATE_MACHINE
             
             setxl
-            
             JSR DRAW_DISPLAY
+            JSR LOAD_INSTRUMENT
             JSR DISPLAY_PATTERN
-            
+            JSR DISPLAY_ORDERS
             setxs
             
             RTL

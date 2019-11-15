@@ -102,7 +102,7 @@ NOT_ESCAPE
                 CMP #$1A        ; left bracket
                 BNE NOT_LEFT_BRACKET
                 DEC INSTR_NUMBER
-                JSL LOAD_INSTRUMENT  ; X is already set to 0
+                JSR LOAD_INSTRUMENT  ; X is already set to 0
                 JMP KB_WR_2_SCREEN
                 
 NOT_LEFT_BRACKET
@@ -342,9 +342,8 @@ KB_WR_2_SCREEN
                 
                 PHA
                 ; start or stop scrolling
-                LDA STATE_MACHINE
-                CMP #1
-                BEQ START_SOF
+                LDA STATE_MACHINE 
+                BEQ START_SOF ; if zero then start playing
                 CMP #2
                 BEQ GO_LOAD_FILE
                 
@@ -435,7 +434,8 @@ TIMER0_INTERRUPT
 
                 .as
                 LDA STATE_MACHINE  ; the SOF is still called even when the interrupt is masked.
-                BEQ TICK_DONE
+                AND #1
+                BEQ EDIT_MODE
                 
                 LDA @lTICK
                 INC A
@@ -443,7 +443,7 @@ TIMER0_INTERRUPT
                 BNE TICK_DONE
                 
                 ; we now have to increment the line count
-INCR_LINE
+    INCR_LINE
                 CLC
                 SED
                 INC LINE_NUM_HEX
@@ -457,7 +457,7 @@ INCR_LINE
                 ; read the next pattern from the order list
                 JSR INCREMENT_ORDER
                 
-INCR_DONE
+    INCR_DONE
                 CLD
                 STA @lLINE_NUM_DEC
                 JSR DISPLAY_PATTERN
@@ -467,11 +467,10 @@ INCR_DONE
                 AND #1
                 BEQ EDIT_MODE
                 JSR RAD_PLAYNOTES
-        EDIT_MODE
+    EDIT_MODE
                 
                 LDA #0  ; reset the tick to 0
-
-TICK_DONE
+    TICK_DONE
                 STA @lTICK
                 ; TODO deal with effects
                 ;JSR APPLY_EFFECTS
