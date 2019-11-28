@@ -4,8 +4,46 @@ LOAD_FILE_DISPLAY
             LDA #2
             STA STATE_MACHINE
             
-            JSL ISDOS_INIT
+            LDA #0
+            STA SDOS_LINE_SELECT
             
+            JSL ISDOS_INIT
+            JSR SHOW_FILE_MENU
+            JSR LOAD_SDCARD_DATA
+            JSR POPULATE_FILES
+            
+            RTL
+            
+; ****************************************************
+; * Load SD card data at SDCARD_LIST
+; ****************************************************
+LOAD_SDCARD_DATA
+            .as
+            .xs
+            ; clear 2K of RAM
+            setxl
+            LDA #0
+            LDX #2048
+    CLEAR_FILE_AREA
+            STA SDCARD_LIST,X
+            DEX
+            BNE CLEAR_FILE_AREA
+            
+            ; check if the SD card is present
+            LDA SDCARD_PRSNT_MNT
+            BEQ LOAD_SDCARD_DATA_DONE ; if SD not present, exit
+            
+            ; show files from the SDRAM
+            JSL ISDOS_DIR
+            
+    LOAD_SDCARD_DATA_DONE
+            
+            RTS
+; ****************************************************
+; * File listing is at SDCARD_LIST - display the list
+; ****************************************************
+SHOW_FILE_MENU
+            .as
             setaxl
             LDA #<>CS_TEXT_MEM_PTR      ; store the initial screen buffer location
             STA SCREENBEGIN
@@ -49,15 +87,17 @@ COPY_CHAR   LDA FILE_LOAD_SCREEN,X
             DEC LINE_COPY
             BNE COPY_LINE
             
-            LDA SDCARD_PRSNT_MNT
-            BEQ LD_FILE_DONE ; if SD not present, exit
-            
-            ; show files from the SDRAM
-            JSL ISDOS_DIR
-            
-    LD_FILE_DONE
             setxs
-            RTL
+            RTS
+            
+; ****************************************************************
+; * Populate the file menu with the files from SDCARD_LIST
+; ****************************************************************
+POPULATE_FILES
+            .as
+            .xs
+            
+            RTS
         
 ; ****************************************************************
 ; * EXIT the Load File Screen

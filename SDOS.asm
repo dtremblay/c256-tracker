@@ -110,16 +110,16 @@ ISDOS_DIR
               
               JSR ISDOS_CLEAR_FAT_REC
               
-              LDX #0
               STZ SDOS_LINE_SELECT
               LDY #0 ; count the number of items displayed - limit to 38
+              LDX #0
               ; Transfer the "/*\0" String
     ISDOS_DIR_TRF
-              LDA sd_card_dir_string,X    ; /
+              LDA sd_card_dir_string,X    ; / 
               STA @lSDOS_FILE_NAME,X
               INX
-              CPX #$0003
-              BNE ISDOS_DIR_TRF
+              CMP #0
+              BNE ISDOS_DIR_TRF  ; path string must be 0 terminated
 
               JSR SDOS_FILE_OPEN     ; Now that the file name is set, go open File
               CMP #CH376S_STAT_DSK_RD
@@ -593,6 +593,7 @@ SDOS_READ_BLOCK
 ; MESSAGES
 ;
 sd_card_dir_string  .text $2F, $2A ,$00
+                    .fill 128-3,0  ; leave space for the path
 sd_no_card_msg      .text "NO SDCARD PRESENT", $0D, $00
 sd_card_err0        .text "ERROR IN READIND CARD", $00
 sd_card_err1        .text "ERROR LOADING FILE", $00

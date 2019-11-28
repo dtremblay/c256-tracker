@@ -960,6 +960,9 @@ TEXT_COLOUR_SELECTED
                 
                 RTL
                 
+; ***********************************************************
+; * Move down in the file selector
+; ***********************************************************
 SELECT_NEXT_FILE
                 .as
                 CLC
@@ -979,6 +982,9 @@ SELECT_NEXT_FILE
     DO_NOT_SELECT
                 RTL
                 
+; ***********************************************************
+; * Move up in the file selector
+; ***********************************************************
 SELECT_PREVIOUS_FILE
                 .as
                 CLC

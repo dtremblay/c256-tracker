@@ -256,7 +256,7 @@ SDOS_FILE_SIZE   = $000328 ;
 SDOS_BYTE_NUMBER = $00032C ; Number of Byte to Read or Write before changing the Pointer
 
 SDOS_BYTE_PTR    = $000334
-SDOS_FILE_NAME   = $000380 ; // Max of 128 Chars
+SDOS_FILE_NAME   = $000380 ; // Max of 128 Chars for the file path
 
 
 
