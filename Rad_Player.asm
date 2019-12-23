@@ -25,20 +25,6 @@ InitialSpeed        .byte $06
 hasSlowTimer        .byte $00 ;BOOL $00 = False, $01 = True
 .ends
 
-PlayerVariables .struct
-loopSong            .byte $01 ; Bool
-orders              .byte $00
-line                .byte $00
-tick                .byte $00
-speed               .byte $06
-endOfPattern        .byte $00 ; Bool
-channelNote         .word $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000
-pitchSlideDest      .word $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000
-efftectParameter    .byte $00, $00, $00, $00, $00, $00, $00, $00, $00
-pitchSlideSpeed     .byte $00, $00, $00, $00, $00, $00, $00, $00, $00
-patternBreak        .byte $FF
-.ends
-
 ; special characters for notes
                     ;     C    C#   D    D#   E    F    F#   G    G#   A    A#   B    
 note_array          .byte $43, $90, $44, $91, $45, $46, $92, $47, $93, $41, $94, $42, $43
@@ -86,7 +72,6 @@ READ_VERSION_10
             RTL  ; End of READ_VERSION_10
 
 ADLIB_OFFSETS .byte 7,1,8,2,9,3,10,4,5,11,6
-;ADLIB_OFFSETS .byte 1,7,2,8,3,9,4,10,5,6,11
 
 ; ************************************************************************************************
 ; Read the instrument table
@@ -928,28 +913,8 @@ RAD_SETINSTRUMENT
               PLY
               RTS
 
-COMPUTE_POINTER
-              setal
-              LDA #$000A ; Clear  ; Let's Find the Pointer in the Instruments List
-              STA M1_OPERAND_A
-              LDA OPL2_PARAMETER0 ; Which Entry in the list
-              STA M1_OPERAND_B  ;
-              CLC
-              LDA OPL2_IND_ADDY_LL
-              ADC M1_RESULT
-              STA OPL2_IND_ADDY_LL
-              RTS
-;
-;#define OPERATOR1 0
-;#define OPERATOR2 1
-;#define MODULATOR 0
-;#define CARRIER   1
-
 * = $170000
 TuneInfo .dstruct SongData
-
-.align 16
-PlayerInfo .dstruct PlayerVariables
 
 
 * = $178000
@@ -959,8 +924,8 @@ RAD_FILE_TEMP
 ;.binary "RAD_Files/ALLOYRUN.RAD"  ; v1.0
 ;.binary "RAD_Files/backlash.rad"  ; v1.0
 ;.binary "RAD_Files/cpw.rad"      ; v1.0
-.binary "RAD_Files/crystal2.rad"  ; v1.0
-;.binary "RAD_Files/island industrial.rad"  ; v1.0 - fun!
+;.binary "RAD_Files/crystal2.rad"  ; v1.0
+.binary "RAD_Files/island industrial.rad"  ; v1.0 - fun!
 ;.binary "RAD_Files/paybacktime tactics-a1.rad" ; v1.0
 ;.binary "RAD_Files/pipkasoft intro 2.rad"
 ;.binary "RAD_Files/sp2.rad"      ; v1.0

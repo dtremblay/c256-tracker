@@ -134,7 +134,8 @@ TRACKER
 
                 JSR ENABLE_IRQS
                 JSR INIT_TIMER0_50HZ
-                JSL RAD_INIT_PLAYER
+                
+                JSL OPL2_INIT
                 
                 CLI
                 
@@ -146,7 +147,6 @@ TRACKER
           
 ALWAYS          NOP
                 NOP
-                
                 BRA ALWAYS
 ;
 ; IINITCURSOR

@@ -39,28 +39,8 @@ OPL2_BLOCK       = $000036 ;
 
 ; SD Card (CH376S) Variables
 SDCARD_FILE_PTR  = $000038 ; 3 Bytes Pointer to Filename to open
-SDCARD_BYTE_NUM  = $00003C ; 2Bytes
+SDCARD_BYTE_NUM  = $00003C ; 2 Bytes
 SDCARD_PRSNT_MNT = $00003F ; 1 Byte, Indicate that the SDCard is Present and that it is Mounted
-
-; Command Line Parser Variables
-CMD_PARSER_TMPX  = $000040 ; <<< Command Parser 2Bytes
-CMD_PARSER_TMPY  = $000042 ; <<< Command Parser 2Bytes
-CMD_LIST_PTR     = $000044 ; <<< Command Parser 3 Bytes
-CMD_PARSER_PTR   = $000048 ; <<< Command Parser 3 Bytes
-CMD_ATTRIBUTE    = $00004B ; <<< Command Parser 2 Bytes (16bits Attribute Field)
-CMD_EXEC_ADDY    = $00004D ; <<< Command Parser 3 Bytes 24 Bits Address Jump to execute the Command
-KEY_BUFFER_RPOS  = $000050 ;
-KEY_BUFFER_WPOS  = $000052 ;
-CMD_VARIABLE_TMP = $000054 ;
-CMD_ARG_DEV      = $000056 ;
-CMD_ARG_SA       = $000057 ;
-CMD_ARG_EA       = $00005A ;
-CMD_VALID        = $00005D ;
-
-
-; Bitmap Clear Routine
-BM_CLEAR_SCRN_X  = $000040
-BM_CLEAR_SCRN_Y  = $000042
 
 ; RAD File Player
 RAD_STARTLINE    = $000040 ; 1 Byte
@@ -76,19 +56,9 @@ RAD_CHANNE_EFFCT = $00004C
 RAD_TEMP         = $00004E
 RAD_EFFECT       = $000050
 
-; BMP File Parser Variables (Can be shared if BMP Parser not used)
-; Used for Command Parser Mainly
-BMP_X_SIZE       = $000040 ; 2 Bytes
-BMP_Y_SIZE       = $000042 ; 2 Bytes
-BMP_PRSE_SRC_PTR = $000044 ; 3 Bytes
-BMP_PRSE_DST_PTR = $000048 ; 3 Bytes
-BMP_COLOR_PALET  = $00004C ; 2 Bytes
-SCRN_X_STRIDE    = $00004E ; 2 Bytes, Basically How many Pixel Accross in Bitmap Mode
-BMP_FILE_SIZE    = $000050 ; 4 Bytes
-BMP_POSITION_X   = $000054 ; 2 Bytes Where, the BMP will be position on the X Axis
-BMP_POSITION_Y   = $000056 ; 2 Bytes Where, the BMP will be position on the Y Axis
-BMP_PALET_CHOICE = $000058 ;
-
+SDOS_FILE_REC_PTR= $000051 ; 3 byte pointer to a simple file struct
+SDOS_LOOP        = $000054 ; variable to count file length
+SDOS_FILE_SIZE   = $000055 ; 4 bytes for the file length
 
 ;Empty Region
 ;XXX             = $000060
@@ -120,6 +90,8 @@ MOUSE_POS_X_LO   = $0000E1
 MOUSE_POS_X_HI   = $0000E2
 MOUSE_POS_Y_LO   = $0000E3
 MOUSE_POS_Y_HI   = $0000E4
+
+
 
 RAD_ADDR         = $0000F0 ; 3 bytes to avoid OPL2 errors.
 RAD_PATTRN       = $0000F3 ; 1 bytes - offset to patter
@@ -249,19 +221,14 @@ BLOCK_BANK       = $000311 ;1 Byte  (temp) Bank of block being loaded
 BLOCK_COUNT      = $000312 ;2 Bytes (temp) Counter of bytes read as file is loaded
 
 ; $00:0320 to $00:06FF - Reserved for CH376S SDCard Controller
-SDOS_LINE_SELECT = $000320 ;
+SDOS_LINE_SELECT = $00031F ; used by the file menu to track which item is selected (0-37)
+
 
 ; TODO - Fix the following - do we really need them?
-SDOS_FILE_SIZE   = $000328 ;
 SDOS_BYTE_NUMBER = $00032C ; Number of Byte to Read or Write before changing the Pointer
 
 SDOS_BYTE_PTR    = $000334
 SDOS_FILE_NAME   = $000380 ; // Max of 128 Chars for the file path
-
-
-
-* = $700
-current_fat_record .dstruct fatrec
 
 ; COMMAND PARSER Variables
 ; Command Parser Stuff between $000F00 -> $000F84 (see CMD_Parser.asm)

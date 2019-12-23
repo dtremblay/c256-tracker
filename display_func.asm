@@ -750,7 +750,8 @@ HIGHLIGHT_MODE
 DISPLAY_ORDERS
                 .as
                 
-                LDA @lTuneInfo.songLength
+                LDA @lTuneInfo.songLength 
+                BEQ DO_DONE
                 CMP #14
                 BCC DO_DISPLAY_ORDERS
                 LDA #14 ; only display up to 14 orders
@@ -790,6 +791,7 @@ DISPLAY_ORDERS
                 setas
                 DEC TAB_COUNTER
                 BNE NEXT_ORDER
+        DO_DONE
                 RTS
                 
 ; ************************************************************************
@@ -829,11 +831,13 @@ DISPLAY_ACTIVE_CHANNELS
 ; ************************************************************************
 DISPLAY_CHAR
                 .as
-                .xl
+                .xs
+                PHY
                 LDY CURSORX
                 STA [SCREENBEGIN],Y
                 INY
                 STY CURSORX
+                PLY
                 RTL
 
 DISPLAY_NEXT_LINE
@@ -873,26 +877,28 @@ DISPLAY_MSG
 ; ****************************************************
 DISPLAY_FAT_RECORD
                 .as
+                .xl
                 PHY
-                LDX #0
-                LDA current_fat_record.type
+                LDY #11 ; record type
+                LDA [SDOS_FILE_REC_PTR],Y
                 CMP #$10 ; directory
                 BNE DISPLAY_FILE
                 
                 LDA #$E0   ; directory char
                 JSL DISPLAY_CHAR
+                LDY #0
         DIR_LOOP
-                LDA current_fat_record.name,X
+                LDA [SDOS_FILE_REC_PTR],Y
                 JSL DISPLAY_CHAR
-                INX
-                CPX #8
+                INY
+                CPY #8
                 BNE DIR_LOOP
                 
         DIR_BLANK_LOOP
                 LDA #$20
                 JSL DISPLAY_CHAR
-                INX
-                CPX #17
+                INY
+                CPY #17
                 BNE DIR_BLANK_LOOP
                 
                 BRA DISPLAY_FR_DONE
@@ -900,26 +906,27 @@ DISPLAY_FAT_RECORD
     DISPLAY_FILE
                 LDA #$20   ; space char
                 JSL DISPLAY_CHAR
+                LDY #0
         FILENAME_LOOP
-                LDA current_fat_record.name,X
+                LDA [SDOS_FILE_REC_PTR],Y
                 JSL DISPLAY_CHAR
-                INX
-                CPX #8
+                INY
+                CPY #8
                 BNE FILENAME_LOOP
                 LDA #'.'
                 JSL DISPLAY_CHAR
         EXT_LOOP
-                LDA current_fat_record.name,X
+                LDA [SDOS_FILE_REC_PTR],Y
                 JSL DISPLAY_CHAR
-                INX
-                CPX #11
+                INY
+                CPY #11
                 BNE EXT_LOOP
                 
         FL_BLANK_LOOP
                 LDA #$20
                 JSL DISPLAY_CHAR
-                INX
-                CPX #16
+                INY
+                CPY #16
                 BNE FL_BLANK_LOOP
                 
     DISPLAY_FR_DONE
@@ -933,7 +940,7 @@ DISPLAY_FAT_RECORD
 TEXT_COLOUR_SELECTED
                 .as
                 PHA
-                setal
+                setaxl
                 LDA #<>CS_COLOR_MEM_PTR     ; store the initial colour buffer location
                 STA CURSORPOS
                 
