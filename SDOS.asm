@@ -462,7 +462,7 @@ ISDOS_READ_FILE
               BRA SDOS_READ_FILE_GO_FETCH_A_NEW_64KBlock ; Let's go fetch a new block of 64K or less
 
     SDOS_READ_DONE
-              
+              setas
               RTL
 
 SDOS_ADJUST_POINTER
@@ -534,7 +534,8 @@ SDOS_SET_FILE_LENGTH
 ;   A = Number of byte Fetched
 ;  Buffer @ SDOS_SECTOR_BEGIN
 SDOS_READ_BLOCK
-              setas
+              .as
+              .xl
               LDA #CH_CMD_RD_DATA0
               STA SDCARD_CMD;
               JSR DLYCMD_2_DTA;   ; 3us Delay to get the Value Return

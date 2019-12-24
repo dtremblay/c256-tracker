@@ -915,25 +915,3 @@ RAD_SETINSTRUMENT
 
 * = $170000
 TuneInfo .dstruct SongData
-
-
-* = $178000
-RAD_FILE_TEMP
-;.binary "RAD_Files/action.rad"  ; v1.0
-;.binary "RAD_Files/adlibsp.rad"  ; v1.0 - fav!
-;.binary "RAD_Files/ALLOYRUN.RAD"  ; v1.0
-;.binary "RAD_Files/backlash.rad"  ; v1.0
-;.binary "RAD_Files/cpw.rad"      ; v1.0
-;.binary "RAD_Files/crystal2.rad"  ; v1.0
-.binary "RAD_Files/island industrial.rad"  ; v1.0 - fun!
-;.binary "RAD_Files/paybacktime tactics-a1.rad" ; v1.0
-;.binary "RAD_Files/pipkasoft intro 2.rad"
-;.binary "RAD_Files/sp2.rad"      ; v1.0
-;.binary "RAD_Files/strange.rad"  ; v1.0
-;.binary "RAD_Files/subwave.rad"  ; v1.0
-;.binary "RAD_Files/trimarch.rad"  ; v1.0
-;.binary "RAD_Files/yay.rad"  ; v1.0
-
-;.binary "RAD_Files/burnzone.rad" ; v2.1 file
-;.binary "RAD_Files/raster_v2.rad" ; v2.1 file
-;.binary "RAD_Files/Xcessiv.rad"  ; v2.1

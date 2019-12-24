@@ -12,6 +12,7 @@ FIFTY_HZ_COUNT   = 286360
 SCRN_COPY        = $001000
 SCRN_COPY_CLR    = $001000 + 800
 SDCARD_LIST      = $140000
+RAD_FILE_TEMP    = $178000 ; pointer to file
 
 * = MOUSE_BUTTONS_REG
                 .byte 0
@@ -141,7 +142,7 @@ TRACKER
                 
                 ; we allow input of data via MIDI
                 JSR INIT_MIDI
-                JSR DISPLAY_ORDERS
+                ;JSR DISPLAY_ORDERS
                 JSR DISPLAY_PATTERN
                 
           

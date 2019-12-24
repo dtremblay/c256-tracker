@@ -153,10 +153,9 @@ POPULATE_FILES
 EXIT_FILE
             .as
             .xs
-            LDA #0
-            STA STATE_MACHINE
             
             setxl
+            JSR RESET_STATE_MACHINE
             JSR DRAW_DISPLAY
             JSR LOAD_INSTRUMENT
             JSR DISPLAY_PATTERN
@@ -264,11 +263,20 @@ LOAD_FILE
             setas
             LDA #`RAD_FILE_TEMP
             STA SDCARD_FILE_PTR+2
-            
+
+            ; Load the file pointed to by SDOS_LINE_SELECT            
             JSL ISDOS_READ_FILE
-            ; Load the file pointed to by SDOS_LINE_SELECT
-    
-            ; JSL RAD_INIT_PLAYER
+
+            ; clear pattern memory
+            LDA #0
+            LDX #0
+    LF_CLEAR_MEM
+            STA @lPATTERNS,X
+            INX
+            BNE LF_CLEAR_MEM
+                        
+            ; load the song
+            JSL RAD_INIT_PLAYER
             ; Close the load file display
     LF_DONE
             setxs
