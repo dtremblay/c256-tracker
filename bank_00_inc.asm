@@ -106,32 +106,6 @@ RAD_LINE_PTR     = $0000FA ; 2 bytes - offset to memory location
 ;;///////////////////////////////////////////////////////////////
 GAVIN_BLOCK      = $000100 ;256 Bytes Gavin reserved, overlaps debugging registers at $1F0
 
-MULTIPLIER_0     = $000100 ;0 Byte  Unsigned multiplier
-M0_OPERAND_A     = $000100 ;2 Bytes Operand A (ie: A x B)
-M0_OPERAND_B     = $000102 ;2 Bytes Operand B (ie: A x B)
-M0_RESULT        = $000104 ;4 Bytes Result of A x B
-
-MULTIPLIER_1     = $000108 ;0 Byte  Signed Multiplier
-M1_OPERAND_A     = $000108 ;2 Bytes Operand A (ie: A x B)
-M1_OPERAND_B     = $00010A ;2 Bytes Operand B (ie: A x B)
-M1_RESULT        = $00010C ;4 Bytes Result of A x B
-
-DIVIDER_0        = $000110 ;0 Byte  Signed divider
-D0_OPERAND_A     = $000110 ;2 Bytes Divider 1 Dividend ex: A in  B/A
-D0_OPERAND_B     = $000112 ;2 Bytes Divider 1 Divisor ex B in B/A
-D0_RESULT        = $000114 ;2 Bytes Signed quotient result of B/A ex: 7/2 = 3 r 1
-D0_REMAINDER     = $000116 ;2 Bytes Signed remainder of B/A ex: 1 in 7/2=3 r 1
-
-DIVIDER_1        = $000118 ;0 Byte  Unsigned divider
-D1_OPERAND_A     = $000118 ;2 Bytes Divider 0 Dividend ex: A in  A/B
-D1_OPERAND_B     = $00011A ;2 Bytes Divider 0 Divisor ex B in A/B
-D1_RESULT        = $00011C ;2 Bytes Quotient result of A/B ex: 7/2 = 3 r 1
-D1_REMAINDER     = $00011E ;2 Bytes Remainder of A/B ex: 1 in 7/2=3 r 1
-
-; Reserved
-ADDER_A          = $000120 ; 4 bytes (32 bit) Accumulator A
-ADDER_B          = $000124 ; 4 bytes (32 bit) Accumulator B
-ADDER_R          = $000128 ; 4 bytes (32 bit) Result
 ; Reserved
 INT_CONTROLLER   = $000140 ; $000140...$00015F Interrupt Controller
 
@@ -249,16 +223,16 @@ TEST_END         = $007FFF ;0 Byte
 STACK_BEGIN      = $008000 ;32512 Bytes The default beginning of stack space
 STACK_END        = $00FEFF ;0 Byte  End of stack space. Everything below this is I/O space
 
-ISR_BEGIN        = $18FF00 ; Byte  Beginning of CPU vectors in Direct page
-HRESET           = $18FF00 ;16 Bytes Handle RESET asserted. Reboot computer and re-initialize the kernel.
-HCOP             = $18FF10 ;16 Bytes Handle the COP instruction. Program use; not used by OS
-HBRK             = $18FF20 ;16 Bytes Handle the BRK instruction. Returns to BASIC Ready prompt.
-HABORT           = $18FF30 ;16 Bytes Handle ABORT asserted. Return to Ready prompt with an error message.
-HNMI             = $18FF40 ;32 Bytes Handle NMI
-HIRQ             = $18FF60 ;32 Bytes Handle IRQ
-Unused_FF80      = $18FF80 ;End of direct page Interrrupt handlers
+ISR_BEGIN        = $38FF00 ; Byte  Beginning of CPU vectors in Direct page
+HRESET           = $38FF00 ;16 Bytes Handle RESET asserted. Reboot computer and re-initialize the kernel.
+HCOP             = $38FF10 ;16 Bytes Handle the COP instruction. Program use; not used by OS
+HBRK             = $38FF20 ;16 Bytes Handle the BRK instruction. Returns to BASIC Ready prompt.
+HABORT           = $38FF30 ;16 Bytes Handle ABORT asserted. Return to Ready prompt with an error message.
+HNMI             = $38FF40 ;32 Bytes Handle NMI
+HIRQ             = $38FF60 ;32 Bytes Handle IRQ
+Unused_FF80      = $38FF80 ;End of direct page Interrrupt handlers
 
-VECTORS_BEGIN    = $18FFE0 ;0 Byte  Interrupt vectors
+VECTORS_BEGIN    = $38FFE0 ;0 Byte  Interrupt vectors
 JMP_READY        = $00FFE0 ;4 Bytes Jumps to ROM READY routine. Modified whenever alternate command interpreter is loaded.
 VECTOR_COP       = $00FFE4 ;2 Bytes Native COP Interrupt vector
 VECTOR_BRK       = $00FFE6 ;2 Bytes Native BRK Interrupt vector

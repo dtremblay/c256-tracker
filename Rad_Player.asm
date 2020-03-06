@@ -108,10 +108,10 @@ PARSER_RAD_FILE_INSTRUMENT_10
             setal
             ; find the address of the instrument by multiplying by the record length
             DEC A
-            STA @lM0_OPERAND_A
+            STA @lUNSIGNED_MULT_A
             LDA #INSTR_REC_LEN
-            STA @lM0_OPERAND_B
-            LDA @lM0_RESULT  ; not sure why this one requires a long address - bank is still 0
+            STA @lUNSIGNED_MULT_B
+            LDA @lUNSIGNED_MULT_RESULT  ; not sure why this one requires a long address - bank is still 0
             
             CLC
             ADC #<>INSTRUMENT_ACCORDN
@@ -206,10 +206,10 @@ READ_PATTERNS_10
             ; compute the start address of the pattern
             LDA RAD_PATTRN
             AND #$00FF
-            STA @lM0_OPERAND_A
+            STA @lUNSIGNED_MULT_A
             LDA #PATTERN_BYTES
-            STA @lM0_OPERAND_B
-            LDA @lM0_RESULT
+            STA @lUNSIGNED_MULT_B
+            LDA @lUNSIGNED_MULT_RESULT
             INC A ; skip the pattern byte
             STA RAD_PTN_DEST
             
@@ -238,10 +238,10 @@ READ_PATTERN_10
             INY
             setal
             AND #$7F
-            STA @lM0_OPERAND_A
+            STA @lUNSIGNED_MULT_A
             LDA #LINE_BYTES
-            STA @lM0_OPERAND_B
-            LDA @lM0_RESULT
+            STA @lUNSIGNED_MULT_B
+            LDA @lUNSIGNED_MULT_RESULT
             INC A ; skip the line number
             STA @lRAD_LINE_PTR
             setas
@@ -389,10 +389,10 @@ RAD_PLAYNOTES
             LDA PATTERN_NUM
             AND #$FF
             DEC A ; start at 0
-            STA @lM0_OPERAND_A
+            STA @lUNSIGNED_MULT_A
             LDA #PATTERN_BYTES
-            STA @lM0_OPERAND_B
-            LDA @lM0_RESULT
+            STA @lUNSIGNED_MULT_B
+            LDA @lUNSIGNED_MULT_RESULT
             INC A ; skip the pattern number byte
             STA RAD_PTN_DEST
             
@@ -405,10 +405,10 @@ RAD_PLAYNOTES
             
             LDA LINE_NUM_HEX
             AND #$7F
-            STA @lM0_OPERAND_A
+            STA @lUNSIGNED_MULT_A
             LDA #LINE_BYTES
-            STA @lM0_OPERAND_B
-            LDA @lM0_RESULT
+            STA @lUNSIGNED_MULT_B
+            LDA @lUNSIGNED_MULT_RESULT
             INC A  ; skip the line number byte
 
             LDY #128 + 2

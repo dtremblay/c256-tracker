@@ -253,12 +253,12 @@ DISPLAY_PATTERN
                 
                 ; find the starting address of the pattern and write it to the PTRN_ADDR
                 DEC A  ; use 0 based offsets
-                STA @lM0_OPERAND_A
-                STZ M0_OPERAND_A + 1
+                STA @lUNSIGNED_MULT_A
+                STZ UNSIGNED_MULT_A + 1
             setal
                 LDA #PATTERN_BYTES  ; this is the pattern size
-                STA @lM0_OPERAND_B
-                LDA @lM0_RESULT
+                STA @lUNSIGNED_MULT_B
+                LDA @lUNSIGNED_MULT_RESULT
                 INC A ; skip the pattern # byte
                 STA PTRN_ADDR
             setas 
@@ -317,16 +317,16 @@ TRIPLET
                 
                 ; compute the address of the line
                 LDA #LINE_BYTES
-                STA @lM0_OPERAND_A
-                STZ M0_OPERAND_A + 1
-                STZ M0_OPERAND_B + 1
+                STA @lUNSIGNED_MULT_A
+                STZ UNSIGNED_MULT_A + 1
+                STZ UNSIGNED_MULT_B + 1
                 LDA TAB_COUNTER
                 DEC A ; use zero based offset
-                STA @lM0_OPERAND_B
+                STA @lUNSIGNED_MULT_B
                 
                 
             setal
-                LDA @lM0_RESULT
+                LDA @lUNSIGNED_MULT_RESULT
                 STA LINE_ADDR
             setas
                 LDA TAB_COUNTER
@@ -945,10 +945,10 @@ TEXT_COLOUR_SELECTED
                 STA CURSORPOS
                 
                 LDA SDOS_LINE_SELECT
-                STA M0_OPERAND_A
+                STA UNSIGNED_MULT_A
                 LDA #128
-                STA M0_OPERAND_B
-                LDA M0_RESULT
+                STA UNSIGNED_MULT_B
+                LDA UNSIGNED_MULT_RESULT
                 CLC
                 ADC #128 * 11 + 31
                 TAY

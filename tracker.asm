@@ -1,18 +1,19 @@
 .cpu "65816"
 .include "macros_inc.asm"
 .include "bank_00_inc.asm"
+.include "math_def.asm"
 .include "io_def.asm"
 .include "super_io_def.asm"
 .include "vicky_def.asm"
 .include "interrupt_def.asm"
 
-MOUSE_BUTTONS_REG= $180F00 ; bit 2=middle, bit 1=right, bit 0=left
+MOUSE_BUTTONS_REG= $380F00 ; bit 2=middle, bit 1=right, bit 0=left
 INSTR_REC_LEN    = INSTRUMENT_BAGPIPE1 - INSTRUMENT_ACCORDN
 FIFTY_HZ_COUNT   = 286360
 SCRN_COPY        = $001000
 SCRN_COPY_CLR    = $001000 + 800
-SDCARD_LIST      = $140000
-RAD_FILE_TEMP    = $178000 ; pointer to file
+SDCARD_LIST      = $340000
+RAD_FILE_TEMP    = $378000 ; pointer to file
 
 * = MOUSE_BUTTONS_REG
                 .byte 0
@@ -75,7 +76,7 @@ RVECTOR_ENMI    .addr HNMI     ; FFFA
 RVECTOR_ERESET  .addr HRESET   ; FFFC
 RVECTOR_EIRQ    .addr HIRQ     ; FFFE
 
-* = $181000
+* = $381000
 
 .include "OPL2_library.asm"
 .include "keyboard_def.asm"
@@ -259,16 +260,16 @@ INIT_TIMER0_BPM
                 PLB ; set databank to 0
                 
                 LDA #3  ; each timer counter is 24 bits - 3 bytes
-                STA M0_OPERAND_A
-                STZ M0_OPERAND_A + 1
-                STZ M0_OPERAND_B + 1
+                STA UNSIGNED_MULT_A
+                STZ UNSIGNED_MULT_A + 1
+                STZ UNSIGNED_MULT_B + 1
                 SEC
                 LDA BPM  ; multiply by the BPM, the 4 offset is the lowest BPM
                 SBC #4
-                STA M0_OPERAND_B
+                STA UNSIGNED_MULT_B
                 
                 setal
-                LDA M0_RESULT 
+                LDA UNSIGNED_MULT_RESULT 
                 TAX
                 
                 setas
@@ -366,14 +367,14 @@ LOAD_INSTRUMENT
                 LDA @lINSTR_NUMBER
 
                 ; calculate the memory offset to the instrument bank
-                STA @lM0_OPERAND_A
+                STA @lUNSIGNED_MULT_A
                 LDA #0
-                STA @lM0_OPERAND_A + 1
-                STA @lM0_OPERAND_B + 1
+                STA @lUNSIGNED_MULT_A + 1
+                STA @lUNSIGNED_MULT_B + 1
                 LDA #INSTR_REC_LEN
-                STA @lM0_OPERAND_B
+                STA @lUNSIGNED_MULT_B
                 setal
-                LDA @lM0_RESULT
+                LDA @lUNSIGNED_MULT_RESULT
                 
                 CLC
                 ADC #<>INSTRUMENT_ACCORDN
@@ -935,7 +936,7 @@ MIDI_COMMAND_TABLE
 .include "Rad_Player.asm"
 
 
-* = $190000 ; pattern memory - reserving memory is kind of inefficient, but it's easier right now
+* = $390000 ; pattern memory - reserving memory is kind of inefficient, but it's easier right now
 PATTERN_BYTES = 1793
 LINE_BYTES    =   28
 PATTERNS .for pattern=1, pattern <= 36, pattern += 1 ; 64548 bytes total
@@ -950,6 +951,6 @@ PATTERNS .for pattern=1, pattern <= 36, pattern += 1 ; 64548 bytes total
 .next
 ORDERS    .fill 120, 0
 
-* = $1A0000
+* = $3A0000
 .include "bpm.asm"
 .include "SDOS.asm"
