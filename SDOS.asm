@@ -1,9 +1,64 @@
-.cpu "65816"
-
+;******************************************************************************
 ; SD Card OS
-;SDOS.asm
-;Jump Table
+; SDOS.asm
+;******************************************************************************
+.include "SDCard_Controller_def.asm"
+.include "GABE_Control_Registers_def.asm"
 .include "ch376s_inc.asm"
+
+
+partentryrec    .struct
+    status      .fill 1 ; 80 represents bootable - 00 is inactive
+    first_chs   .fill 3
+    ptype       .fill 1
+    lst_chs     .fill 3
+    lba         .fill 4
+    sectors     .fill 4
+                .ends
+
+bootrec         .struct
+    void        .fill 446 ; 16 lines
+    partition1  .dstruct partentryrec
+    partition2  .dstruct partentryrec
+    partition3  .dstruct partentryrec
+    partition4  .dstruct partentryrec
+    sig         .fill 2
+                .ends
+                
+bootsector      .struct
+                .fill 3 ; EB 3C 90
+                .fill 8 ; MSDOS5.0
+                .dstruct biosparamblock ; 25 bytes - BIOS Parameter Block
+                .dstruct extendedbiosprm ; 26 bytes - Extended BIOS Param Block
+                .fill 448 ; bootstrap code
+                .fill 2 ; 55 AA
+                .ends
+                
+biosparamblock  .struct
+                .fill 2 ; bytes per second - should be 512
+                .fill 1 ; sectors per cluster
+                .fill 2 ; reserved sectors
+                .fill 1 ; Number of FATs - should be 2
+                .fill 2 ; Root Entries
+                .fill 2 ; small sectors - 0 with large sectors set.
+                .fill 1 ; media type - $F8 hard disk
+                .fill 2 ; sectors per FAT
+                .fill 2 ; sectors per track
+                .fill 2 ; number of heades
+                .fill 4 ; hidden sectors
+                .fill 4 ; large sectors
+                
+                .ends
+                
+extendedbiosprm .struct
+                .fill 1 ; physical disk number - floppies start at $0, hard disks at $80
+                .fill 1 ; current heades
+                .fill 1 ; signature $28 or $29
+                .fill 4 ; volume serial number
+                .fill 11 ; volume label
+                .fill 8 ; system id - FAT12 or FAT16 depending on format
+
+                .ends
 
 fatrec  .struct
   name      .fill 8
@@ -15,82 +70,146 @@ fatrec  .struct
 .ends
 
 simplefilestruct .struct
-  name      .fill 8
-  extension .fill 3
-  type      .byte 1
-  size_l    .word 0
-  size_h    .word 0
-.ends
+  name          .fill 8
+  extension     .fill 3
+  type          .byte 1
+  size_l        .word 0
+  size_h        .word 0
+                .ends
+                
+TURN_ON_SD_LED  .macro
+                ; turn on the LED
+                LDA GABE_MSTR_CTRL
+                AND #~GABE_CTRL_SDC_LED
+                ORA #GABE_CTRL_SDC_LED
+                STA GABE_MSTR_CTRL
+                .endm
+                
+TURN_OFF_SD_LED .macro
+                ; turn off the LED
+                LDA GABE_MSTR_CTRL
+                AND #~GABE_CTRL_SDC_LED
+                STA GABE_MSTR_CTRL
+                .endm
 
-; Low-Level Command for the SD Card OS
-; CH376S Controller Commands
-
-SDOS_CHECK_CD JML ISDOS_CHK_CD ; Check if Card is Present
-SDOS_CHECK_WP JML ISDOS_CHK_WP ; Check if Card is Write Protected
-
-; High-Level Command for the SD CARD
-SDOS_INIT     JML ISDOS_INIT
-SDOS_DIR      JML ISDOS_DIR
-SDOS_CHDIR    JML ISDOS_CHDIR
-SDOS_LOAD     JML ISDOS_READ_FILE
-SDOS_SAVE     JML ISDOS_SAVE
-SDOS_EXEC     JML ISDOS_EXEC
-
-;/////////////////////////////////////////////////////////
-;////////////////////////////////////////////////////////
+;******************************************************************************
 ; ISDOS_INIT
 ; Init the SDCARD
 ; Inputs:
 ;  None
 ; Affects:
 ;   None
-ISDOS_INIT    setas
-              LDA @lINT_PENDING_REG1    ; Read the Pending Register &
-              AND #~FNX1_INT07_SDCARD   ; Enable
-              STA @lINT_PENDING_REG1
-
-              LDA #CH_CMD_CHECK_EXIST
-              STA SDCARD_CMD
-              JSR DLYCMD_2_DTA
-              LDA #$A8
-              STA SDCARD_DATA
-    CHK_LOOP
-              JSR DLYDTA_2_DTA
-              JSR DLYDTA_2_DTA
-              JSR DLYDTA_2_DTA
-              LDA SDCARD_DATA  ; the data returned must be the complement
-              CMP #~$A8;  $57
-              BNE CHK_LOOP
-              JSR DLYCMD_2_DTA
-
-              LDA #CH_CMD_SET_MODE
-              STA SDCARD_CMD
-              JSR DLYCMD_2_DTA
-              JSR DLYCMD_2_DTA
-              LDA #$03            ; Mode 3 - SDCARD
-              STA SDCARD_DATA     ; Write the MODE and Wait for around ~10us
-
-    ISDOS_WAIT_FOR_MODE_SW
-              JSR DLYDTA_2_DTA ; Wait 0.6us
-              LDA SDCARD_DATA
-              CMP #$51         ; CMD_RET_SUCCESS = 051H, CMD_RET_ABORT = 05FH
-              BEQ CHK_SET_OK
-              CMP #$5F
-              BEQ CHK_SET_NOK
+;******************************************************************************
+ISDOS_INIT
+                .as
+                TURN_ON_SD_LED
+                
+                ; initialize the SD Card reader
+                LDA #SDC_TRANS_INIT_SD
+                STA SDC_TRANS_TYPE_REG
+                
+                LDA #SDC_TRANS_START
+                STA SDC_TRANS_CONTROL_REG
               
-              BNE ISDOS_WAIT_FOR_MODE_SW
-    CHK_SET_OK
-              LDA #SDCARD_PRSNT_CD
-              STA SDCARD_PRSNT_MNT
-              BRA SD_INIT_DONE
-    CHK_SET_NOK
-              LDA #SDCARD_PRSNT_NO_CARD
-              STA SDCARD_PRSNT_MNT
-              BRA SD_INIT_DONE
+    SD_WAIT     LDA SDC_TRANS_STATUS_REG
+                AND #SDC_TRANS_BUSY
+                CMP #SDC_TRANS_BUSY
+                BEQ SD_WAIT
+                
+                ; check for errors
+                LDA SDC_TRANS_ERROR_REG
+                BNE SD_INIT_FAILED
+                
+                ; SD Card is present
+                LDA #1
+                STA SDCARD_PRSNT_MNT 
+                
+                BRA SD_INIT_DONE
+              
+    SD_INIT_FAILED
+                ; SD Card is not present
+                LDA #0
+                STA SDCARD_PRSNT_MNT 
+                ; display message
+                LDA #`sd_no_card_msg
+                PHA
+                PLB
+                LDX #<>sd_no_card_msg
+                JSL PUTS
               
     SD_INIT_DONE
-              RTL
+                TURN_OFF_SD_LED
+                RTL
+                
+;******************************************************************************
+;* Read a block of data
+;* Addresses at SDC_SD_ADDR_7_0_REG to SDC_SD_ADDR_31_24_REG need to be set.
+;******************************************************************************
+ISDOS_READ_BLOCK
+                .as
+                TURN_ON_SD_LED
+                LDX #0
+                ; check if the SD Card is present
+                LDA SDCARD_PRSNT_MNT
+                BEQ SDCARD_NOT_PRESENT
 
+                LDA #SDC_TRANS_READ_BLK
+                STA SDC_TRANS_TYPE_REG
+
+                LDA #SDC_TRANS_START
+                STA SDC_TRANS_CONTROL_REG
+                
+    SR_WAIT     LDA SDC_TRANS_STATUS_REG
+                AND #SDC_TRANS_BUSY
+                CMP #SDC_TRANS_BUSY
+                BEQ SR_WAIT
+                
+                ; check for errors
+                LDA SDC_TRANS_ERROR_REG
+                BNE SD_READ_BLOCK_FAILED
+                
+                ; SDC_RX_FIFO_DATA_CNT_HI and SDC_RX_FIFO_DATA_CNT_LO may contain how many bytes were read
+                
+                
+    SR_READ_LOOP
+                LDA SDC_RX_FIFO_DATA_REG
+                STA SD_BLK_BEGIN,X
+                INX
+                CPX #512
+                BNE SR_READ_LOOP
+                BRA SR_DONE
+                
+    SDCARD_NOT_PRESENT
+                LDA #`sd_cant_read_msg
+                PHA
+                PLB
+                LDX #<>sd_cant_read_msg
+                BRA SR_CLEAR
+                
+    SD_READ_BLOCK_FAILED
+                LDA #`sd_read_failure
+                PHA
+                PLB
+                LDX #<>sd_read_failure
+                
+    SR_CLEAR
+                JSL PUTS
+                
+                ; clear the SD memory
+                LDA #0
+        SR_FAIL_LOOP
+                STA SD_BLK_BEGIN,X
+                INX
+                CPX #512
+                BNE SR_FAIL_LOOP
+    SR_DONE
+                ; discard all other bytes
+                LDA #1
+                STA SDC_RX_FIFO_CTRL_REG
+                
+                TURN_OFF_SD_LED
+                RTL
+                
 ; ***************************************************************
 ; * Clear the current FAT record
 ; ***************************************************************
@@ -232,7 +351,7 @@ ISDOS_MOUNT_CARD
 ; File Name ought to be here: SDOS_FILE_NAME and be terminated by NULL.
 ; Affects:
 ;   A
-; Outputs:
+; Out:
 ; A = Interrupt Status
 SDOS_FILE_OPEN
               .as
@@ -333,7 +452,7 @@ DLYDTA_2_DTA
 ; Blocking - Wait for the CH376S Interrupt
 ; Inputs:
 ;
-; Outputs:
+; Out:
 ;   A = Interrupt Status
 SDCARD_WAIT_4_INT
               setas                    ; This is for security
@@ -356,36 +475,6 @@ SDCARD_WAIT_4_INT
               JSR DLYCMD_2_DTA;   ; 1.5us Delay to get the Value Return
               LDA SDCARD_DATA;
               RTS           ;
-; ISDOS_CHK_CD
-; Return the Value of SD Card Present Status
-; Inputs:
-;   None
-; Affects:
-;   Carry - If Card Present -> Carry = 1
-ISDOS_CHK_CD  setas
-              CLC
-              LDA SDCARD_STAT;  BIT[0] = Cd, BIT[1] = WP
-              AND #$01
-              CMP #$01
-              BEQ SDCD_NOT_PRST;
-              SEC
-    SDCD_NOT_PRST 
-              RTS
-;
-; ISDOS_CHK_WP
-; Return the Value of Write Protection Status
-; Inputs:
-;   None
-; Affects:
-;   Carry - If Card Write Protect -> Carry = 1
-ISDOS_CHK_WP  setas
-              CLC
-              LDA SDCARD_STAT;  BIT[0] = Cd, BIT[1] = WP
-              AND #$02
-              BNE SDCD_NOT_WP;
-              SEC
-    SDCD_NOT_WP   
-              RTS
               
 ; ISDOS_READ_FILE
 ; Go Open and Read a file and store it to prefedined address
@@ -524,40 +613,19 @@ SDOS_SET_FILE_LENGTH
               STA @lSDOS_BYTE_NUMBER
               RTS
 
-; SDOS_READ_BLOCK (A needs to be short)
-; Read a Block of Data from Controller
-; Inputs:
-;  None
-; Affects:
-;   A, X
-; Returns:
-;   A = Number of byte Fetched
-;  Buffer @ SDOS_SECTOR_BEGIN
-SDOS_READ_BLOCK
-              .as
-              .xl
-              LDA #CH_CMD_RD_DATA0
-              STA SDCARD_CMD;
-              JSR DLYCMD_2_DTA;   ; 3us Delay to get the Value Return
-              LDA SDCARD_DATA     ; Read First Byte for Number of Byte to Read
-              STA SDCARD_BYTE_NUM  ; Store the Number of byte to be read
-              JSR DLYDTA_2_DTA;   ; 3us Delay to get the Value Return
-              LDY #$0000
-    SDOS_READ_MORE
-              LDA SDCARD_DATA
-              STA [SDCARD_FILE_PTR], Y        ; Store Block Data Sector Begin
-              INY
-              CPY SDCARD_BYTE_NUM
-              BNE SDOS_READ_MORE
-              LDA SDCARD_BYTE_NUM  ; Reload the Number of Byte Read
-              RTS
 ;
 ; MESSAGES
 ;
 sd_card_dir_string  .text '/*' ,$00
                     .fill 128-3,0  ; leave space for the path
-sd_no_card_msg      .text "NO SDCARD PRESENT", $0D, $00
-sd_card_err0        .text "ERROR IN READIND CARD", $00
+sd_no_card_msg      .text "01 - NO SDCARD PRESENT", $0D, $00
+sd_cant_read_msg    .text "02 - Can't read MBR - No Card present", $D, $0
+sd_read_failure     .text "03 - Error during read operation", $d, $0
+SD_FIRST_SECTOR_MSG .text "04 - Error reading boot sector", $d, $0
+SD_FAT_ERROR_MSG    .text "05 - Error reading FAT sector", $d, $0
+SD_ROOT_ERROR_MSG   .text "05 - Error reading Root sector", $d, $0
+
+sd_card_err0        .text "ERROR IN READIND CARD", $d, $0
 sd_card_err1        .text "ERROR LOADING FILE", $00
 sd_card_msg0        .text "Name: ", $0D,$00
 sd_card_msg1        .text "SDCARD DETECTED", $00

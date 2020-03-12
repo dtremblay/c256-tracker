@@ -1,6 +1,7 @@
 .cpu "65816"
 .include "macros_inc.asm"
 .include "bank_00_inc.asm"
+.include "timer_def.asm"
 .include "math_def.asm"
 .include "io_def.asm"
 .include "super_io_def.asm"
@@ -339,17 +340,17 @@ INIT_TIMER0_50HZ
 INIT_OPL2_TMRS
                 .as
                 LDA #$80 ; Reset OPL2 Interrupts
-                STA OPL2_L_IRQ ; byte 4 of OPL2
+                STA OPL3_R_IRQ ; byte 4 of OPL2
                 
                 ; wait 80 us
                 JSR WAIT_80
                 
                 LDA #$10
-                STA OPL2_L_TIMER1 ; byte 2 of OPL2
-                STA OPL2_L_TIMER2 ; byte 2 of OPL2
+                STA OPL3_R_TIMER1 ; byte 2 of OPL2
+                STA OPL3_R_TIMER2 ; byte 2 of OPL2
 
                 LDA #$3 ; enable timers 1 and 2
-                STA OPL2_L_IRQ ; byte 4 of OPL2
+                STA OPL3_R_IRQ ; byte 4 of OPL2
                 
                 RTS
 
@@ -453,7 +454,7 @@ LOAD_AM_VIB_MULT
                 PHA
                 PHA
                 PHA
-                STA @lOPL2_S_AM_VID_EG_KSR_MULT,X
+                STA @lOPL3_R_AM_VID_EG_KSR_MULT,X
                 AND #TREMOLO
                 LDY #7 * 128 + 13
                 JSR WRITE_OFF_ON
@@ -484,7 +485,7 @@ LOAD_AM_VIB_MULT
                 PHA
                 PHA
                 PHA
-                STA @lOPL2_S_AM_VID_EG_KSR_MULT + 3,X
+                STA @lOPL3_R_AM_VID_EG_KSR_MULT + 3,X
                 AND #TREMOLO
                 LDY #7 * 128 + 39
                 JSR WRITE_OFF_ON
@@ -516,7 +517,7 @@ LOAD_KEY_OP_LVL
                 ; Operator 1
                 LDA [INSTR_ADDR]
                 PHA
-                STA @lOPL2_S_KSL_TL,X
+                STA @lOPL3_R_KSL_TL,X
                 AND #KEY_SCALE
                 ROL A
                 ROL A
@@ -533,7 +534,7 @@ LOAD_KEY_OP_LVL
                 LDY #6
                 LDA [INSTR_ADDR],Y
                 PHA
-                STA @lOPL2_S_KSL_TL + 3,X
+                STA @lOPL3_R_KSL_TL + 3,X
                 AND #KEY_SCALE
                 ROL A
                 ROL A
@@ -551,7 +552,7 @@ LOAD_KEY_OP_LVL
 LOAD_ATT_DEC_RATE
                 LDA [INSTR_ADDR]
                 PHA
-                STA @lOPL2_S_AR_DR,X
+                STA @lOPL3_R_AR_DR,X
                 AND #ATTACK_RT
                 LSR A
                 LSR A
@@ -568,7 +569,7 @@ LOAD_ATT_DEC_RATE
                 LDY #6
                 LDA [INSTR_ADDR],Y
                 PHA
-                STA @lOPL2_S_AR_DR + 3,X
+                STA @lOPL3_R_AR_DR + 3,X
                 AND #ATTACK_RT
                 LSR A
                 LSR A
@@ -586,7 +587,7 @@ LOAD_ATT_DEC_RATE
 LOAD_SUSTAIN_RELEASE_RATE
                 LDA [INSTR_ADDR]
                 PHA
-                STA @lOPL2_S_SL_RR,X
+                STA @lOPL3_R_SL_RR,X
                 AND #ATTACK_RT
                 LSR A
                 LSR A
@@ -603,7 +604,7 @@ LOAD_SUSTAIN_RELEASE_RATE
                 LDY #6
                 LDA [INSTR_ADDR],Y
                 PHA
-                STA @lOPL2_S_SL_RR + 3,X
+                STA @lOPL3_R_SL_RR + 3,X
                 AND #ATTACK_RT
                 LSR A
                 LSR A
@@ -621,7 +622,7 @@ LOAD_SUSTAIN_RELEASE_RATE
 LOAD_FEEDBACK_ALGO
                 LDA [INSTR_ADDR]
                 PHA
-                STA @lOPL2_S_FEEDBACK,X
+                STA @lOPL3_R_FEEDBACK,X
                 AND #FEEDBACK
                 LSR A
                 LDY #20 * 128 + 40
@@ -636,14 +637,14 @@ LOAD_FEEDBACK_ALGO
 
 LOAD_WAVE
                 LDA [INSTR_ADDR]
-                STA @lOPL2_S_WAVE_SELECT,X
+                STA @lOPL3_R_WAVE_SELECT,X
                 AND #$7
                 LDY #18 * 128 + 14
                 JSR WRITE_HEX
                 
                 LDY #5
                 LDA [INSTR_ADDR],Y
-                STA @lOPL2_S_WAVE_SELECT+3,X
+                STA @lOPL3_R_WAVE_SELECT+3,X
                 AND #$7
                 LDY #18 * 128 + 40
                 JSR WRITE_HEX

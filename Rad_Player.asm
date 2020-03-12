@@ -362,9 +362,9 @@ RAD_ALL_NOTES_OFF
             .as
             PHY
             setal
-            LDA #<>OPL2_S_BASE
+            LDA #<>OPL3_R_BASE
             STA OPL2_IND_ADDY_LL
-            LDA #`OPL2_S_BASE
+            LDA #`OPL3_R_BASE
             STA OPL2_IND_ADDY_LL + 2
             setas
             LDY #$A0
@@ -549,9 +549,9 @@ RAD_EFFECT_VOLUME_SLIDE
             STA RAD_CHANNE_EFFCT
             
             setal
-            LDA #<>OPL2_S_BASE
+            LDA #<>OPL3_R_BASE
             STA OPL2_IND_ADDY_LL
-            LDA #`OPL2_S_BASE
+            LDA #`OPL3_R_BASE
             STA OPL2_IND_ADDY_LL + 2
             setaxs
             
@@ -638,9 +638,9 @@ RAD_EFFECT_NOTE_SLIDE_DOWN
             STA RAD_CHANNE_EFFCT
             
             setal
-            LDA #<>OPL2_S_BASE
+            LDA #<>OPL3_R_BASE
             STA OPL2_IND_ADDY_LL
-            LDA #`OPL2_S_BASE
+            LDA #`OPL3_R_BASE
             STA OPL2_IND_ADDY_LL + 2
             setaxs
             ; read the current fnumber into accumulator
@@ -722,9 +722,9 @@ RAD_EFFECT_SET_VOLUME
             .as
             PHY
             setal
-            LDA #<>OPL2_S_BASE
+            LDA #<>OPL3_R_BASE
             STA OPL2_IND_ADDY_LL
-            LDA #`OPL2_S_BASE
+            LDA #`OPL3_R_BASE
             STA OPL2_IND_ADDY_LL + 2
             setas
 
@@ -901,10 +901,10 @@ RAD_SETINSTRUMENT
               STA OPL2_REG_OFFSET+1;
               setaxl
               CLC
-              LDA #<>OPL2_S_BASE
+              LDA #<>OPL3_R_BASE
               ADC OPL2_REG_OFFSET
               STA OPL2_IND_ADDY_LL
-              LDA #`OPL2_S_BASE
+              LDA #`OPL3_R_BASE
               STA OPL2_IND_ADDY_HL
               setas
               LDY #$0008
