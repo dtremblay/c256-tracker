@@ -8,17 +8,6 @@
 .include "kernel_inc.asm"
 
 LINE_COUNTER            = $B0
-; File System Offsets
-SD_FIRST_SECTOR         = $5F00 ; 4 bytes
-SD_FAT_OFFSET           = $5F04 ; 4 bytes
-SD_ROOT_OFFSET          = $5F08 ; 4 bytes
-SD_SECTORS              = $5F0C ; 4 bytes
-
-SD_RESERVED_SECTORS     = $5F10 ; 2 bytes
-SD_SECTORS_PER_FAT      = $5F12 ; 2 bytes
-SD_BYTES_PER_SECTOR     = $5F14 ; 2 bytes
-SD_SECTORS_PER_CLUSTER  = $5F16 ; 2 bytes
-SD_FAT_COUNT            = $5F18 ; 2 bytes
 
 ; Read data here
 SD_BLK_BEGIN            = $6000
@@ -76,26 +65,20 @@ RVECTOR_EIRQ    .addr HIRQ     ; FFFE
 * = $5000
 .include "SDOS.asm"
 
-ERROR_MSG       .macro
-                setas
-                LDA #`\1
-                PHB
-                PHA
-                PLB
-                LDX #<>\1
-                JSL PUTS
-                PLB
-                BRL SDCARD_DONE
-                .endm
-
 SDCARD
                 setas
                 setxl
                 JSL CLEAR_DISPLAY
+                
                 ; initialize the SD Card
                 JSL ISDOS_INIT
         ; read sector 0 - the Master Boot Record
                 setal
+                ; where is the data going to be written to
+                LDA #SD_BLK_BEGIN
+                STA SD_DATA
+                
+                ; initialize registers to load MBR
                 LDA #0
                 STA SDC_SD_ADDR_7_0_REG
                 STA SDC_SD_ADDR_23_16_REG
@@ -105,7 +88,7 @@ SDCARD
                 ; check for errors
                 LDA SDC_TRANS_ERROR_REG
                 BEQ SD_CONTINUE_1
-                ERROR_MSG sd_no_card_msg
+                ERROR_MSG sd_no_card_msg, SDCARD_DONE
                 
     SD_CONTINUE_1
                 ; Read the MBR signature - it should be 55 AA
@@ -113,7 +96,7 @@ SDCARD
                 LDA SD_BLK_BEGIN + 510
                 CMP #$AA55
                 BEQ VALID_SIG
-                ERROR_MSG INVALID_SIG_MSG
+                ERROR_MSG INVALID_SIG_MSG, SDCARD_DONE
     VALID_SIG
                 setal
                 LDX #446 ; offset to first partition
@@ -126,9 +109,9 @@ SDCARD
                 LDA SD_FIRST_SECTOR
                 ASL A
                 STA SDC_SD_ADDR_15_8_REG
+                setas
                 LDA SD_FIRST_SECTOR+2
                 STA SDC_SD_ADDR_31_24_REG
-                setas
                 LDA #0
                 STA SDC_SD_ADDR_7_0_REG
                 JSL ISDOS_READ_BLOCK
@@ -136,25 +119,23 @@ SDCARD
                 ; check for errors
                 LDA SDC_TRANS_ERROR_REG
                 BEQ SD_CONTINUE_2
-                ERROR_MSG SD_FIRST_SECTOR_MSG
+                ERROR_MSG SD_FIRST_SECTOR_MSG, SDCARD_DONE
                 
     SD_CONTINUE_2
-
                 setal
                 LDX #0
                 ; bytes per sector - not sure what this is used for
                 LDA SD_BLK_BEGIN,X + $B
                 STA SD_BYTES_PER_SECTOR
                 
-                ; sectors per cluster - not sure what this is used for
-                LDA SD_BLK_BEGIN,X + $D
-                AND #$FF
-                STA SD_SECTORS_PER_CLUSTER
-                
                 ; number of fat tables
                 LDA SD_BLK_BEGIN,X + $10
                 AND #$FF
                 STA SD_FAT_COUNT
+                
+                ; number of root entries
+                LDA SD_BLK_BEGIN,X + $11
+                STA SD_ROOT_ENTRIES
 
                 ; how many sectors do we have - small <= 65535
                 LDA SD_BLK_BEGIN,X + $13
@@ -174,55 +155,115 @@ SDCARD
                 
                 LDA SD_BLK_BEGIN,X + $E
                 STA SD_RESERVED_SECTORS
-                LDA SD_BLK_BEGIN,X + $24
+                LDA SD_BLK_BEGIN,X + $16
                 STA SD_SECTORS_PER_FAT
-            
-                JSR COMPUTE_FAT_ROOT_OFFSETS
-
-                ; Load the FAT table
-                LDA SD_FAT_OFFSET
-                ASL A
-                STA SDC_SD_ADDR_15_8_REG
-                LDA SD_FAT_OFFSET+2
-                STA SDC_SD_ADDR_23_16_REG
-                setas
-                LDA #0
-                STA SDC_SD_ADDR_7_0_REG
-                JSL ISDOS_READ_BLOCK
-                ; check for errors
-                LDA SDC_TRANS_ERROR_REG
-                BEQ SD_CONTINUE_3
-                ERROR_MSG SD_FAT_ERROR_MSG
                 
-    SD_CONTINUE_3
-
-setas
-LDY #$A000 + 20 * 128
-;JSL DISPLAY_BLOCK
-                setal
-                LDA SD_ROOT_OFFSET
-                ASL A
-                STA SDC_SD_ADDR_15_8_REG
-                LDA SD_ROOT_OFFSET + 2
-                STA SDC_SD_ADDR_23_16_REG
-                setas
-                LDA #0
-                STA SDC_SD_ADDR_7_0_REG
-                JSL ISDOS_READ_BLOCK
-                ; check for errors
-                LDA SDC_TRANS_ERROR_REG
-                BEQ SD_CONTINUE_4
-                ERROR_MSG SD_ROOT_ERROR_MSG
+                JSR COMPUTE_FAT_ROOT_DATA_OFFSETS
+                LDA #$6200
+                STA SD_DATA
+                JSR SD_READ_FAT_SECTOR
                 
-    SD_CONTINUE_4
-                LDX #0
-                LDY #20
-                JSL LOCATE
+                LDA #$6400
+                STA SD_DATA
+                JSR SD_READ_ROOT_SECTOR
                 
+                LDA #$6600
+                STA SD_DATA
+                JSR SD_READ_DATA_SECTOR
     SDCARD_DONE
                 BRL SDCARD_DONE
                 
 INVALID_SIG_MSG .text 'Invalid MBR Signature',$D,0
+
+
+; *****************************************************************************
+; * Load the FAT table
+; *****************************************************************************
+SD_READ_FAT_SECTOR
+                .al
+                .xl
+                LDA SD_FAT_OFFSET
+                ASL A
+                PHP
+                STA SDC_SD_ADDR_15_8_REG
+                LDA SD_FAT_OFFSET+2
+                ASL A
+                PLP
+                setas
+                STA SDC_SD_ADDR_31_24_REG
+                LDA #0
+                STA SDC_SD_ADDR_7_0_REG
+                JSL ISDOS_READ_BLOCK
+                ; check for errors
+                LDA SDC_TRANS_ERROR_REG
+                BEQ SD_CONTINUE_FAT
+                ERROR_MSG SD_FAT_ERROR_MSG, SD_CONTINUE_FAT
+                
+    SD_CONTINUE_FAT
+                setal
+                RTS
+                
+; *****************************************************************************
+; * Load the ROOT table
+; *****************************************************************************
+SD_READ_ROOT_SECTOR
+                .al
+                .xl
+                LDA SD_ROOT_OFFSET
+                ASL A ; this may cause a carry
+                PHP
+                STA SDC_SD_ADDR_15_8_REG
+                LDA SD_ROOT_OFFSET+2
+                ASL A
+                PLP
+                setas
+                BCC RT_NO_CARRY
+                INC A
+        RT_NO_CARRY
+                STA SDC_SD_ADDR_31_24_REG
+                LDA #0
+                STA SDC_SD_ADDR_7_0_REG
+                JSL ISDOS_READ_BLOCK
+                ; check for errors
+                LDA SDC_TRANS_ERROR_REG
+                BEQ SD_CONTINUE_ROOT
+                ERROR_MSG SD_ROOT_ERROR_MSG, SD_CONTINUE_ROOT
+                
+    SD_CONTINUE_ROOT
+                setal
+                RTS
+                
+; *****************************************************************************
+; * Load the ROOT table
+; *****************************************************************************
+SD_READ_DATA_SECTOR
+                .al
+                .xl
+                LDA SD_DATA_OFFSET
+                CLC
+                ADC #6
+                ASL A; this may cause a carry
+                PHP
+                STA SDC_SD_ADDR_15_8_REG
+                LDA SD_DATA_OFFSET+2
+                ASL A
+                PLP
+                setas
+                BCC DT_NO_CARRY
+                INC A
+        DT_NO_CARRY
+                STA SDC_SD_ADDR_31_24_REG
+                LDA #0
+                STA SDC_SD_ADDR_7_0_REG
+                JSL ISDOS_READ_BLOCK
+                ; check for errors
+                LDA SDC_TRANS_ERROR_REG
+                BEQ SD_CONTINUE_DATA
+                ERROR_MSG SD_DATA_ERROR_MSG, SD_CONTINUE_DATA
+                
+    SD_CONTINUE_DATA
+                setal
+                RTS
 
 CLEAR_DISPLAY
                 .as
@@ -319,13 +360,13 @@ DISPLAY_BLOCK
                 
                 LDA #32 ; 32 x 16 is 512 bytes
                 STA LINE_COUNTER
-               
-                LDX #0
+                
+                LDX SD_DATA
     DB_LINE_LOOP
                 LDA #0
                 XBA
         DB_LOOP
-                LDA @lSD_BLK_BEGIN,X
+                LDA 0, X
                 JSR DISPLAY_HEX
                 
                 ; display a blank
@@ -468,7 +509,7 @@ IRQ_HANDLER
 ; *****************************************************************************
 ; * Add MBR offset and Reserved Sectors
 ; *****************************************************************************
-COMPUTE_FAT_ROOT_OFFSETS
+COMPUTE_FAT_ROOT_DATA_OFFSETS
                 .al
                 ; compute the FAT sector offset
                 LDA SD_RESERVED_SECTORS ; 16 bit value
@@ -505,5 +546,19 @@ COMPUTE_FAT_ROOT_OFFSETS
                 LDA ADDER_R +2
                 STA SD_ROOT_OFFSET + 2
                 
+                ; compute the offset to data
+                LDA SD_ROOT_OFFSET
+                STA ADDER_A
+                LDA SD_ROOT_OFFSET + 2
+                STA ADDER_A + 2
+                LDA #32 ; the root contains 512 entries at 32 bytes each
+                STA ADDER_B
+                LDA #0
+                STA ADDER_B + 2
+                
+                LDA ADDER_R
+                STA SD_DATA_OFFSET
+                LDA ADDER_R + 2
+                STA SD_DATA_OFFSET + 2
                 
                 RTS

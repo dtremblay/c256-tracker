@@ -101,13 +101,13 @@ RAD_LAST_NOTE    = $0000F9 ; 1 if this is the last note
 RAD_LINE_PTR     = $0000FA ; 2 bytes - offset to memory location
 
 ;;///////////////////////////////////////////////////////////////
-;;; NO CODE or Variable ought to be Instatied in this REGION
+;;; NO CODE or Variable ought to be Instantiated in this REGION
 ;; BEGIN
 ;;///////////////////////////////////////////////////////////////
 GAVIN_BLOCK      = $000100 ;256 Bytes Gavin reserved, overlaps debugging registers at $1F0
 
 ;;///////////////////////////////////////////////////////////////
-;;; NO CODE or Variable ought to be Instatied in this REGION
+;;; NO CODE or Variable ought to be Instantiated in this REGION
 ;; END
 ;;///////////////////////////////////////////////////////////////
 CPU_REGISTERS    = $000240 ; Byte

@@ -61,3 +61,15 @@ setdbr          .macro          ; Set the B (Data bank) register
                 PLA             ; end setdbr macro 
                 .endm 
 
+
+ERROR_MSG       .macro
+                setas
+                LDA #`\1
+                PHB
+                PHA
+                PLB
+                LDX #<>\1
+                JSL PUTS
+                PLB
+                BRL \2
+                .endm

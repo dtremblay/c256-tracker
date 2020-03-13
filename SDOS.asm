@@ -6,6 +6,19 @@
 .include "GABE_Control_Registers_def.asm"
 .include "ch376s_inc.asm"
 
+; File System Offsets
+SD_FIRST_SECTOR         = $5F00 ; 4 bytes
+SD_FAT_OFFSET           = $5F04 ; 4 bytes
+SD_ROOT_OFFSET          = $5F08 ; 4 bytes
+SD_DATA_OFFSET          = $5F0C ; 4 bytes
+
+SD_RESERVED_SECTORS     = $5F10 ; 2 bytes
+SD_SECTORS_PER_FAT      = $5F12 ; 2 bytes
+SD_BYTES_PER_SECTOR     = $5F14 ; 2 bytes
+SD_FAT_COUNT            = $5F16 ; 2 bytes
+SD_SECTORS              = $5F18 ; 4 bytes
+SD_ROOT_ENTRIES         = $5F1A ; 2 bytes
+SD_DATA                 = $0080 ; 3 bytes - used indirect addressing
 
 partentryrec    .struct
     status      .fill 1 ; 80 represents bootable - 00 is inactive
@@ -104,6 +117,10 @@ ISDOS_INIT
                 .as
                 TURN_ON_SD_LED
                 
+                ; SD Card is not present
+                LDA #0
+                STA SDCARD_PRSNT_MNT 
+                
                 ; initialize the SD Card reader
                 LDA #SDC_TRANS_INIT_SD
                 STA SDC_TRANS_TYPE_REG
@@ -118,24 +135,15 @@ ISDOS_INIT
                 
                 ; check for errors
                 LDA SDC_TRANS_ERROR_REG
-                BNE SD_INIT_FAILED
+                BEQ SD_INIT_SUCCESS
+                ERROR_MSG sd_no_card_msg, SD_INIT_DONE
                 
+    SD_INIT_SUCCESS
                 ; SD Card is present
                 LDA #1
                 STA SDCARD_PRSNT_MNT 
                 
                 BRA SD_INIT_DONE
-              
-    SD_INIT_FAILED
-                ; SD Card is not present
-                LDA #0
-                STA SDCARD_PRSNT_MNT 
-                ; display message
-                LDA #`sd_no_card_msg
-                PHA
-                PLB
-                LDX #<>sd_no_card_msg
-                JSL PUTS
               
     SD_INIT_DONE
                 TURN_OFF_SD_LED
@@ -148,7 +156,6 @@ ISDOS_INIT
 ISDOS_READ_BLOCK
                 .as
                 TURN_ON_SD_LED
-                LDX #0
                 ; check if the SD Card is present
                 LDA SDCARD_PRSNT_MNT
                 BEQ SDCARD_NOT_PRESENT
@@ -170,12 +177,12 @@ ISDOS_READ_BLOCK
                 
                 ; SDC_RX_FIFO_DATA_CNT_HI and SDC_RX_FIFO_DATA_CNT_LO may contain how many bytes were read
                 
-                
+                LDY #0
     SR_READ_LOOP
                 LDA SDC_RX_FIFO_DATA_REG
-                STA SD_BLK_BEGIN,X
-                INX
-                CPX #512
+                STA [SD_DATA],Y
+                INY
+                CPY #512
                 BNE SR_READ_LOOP
                 BRA SR_DONE
                 
@@ -234,7 +241,7 @@ ISDOS_CLEAR_FAT_REC
 ISDOS_DIR
               setas
               setxl
-              JSR ISDOS_MOUNT_CARD;     First to See if the Card is Present
+              ;** JSR ISDOS_MOUNT_CARD;     First to See if the Card is Present
               
               JSR ISDOS_CLEAR_FAT_REC
               
@@ -246,13 +253,13 @@ ISDOS_DIR
     ISDOS_NEXT_ENTRY
               LDA #CH_CMD_RD_DATA0
               STA SDCARD_CMD
-              JSR DLYCMD_2_DTA;      ; Wait 1.5us
+              ;** JSR DLYCMD_2_DTA;      ; Wait 1.5us
               LDA SDCARD_DATA        ;  Load Data Length - should be 32 - we don't care.
               
               ; populate the FAT records - only copy the filename, type and size
               LDY #0
     FAT_REC_LOOP
-              JSR DLYDTA_2_DTA       ; Wait 0.6us
+              ;** JSR DLYDTA_2_DTA       ; Wait 0.6us
               LDA SDCARD_DATA
               STA [SDOS_FILE_REC_PTR],Y
               INY
@@ -280,12 +287,12 @@ ISDOS_DIR
               CPX #64
               BEQ ISDOS_DIR_DONE
               
-              JSR DLYCMD_2_DTA;      ; Wait 1.5us
+              ;** JSR DLYCMD_2_DTA;      ; Wait 1.5us
               
               ; Ask Controller to go fetch the next entry in the Directory
               LDA #CH_CMD_FILE_ENUM_GO
               STA SDCARD_CMD
-              JSR SDCARD_WAIT_4_INT       ; Go Wait for Interrupt
+              ;** JSR SDCARD_WAIT_4_INT       ; Go Wait for Interrupt
               CMP #CH376S_STAT_DSK_RD
               BEQ ISDOS_NEXT_ENTRY
 
@@ -302,48 +309,6 @@ ISDOS_SAVE    BRK;
 ; Load a File ".FNX" and execute it
 ISDOS_EXEC    BRK;
 
-;/////////////////////////////////////////////////////////
-;////////////////////////////////////////////////////////
-; ISDOS_MOUNT_CARD
-; Check to see if Card exist, then Mount the SD Card
-; Inputs:
-;   Pointer to the ASCII File name by
-; Located @ $000030..$000032 - SDCARD_FLNMPTR_L
-; Affects:
-;   None
-ISDOS_MOUNT_CARD
-              setas
-              setxl
-              LDY #$0000
-              LDA #$01
-              STA SDCARD_PRSNT_MNT        ; Bit[0] = Card Present
-    TRY_MOUNT_AGAIN
-              LDA #CH_CMD_DISK_MOUNT      ; If Present, go Mount it.
-              STA SDCARD_CMD              ;
-              JSR SDCARD_WAIT_4_INT       ;
-              CMP #CH376S_STAT_SUCCESS    ;
-              BEQ ISDOS_MOUNTED
-              INY
-              CPY #$0005
-              BNE TRY_MOUNT_AGAIN
-              JMP SDCARD_ERROR_MOUNT
-    ISDOS_MOUNTED ; The Card is already mounted
-
-              LDA SDCARD_PRSNT_MNT
-              AND #~SDCARD_PRSNT_MNTED
-              ORA #SDCARD_PRSNT_MNTED     ; Set Bit to Indicate that is mounted
-              RTS
-
-    SDCARD_ERROR_MOUNT
-              LDX #<>sd_card_msg3         ; Print Screen the Message "Card Detected"
-              JSL DISPLAY_MSG       ; print the first line
-              RTS
-
-    ISDOS_NO_CARD 
-              LDA #SDCARD_PRSNT_NO_CARD
-              STA SDCARD_PRSNT_MNT
-              RTS
-
 ;
 ; ISDOS_FILE_OPEN
 ; Open the File - whenever a / is found, call File Open until 0 is found.
@@ -351,7 +316,7 @@ ISDOS_MOUNT_CARD
 ; File Name ought to be here: SDOS_FILE_NAME and be terminated by NULL.
 ; Affects:
 ;   A
-; Out:
+; Outputs:
 ; A = Interrupt Status
 SDOS_FILE_OPEN
               .as
@@ -383,11 +348,11 @@ SDOS_FILE_OPEN
               LDA #'/'
     FO_READ_END_PATH
               PHA
-              JSR SDOS_SET_FILE_NAME ; Make Sure the Pointer to the File Name is properly
-              JSR DLYCMD_2_DTA
+              ;** JSR SDOS_SET_FILE_NAME ; Make Sure the Pointer to the File Name is properly
+              ;** JSR DLYCMD_2_DTA
               LDA #CH_CMD_FILE_OPEN ;
               STA SDCARD_CMD          ; Go Request to open the File
-              JSR SDCARD_WAIT_4_INT   ; A Interrupt is Generated, so go polling it
+              ;** JSR SDCARD_WAIT_4_INT   ; A Interrupt is Generated, so go polling it
                
               PLA
               CMP #0
@@ -401,80 +366,12 @@ SDOS_FILE_OPEN
 SDOS_FILE_CLOSE
               LDA #CH_CMD_FILE_CLOSE ;
               STA SDCARD_CMD          ; Go Request to open the File
-              JSR DLYCMD_2_DTA
+              ;** JSR DLYCMD_2_DTA
               LDA #$00                ; FALSE
               STA SDCARD_DATA         ; Store into the Data Register of the CH376s
-              JSR SDCARD_WAIT_4_INT   ; A Interrupt is Generated, so go polling it
+              ;** JSR SDCARD_WAIT_4_INT   ; A Interrupt is Generated, so go polling it
               RTS
 
-; SDOS_SET_FILE_NAME
-; Set the Filename to the Controller CH376D
-; Inputs:
-; File Name ought to reside here: SDOS_FILE_NAME
-; Affects:
-;   None
-SDOS_SET_FILE_NAME
-              PHX
-              LDA #CH_CMD_SET_FILENAME
-              STA SDCARD_CMD
-              JSR DLYCMD_2_DTA
-              LDX #$0000
-    SDOS_SET_FILE_LOOP
-              LDA @lSDOS_FILE_NAME, X   ; This is where the FileName ought to be.
-              STA SDCARD_DATA         ; Store into the Data Register of the CH376s
-              JSR DLYDTA_2_DTA
-              INX
-              CMP #$00              ; Check end of Line
-              BNE SDOS_SET_FILE_LOOP
-              PLX
-              RTS
-
-;
-; 1.5us Delay inbetween the time the Cmd is Sent and Data is either Read or Writen
-; NOP takes 2 Cycles Now
-DLYCMD_2_DTA
-              NOP
-              NOP
-              NOP
-              NOP
-              NOP
-; 0.6us Delay inbetween the time the Cmd is Sent and Data is either Read or Writen
-DLYDTA_2_DTA
-              NOP
-              NOP
-              NOP
-              NOP
-              NOP
-              RTS
-
-
-; SDCARD_WAIT_4_INT
-; Blocking - Wait for the CH376S Interrupt
-; Inputs:
-;
-; Out:
-;   A = Interrupt Status
-SDCARD_WAIT_4_INT
-              setas                    ; This is for security
-;              SEI                     ; There is no time out on this, so let's
-                                       ; make sure it is not going to be interrupted
-;              LDA @lINT_PENDING_REG1  ; Read the Pending Register &
-;              AND #$7F   ; Enable
-;              STA @lINT_PENDING_REG1
-    SDCARD_BUSY_INT
-              LDA @lINT_PENDING_REG1   ; Check to See if the Pending Register for the SD_INT is Set
-              AND #FNX1_INT07_SDCARD   ;
-              CMP #FNX1_INT07_SDCARD
-              BNE SDCARD_BUSY_INT      ; Go Check again to see if it is checked
-              STA @lINT_PENDING_REG1   ;Interrupt as occured, clear the Pending Register for next time.
-              ; Fetch the Status
-              JSR DLYCMD_2_DTA ;
-              JSR DLYCMD_2_DTA ;
-              LDA #CH_CMD_GET_STATUS
-              STA SDCARD_CMD;
-              JSR DLYCMD_2_DTA;   ; 1.5us Delay to get the Value Return
-              LDA SDCARD_DATA;
-              RTS           ;
               
 ; ISDOS_READ_FILE
 ; Go Open and Read a file and store it to prefedined address
@@ -508,23 +405,23 @@ ISDOS_READ_FILE
     SDOS_READ_FILE_GO_FETCH_A_NEW_64KBlock
               LDA #CH_CMD_BYTE_READ
               STA SDCARD_CMD;
-              JSR DLYCMD_2_DTA;   ; 3us Delay to get the Value Return
+              ;** JSR DLYCMD_2_DTA;   ; 3us Delay to get the Value Return
               LDA @lSDOS_BYTE_NUMBER
               STA SDCARD_DATA
-              JSR DLYDTA_2_DTA;   ; 1.5us Delay to get the Value Return
+              ;** JSR DLYDTA_2_DTA;   ; 1.5us Delay to get the Value Return
               LDA @lSDOS_BYTE_NUMBER+1
               STA SDCARD_DATA
-              JSR SDCARD_WAIT_4_INT
+              ;** JSR SDCARD_WAIT_4_INT
               CMP #CH376S_STAT_DSK_RD ;
               BEQ SDOS_READ_FILE_GO_FETCH_A_NEW_BLOCK
               BRL SDOS_READ_DONE
     SDOS_READ_FILE_GO_FETCH_A_NEW_BLOCK
               ; Go Read 1 Block and Store it @ ($00:0030)
-              JSR SDOS_READ_BLOCK
+              ;**** JSR SDOS_READ_BLOCK
               LDA #CH_CMD_BYTE_RD_GO
               STA SDCARD_CMD
               ;Now let's go to Poll the INTERRUPT and wait for
-              JSR SDCARD_WAIT_4_INT
+              ;** JSR SDCARD_WAIT_4_INT
               CMP #CH376S_STAT_DSK_RD ;
               BNE SDOS_READ_PROC_DONE
               JSR SDOS_ADJUST_POINTER  ; Go Adjust the Address
@@ -544,7 +441,7 @@ ISDOS_READ_FILE
               JSR SDOS_COMPUTE_LOCATE_POINTER
               setas
               JSR SDOS_BYTE_LOCATE    ; Apply the new location for the CH376S
-              JSR SDCARD_WAIT_4_INT
+              ;** JSR SDCARD_WAIT_4_INT
               CMP #CH376S_STAT_SUCCESS ;
               BNE SDOS_READ_PROC_DONE
               ; Check to see that we have Loaded all the bytes.
@@ -571,16 +468,16 @@ SDOS_BYTE_LOCATE  ; Reposition the Pointer of the CH376S when the File is > 64K
               setas
               LDA #CH_CMD_BYTE_LOCATE
               STA SDCARD_CMD
-              JSR DLYCMD_2_DTA
+              ;** JSR DLYCMD_2_DTA
               LDA @lSDOS_BYTE_PTR
               STA SDCARD_DATA
-              JSR DLYDTA_2_DTA
+              ;** JSR DLYDTA_2_DTA
               LDA @lSDOS_BYTE_PTR+1
               STA SDCARD_DATA
-              JSR DLYDTA_2_DTA
+              ;** JSR DLYDTA_2_DTA
               LDA @lSDOS_BYTE_PTR+2
               STA SDCARD_DATA
-              JSR DLYDTA_2_DTA
+              ;** JSR DLYDTA_2_DTA
               LDA @lSDOS_BYTE_PTR+3
               STA SDCARD_DATA
               RTS
@@ -624,6 +521,7 @@ sd_read_failure     .text "03 - Error during read operation", $d, $0
 SD_FIRST_SECTOR_MSG .text "04 - Error reading boot sector", $d, $0
 SD_FAT_ERROR_MSG    .text "05 - Error reading FAT sector", $d, $0
 SD_ROOT_ERROR_MSG   .text "05 - Error reading Root sector", $d, $0
+SD_DATA_ERROR_MSG   .text "05 - Error reading Data sector", $d, $0
 
 sd_card_err0        .text "ERROR IN READIND CARD", $d, $0
 sd_card_err1        .text "ERROR LOADING FILE", $00
