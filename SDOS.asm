@@ -148,7 +148,112 @@ ISDOS_INIT
     SD_INIT_DONE
                 TURN_OFF_SD_LED
                 RTL
+
+;******************************************************************************
+; ISDOS_READ_MASTERBOOTRECORD
+; Read the Master Boot Record - offset 0
+; Inputs:
+;  None
+; Affects:
+;   None
+;******************************************************************************
+SD_BLK_BEGIN = $6000
+ISDOS_READ_MBR_BOOT
+                LDA SDCARD_PRSNT_MNT ; this must be non-zero
+                BNE RMBR_CARD_PRESENT
+                ERROR_MSG sd_cant_read_mbr_msg, RMBR_DONE
+
+    RMBR_CARD_PRESENT
+        ; read sector 0 - the Master Boot Record
+                setal
+                ; where is the data going to be written to
+                LDA #SD_BLK_BEGIN
+                STA SD_DATA
                 
+                ; initialize registers to load MBR
+                LDA #0
+                STA SDC_SD_ADDR_7_0_REG
+                STA SDC_SD_ADDR_23_16_REG
+                setas
+                JSL ISDOS_READ_BLOCK
+
+                ; check for errors
+                LDA SDC_TRANS_ERROR_REG
+                BEQ SD_CONTINUE_1
+                ERROR_MSG sd_cant_read_mbr_msg, RMBR_DONE
+                
+    SD_CONTINUE_1
+                ; Read the MBR signature - it should be 55 AA
+                setal
+                LDA SD_BLK_BEGIN + 510
+                CMP #$AA55
+                BEQ VALID_SIG
+                ERROR_MSG INVALID_SIG_MSG, RMBR_DONE
+    VALID_SIG
+                setal
+                LDX #446 ; offset to first partition
+                LDA SD_BLK_BEGIN,X + 8
+                STA SD_FIRST_SECTOR
+                LDA SD_BLK_BEGIN,X + 10
+                STA SD_FIRST_SECTOR+2
+                
+        ; read the FAT Boot Sector - this overwrites the MBR record
+                LDA SD_FIRST_SECTOR
+                ASL A
+                STA SDC_SD_ADDR_15_8_REG
+                setas
+                LDA SD_FIRST_SECTOR+2
+                STA SDC_SD_ADDR_31_24_REG
+                LDA #0
+                STA SDC_SD_ADDR_7_0_REG
+                JSL ISDOS_READ_BLOCK
+                
+                ; check for errors
+                LDA SDC_TRANS_ERROR_REG
+                BEQ SD_CONTINUE_2
+                ERROR_MSG SD_FIRST_SECTOR_MSG, RMBR_DONE
+                
+    SD_CONTINUE_2
+                setal
+                LDX #0
+                ; bytes per sector - not sure what this is used for
+                LDA SD_BLK_BEGIN,X + $B
+                STA SD_BYTES_PER_SECTOR
+                
+                ; number of fat tables
+                LDA SD_BLK_BEGIN,X + $10
+                AND #$FF
+                STA SD_FAT_COUNT
+                
+                ; number of root entries
+                LDA SD_BLK_BEGIN,X + $11
+                STA SD_ROOT_ENTRIES
+
+                ; how many sectors do we have - small <= 65535
+                LDA SD_BLK_BEGIN,X + $13
+                BEQ SD_LARGE_SECTORS
+                STA SD_SECTORS
+                LDA #0
+                STA SD_SECTORS + 2
+
+                BRA SD_SMALL_SECTORS
+    SD_LARGE_SECTORS
+                ; large sectors > 65535
+                LDA SD_BLK_BEGIN,X + $20
+                STA SD_SECTORS
+                LDA SD_BLK_BEGIN,X + $22
+                STA SD_SECTORS + 2
+    SD_SMALL_SECTORS
+                
+                LDA SD_BLK_BEGIN,X + $E
+                STA SD_RESERVED_SECTORS
+                LDA SD_BLK_BEGIN,X + $16
+                STA SD_SECTORS_PER_FAT
+                
+                JSR COMPUTE_FAT_ROOT_DATA_OFFSETS
+    RMBR_DONE
+                RTL
+
 ;******************************************************************************
 ;* Read a block of data
 ;* Addresses at SDC_SD_ADDR_7_0_REG to SDC_SD_ADDR_31_24_REG need to be set.
@@ -158,8 +263,10 @@ ISDOS_READ_BLOCK
                 TURN_ON_SD_LED
                 ; check if the SD Card is present
                 LDA SDCARD_PRSNT_MNT
-                BEQ SDCARD_NOT_PRESENT
+                BNE SR_CARD_PRESENT
+                ERROR_MSG sd_no_card_msg, SR_DONE
 
+    SR_CARD_PRESENT
                 LDA #SDC_TRANS_READ_BLK
                 STA SDC_TRANS_TYPE_REG
 
@@ -173,10 +280,11 @@ ISDOS_READ_BLOCK
                 
                 ; check for errors
                 LDA SDC_TRANS_ERROR_REG
-                BNE SD_READ_BLOCK_FAILED
+                BEQ SD_READ_BLOCK_OK
+                ERROR_MSG SD_FIRST_SECTOR_MSG, SR_DONE
                 
                 ; SDC_RX_FIFO_DATA_CNT_HI and SDC_RX_FIFO_DATA_CNT_LO may contain how many bytes were read
-                
+    SD_READ_BLOCK_OK
                 LDY #0
     SR_READ_LOOP
                 LDA SDC_RX_FIFO_DATA_REG
@@ -186,29 +294,12 @@ ISDOS_READ_BLOCK
                 BNE SR_READ_LOOP
                 BRA SR_DONE
                 
-    SDCARD_NOT_PRESENT
-                LDA #`sd_cant_read_msg
-                PHA
-                PLB
-                LDX #<>sd_cant_read_msg
-                BRA SR_CLEAR
-                
     SD_READ_BLOCK_FAILED
                 LDA #`sd_read_failure
                 PHA
                 PLB
                 LDX #<>sd_read_failure
                 
-    SR_CLEAR
-                JSL PUTS
-                
-                ; clear the SD memory
-                LDA #0
-        SR_FAIL_LOOP
-                STA SD_BLK_BEGIN,X
-                INX
-                CPX #512
-                BNE SR_FAIL_LOOP
     SR_DONE
                 ; discard all other bytes
                 LDA #1
@@ -217,6 +308,208 @@ ISDOS_READ_BLOCK
                 TURN_OFF_SD_LED
                 RTL
                 
+; *****************************************************************************
+; Accumulator must contain filetype
+; *****************************************************************************
+DISPLAY_FAT_NAME
+                PHA ; - store the value of filetype
+                LDY #0
+        _RD_VOLNAME_LOOP
+                LDA [SD_DATA],Y
+                JSL PUTC
+                INY
+                CPY #8
+                BEQ _RD_DOT
+                CPY #11
+                BNE _RD_VOLNAME_LOOP
+                BRA _DFAT_NAME_DONE
+                
+        _RD_DOT
+                PLA ; - read the value of filetype
+                PHA ; - store the value of filetype
+                BIT #$18
+                BNE _RD_VOLNAME_LOOP
+                LDA #"."
+                JSL PUTC
+                BRA _RD_VOLNAME_LOOP
+                
+        _DFAT_NAME_DONE
+                PLA ; - read the value of filetype
+                BIT #$18
+                BNE RD_DFAT_DONE
+                
+                ; Get Cluster Position
+                LDA #`sd_cluster_str
+                PHB
+                PHA
+                PLB
+                LDX #<>sd_cluster_str
+                JSL PUTS
+                PLB
+                
+                LDY #$1B
+                LDA [SD_DATA],Y
+                JSL PRINTAH
+                LDY #$1A
+                LDA [SD_DATA],Y
+                JSL PRINTAH
+                
+                ; Get Cluster Position
+                LDA #`sd_filesize_str
+                PHB
+                PHA
+                PLB
+                LDX #<>sd_filesize_str
+                JSL PUTS
+                PLB
+                
+                LDY #$1F
+        RD_SIZE_LOOP
+                LDA [SD_DATA],Y
+                JSL PRINTAH
+                DEY
+                CPY #$1B
+                BNE RD_SIZE_LOOP
+                
+        RD_DFAT_DONE
+                ; add CR
+                LDA #$D
+                JSL PUTC
+                RTS
+                
+
+;******************************************************************************
+;* Read the directory from the Data section
+;******************************************************************************
+ISDOS_READ_ROOT_DIR
+                .as
+                .xl
+                setal
+                LDA #$6200
+                STA SD_DATA
+                
+                ; read the root sector
+                LDA SD_ROOT_OFFSET
+                ASL A ; this may cause a carry
+                PHP
+                STA SDC_SD_ADDR_15_8_REG
+                LDA SD_ROOT_OFFSET+2
+                ASL A
+                PLP
+                setas
+                BCC RT_NO_CARRY
+                INC A
+        RT_NO_CARRY
+                STA SDC_SD_ADDR_31_24_REG
+                LDA #0
+                STA SDC_SD_ADDR_7_0_REG
+                JSL ISDOS_READ_BLOCK
+                ; check for errors
+                LDA SDC_TRANS_ERROR_REG
+                BEQ RD_DIR_ENTRY
+                ERROR_MSG SD_ROOT_ERROR_MSG, RD_DONE
+                
+    RD_DIR_ENTRY
+                LDA [SD_DATA]
+                BNE RD_CONTINUE ; if first byte is 0, entry is available and there are no following entries
+                JML RD_DONE
+                
+    RD_CONTINUE
+                CMP #$E5
+                BEQ RD_SKIP
+    RD_LOOP
+                ; check the file type
+                LDY #$B
+                LDA [SD_DATA],Y
+                
+                CMP #$F ; long file name
+                BNE RD_NOT_VFAT
+                JML RD_READ_LONG_FILENAME
+                
+        RD_NOT_VFAT
+                BIT #8 ; volume name
+                BEQ RD_NOT_VOLUME
+                JML RD_READ_VOLNAME
+                
+        RD_NOT_VOLUME
+                BIT #$10 ; directory
+                BEQ RD_NOT_DIRECTORY
+                JML RD_DIRNAME
+                
+        RD_NOT_DIRECTORY
+                ; display "Filename: "
+                PHA ; - store the value of filetype
+                LDA #`sd_filename
+                PHB
+                PHA
+                PLB
+                LDX #<>sd_filename
+                JSL PUTS
+                PLB
+                PLA
+                JSR DISPLAY_FAT_NAME
+                
+    RD_SKIP
+                setal
+                LDA SD_DATA
+                CLC
+                ADC #$20
+                STA SD_DATA
+                setas
+                
+                JML RD_DIR_ENTRY
+                
+    RD_DONE
+                RTL
+                
+; ********************** JSR AREA *********************
+    RD_DIRNAME
+                ; display "Volume Name: "
+                PHA ; - store the value of filetype
+                LDA #`sd_dir_name
+                PHB
+                PHA
+                PLB
+                LDX #<>sd_dir_name
+                JSL PUTS
+                PLB
+                PLA
+                JSR DISPLAY_FAT_NAME
+                JML RD_SKIP
+                
+    RD_READ_LONG_FILENAME
+                ; display "VFAT Name: "
+                LDA #`sd_vfat_name
+                PHB
+                PHA
+                PLB
+                LDX #<>sd_vfat_name
+                JSL PUTS
+                PLB
+                
+                ; read the vfat name here
+                ; ...
+                ;
+                ; add CR
+                LDA #$D
+                JSL PUTC
+                JML RD_SKIP
+                
+    RD_READ_VOLNAME
+                ; display "Volume Name: "
+                PHA ; - store the value of filetype
+                LDA #`sd_volume_name
+                PHB
+                PHA
+                PLB
+                LDX #<>sd_volume_name
+                JSL PUTS
+                PLB
+                PLA
+                JSR DISPLAY_FAT_NAME
+                
+                JML RD_SKIP
+
 ; ***************************************************************
 ; * Clear the current FAT record
 ; ***************************************************************
@@ -509,19 +802,83 @@ SDOS_SET_FILE_LENGTH
               LDA SDOS_FILE_SIZE
               STA @lSDOS_BYTE_NUMBER
               RTS
+              
+; *****************************************************************************
+; * Add MBR offset and Reserved Sectors
+; *****************************************************************************
+COMPUTE_FAT_ROOT_DATA_OFFSETS
+                .al
+                ; compute the FAT sector offset
+                LDA SD_RESERVED_SECTORS ; 16 bit value
+                STA ADDER_A
+                LDA #0
+                STA ADDER_A+2
+                
+                LDA SD_FIRST_SECTOR ; 32 bit value
+                STA ADDER_B
+                LDA SD_FIRST_SECTOR + 2
+                STA ADDER_B + 2
+                
+                ; result is 32 bites
+                LDA ADDER_R
+                STA SD_FAT_OFFSET
+                LDA ADDER_R + 2
+                STA SD_FAT_OFFSET + 2
+                
+                ; compute the offset to root
+                LDA SD_FAT_COUNT
+                STA UNSIGNED_MULT_A
+                LDA SD_SECTORS_PER_FAT
+                STA UNSIGNED_MULT_B
+                LDA UNSIGNED_MULT_RESULT
+                STA ADDER_A
+                LDA UNSIGNED_MULT_RESULT + 2
+                STA ADDER_A + 2
+                LDA SD_FAT_OFFSET
+                STA ADDER_B
+                LDA SD_FAT_OFFSET + 2
+                STA ADDER_B +2
+                LDA ADDER_R
+                STA SD_ROOT_OFFSET
+                LDA ADDER_R +2
+                STA SD_ROOT_OFFSET + 2
+                
+                ; compute the offset to data
+                LDA SD_ROOT_OFFSET
+                STA ADDER_A
+                LDA SD_ROOT_OFFSET + 2
+                STA ADDER_A + 2
+                LDA #32 ; the root contains 512 entries at 32 bytes each
+                STA ADDER_B
+                LDA #0
+                STA ADDER_B + 2
+                
+                LDA ADDER_R
+                STA SD_DATA_OFFSET
+                LDA ADDER_R + 2
+                STA SD_DATA_OFFSET + 2
+                
+                RTS
 
 ;
 ; MESSAGES
 ;
-sd_card_dir_string  .text '/*' ,$00
-                    .fill 128-3,0  ; leave space for the path
-sd_no_card_msg      .text "01 - NO SDCARD PRESENT", $0D, $00
-sd_cant_read_msg    .text "02 - Can't read MBR - No Card present", $D, $0
-sd_read_failure     .text "03 - Error during read operation", $d, $0
-SD_FIRST_SECTOR_MSG .text "04 - Error reading boot sector", $d, $0
-SD_FAT_ERROR_MSG    .text "05 - Error reading FAT sector", $d, $0
-SD_ROOT_ERROR_MSG   .text "05 - Error reading Root sector", $d, $0
-SD_DATA_ERROR_MSG   .text "05 - Error reading Data sector", $d, $0
+sd_card_dir_string      .text '/*' ,$00
+                        .fill 128-3,0  ; leave space for the path
+sd_no_card_msg          .text "01 - NO SDCARD PRESENT", $0D, $00
+sd_cant_read_mbr_msg    .text "02 - Can't read MBR - No Card present", $D, $0
+sd_read_failure         .text "03 - Error during read operation", $d, $0
+SD_FIRST_SECTOR_MSG     .text "04 - Error reading boot sector", $d, $0
+SD_FAT_ERROR_MSG        .text "05 - Error reading FAT sector", $d, $0
+SD_ROOT_ERROR_MSG       .text "05 - Error reading Root sector", $d, $0
+SD_DATA_ERROR_MSG       .text "05 - Error reading Data sector", $d, $0
+
+sd_volume_name          .text "Volume Name: ", $0
+sd_vfat_name            .text "VFAT Name  : ", $0
+sd_dir_name             .text "Directory  : ", $0
+sd_filename             .text "Filename   : ", $0
+sd_cluster_str          .text ", Cluster:", $0
+sd_filesize_str         .text ", Size:", $0
 
 sd_card_err0        .text "ERROR IN READIND CARD", $d, $0
 sd_card_err1        .text "ERROR LOADING FILE", $00

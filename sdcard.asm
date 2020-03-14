@@ -8,10 +8,6 @@
 .include "kernel_inc.asm"
 
 LINE_COUNTER            = $B0
-
-; Read data here
-SD_BLK_BEGIN            = $6000
-
     
 * = HRESET
                 CLC
@@ -72,104 +68,25 @@ SDCARD
                 
                 ; initialize the SD Card
                 JSL ISDOS_INIT
-        ; read sector 0 - the Master Boot Record
-                setal
-                ; where is the data going to be written to
-                LDA #SD_BLK_BEGIN
-                STA SD_DATA
+                JSL ISDOS_READ_MBR_BOOT
+                ; read the root sectors
+                JSL ISDOS_READ_ROOT_DIR
                 
-                ; initialize registers to load MBR
-                LDA #0
-                STA SDC_SD_ADDR_7_0_REG
-                STA SDC_SD_ADDR_23_16_REG
-                setas
-                JSL ISDOS_READ_BLOCK
-
-                ; check for errors
-                LDA SDC_TRANS_ERROR_REG
-                BEQ SD_CONTINUE_1
-                ERROR_MSG sd_no_card_msg, SDCARD_DONE
+                ; These are temporary sub-routines to help me debug
+                ; READ the First FAT Sectors
+                ;LDA #$6200 - store the block at SD_DATA
+                ;STA SD_DATA
+                ;JSR SD_READ_FAT_SECTOR
                 
-    SD_CONTINUE_1
-                ; Read the MBR signature - it should be 55 AA
-                setal
-                LDA SD_BLK_BEGIN + 510
-                CMP #$AA55
-                BEQ VALID_SIG
-                ERROR_MSG INVALID_SIG_MSG, SDCARD_DONE
-    VALID_SIG
-                setal
-                LDX #446 ; offset to first partition
-                LDA SD_BLK_BEGIN,X + 8
-                STA SD_FIRST_SECTOR
-                LDA SD_BLK_BEGIN,X + 10
-                STA SD_FIRST_SECTOR+2
+                ; Read the First Root Sector - only for FAT12 and FAT16, FAT32 only uses Data area
+                ;LDA #$6400
+                ;STA SD_DATA
+                ;JSR SD_READ_ROOT_SECTOR
                 
-        ; read the FAT Boot Sector
-                LDA SD_FIRST_SECTOR
-                ASL A
-                STA SDC_SD_ADDR_15_8_REG
-                setas
-                LDA SD_FIRST_SECTOR+2
-                STA SDC_SD_ADDR_31_24_REG
-                LDA #0
-                STA SDC_SD_ADDR_7_0_REG
-                JSL ISDOS_READ_BLOCK
-                
-                ; check for errors
-                LDA SDC_TRANS_ERROR_REG
-                BEQ SD_CONTINUE_2
-                ERROR_MSG SD_FIRST_SECTOR_MSG, SDCARD_DONE
-                
-    SD_CONTINUE_2
-                setal
-                LDX #0
-                ; bytes per sector - not sure what this is used for
-                LDA SD_BLK_BEGIN,X + $B
-                STA SD_BYTES_PER_SECTOR
-                
-                ; number of fat tables
-                LDA SD_BLK_BEGIN,X + $10
-                AND #$FF
-                STA SD_FAT_COUNT
-                
-                ; number of root entries
-                LDA SD_BLK_BEGIN,X + $11
-                STA SD_ROOT_ENTRIES
-
-                ; how many sectors do we have - small <= 65535
-                LDA SD_BLK_BEGIN,X + $13
-                BEQ SD_LARGE_SECTORS
-                STA SD_SECTORS
-                LDA #0
-                STA SD_SECTORS + 2
-
-                BRA SDCARD_ROOT
-    SD_LARGE_SECTORS
-                ; large sectors > 65535
-                LDA SD_BLK_BEGIN,X + $20
-                STA SD_SECTORS
-                LDA SD_BLK_BEGIN,X + $22
-                STA SD_SECTORS + 2
-    SDCARD_ROOT
-                
-                LDA SD_BLK_BEGIN,X + $E
-                STA SD_RESERVED_SECTORS
-                LDA SD_BLK_BEGIN,X + $16
-                STA SD_SECTORS_PER_FAT
-                
-                JSR COMPUTE_FAT_ROOT_DATA_OFFSETS
-                LDA #$6200
-                STA SD_DATA
-                JSR SD_READ_FAT_SECTOR
-                
-                LDA #$6400
-                STA SD_DATA
-                JSR SD_READ_ROOT_SECTOR
-                
-                LDA #$6600
-                STA SD_DATA
-                JSR SD_READ_DATA_SECTOR
+                ; Read the First Data Sector 
+                ;LDA #$6600
+                ;STA SD_DATA
+                ;JSR SD_READ_DATA_SECTOR
     SDCARD_DONE
                 BRL SDCARD_DONE
                 
@@ -200,36 +117,6 @@ SD_READ_FAT_SECTOR
                 ERROR_MSG SD_FAT_ERROR_MSG, SD_CONTINUE_FAT
                 
     SD_CONTINUE_FAT
-                setal
-                RTS
-                
-; *****************************************************************************
-; * Load the ROOT table
-; *****************************************************************************
-SD_READ_ROOT_SECTOR
-                .al
-                .xl
-                LDA SD_ROOT_OFFSET
-                ASL A ; this may cause a carry
-                PHP
-                STA SDC_SD_ADDR_15_8_REG
-                LDA SD_ROOT_OFFSET+2
-                ASL A
-                PLP
-                setas
-                BCC RT_NO_CARRY
-                INC A
-        RT_NO_CARRY
-                STA SDC_SD_ADDR_31_24_REG
-                LDA #0
-                STA SDC_SD_ADDR_7_0_REG
-                JSL ISDOS_READ_BLOCK
-                ; check for errors
-                LDA SDC_TRANS_ERROR_REG
-                BEQ SD_CONTINUE_ROOT
-                ERROR_MSG SD_ROOT_ERROR_MSG, SD_CONTINUE_ROOT
-                
-    SD_CONTINUE_ROOT
                 setal
                 RTS
                 
@@ -505,60 +392,3 @@ IRQ_HANDLER
                 .as
                 .xl
                 RTL
-                
-; *****************************************************************************
-; * Add MBR offset and Reserved Sectors
-; *****************************************************************************
-COMPUTE_FAT_ROOT_DATA_OFFSETS
-                .al
-                ; compute the FAT sector offset
-                LDA SD_RESERVED_SECTORS ; 16 bit value
-                STA ADDER_A
-                LDA #0
-                STA ADDER_A+2
-                
-                LDA SD_FIRST_SECTOR ; 32 bit value
-                STA ADDER_B
-                LDA SD_FIRST_SECTOR + 2
-                STA ADDER_B + 2
-                
-                ; result is 32 bites
-                LDA ADDER_R
-                STA SD_FAT_OFFSET
-                LDA ADDER_R + 2
-                STA SD_FAT_OFFSET + 2
-                
-                ; compute the offset to root
-                LDA SD_FAT_COUNT
-                STA UNSIGNED_MULT_A
-                LDA SD_SECTORS_PER_FAT
-                STA UNSIGNED_MULT_B
-                LDA UNSIGNED_MULT_RESULT
-                STA ADDER_A
-                LDA UNSIGNED_MULT_RESULT + 2
-                STA ADDER_A + 2
-                LDA SD_FAT_OFFSET
-                STA ADDER_B
-                LDA SD_FAT_OFFSET + 2
-                STA ADDER_B +2
-                LDA ADDER_R
-                STA SD_ROOT_OFFSET
-                LDA ADDER_R +2
-                STA SD_ROOT_OFFSET + 2
-                
-                ; compute the offset to data
-                LDA SD_ROOT_OFFSET
-                STA ADDER_A
-                LDA SD_ROOT_OFFSET + 2
-                STA ADDER_A + 2
-                LDA #32 ; the root contains 512 entries at 32 bytes each
-                STA ADDER_B
-                LDA #0
-                STA ADDER_B + 2
-                
-                LDA ADDER_R
-                STA SD_DATA_OFFSET
-                LDA ADDER_R + 2
-                STA SD_DATA_OFFSET + 2
-                
-                RTS
