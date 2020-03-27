@@ -15,7 +15,7 @@ LINE_COUNTER            = $B0
                 SEI   ; ignore interrupts
                 JML SDCARD
 
-* = HIRQ       ; IRQ handler.
+* = HIRQ        ; IRQ handler.
 RHIRQ           setaxl
                 PHB
                 PHD
@@ -69,59 +69,29 @@ SDCARD
                 ; initialize the SD Card
                 JSL ISDOS_INIT
                 JSL ISDOS_READ_MBR_BOOT
+                
                 ; read the root sectors
                 JSL ISDOS_READ_ROOT_DIR
                 
                 ; These are temporary sub-routines to help me debug
                 ; READ the First FAT Sectors
-                ;LDA #$6200 - store the block at SD_DATA
-                ;STA SD_DATA
-                ;JSR SD_READ_FAT_SECTOR
+                setal
+                LDA #$6400 ; store the block at SD_DATA
+                STA SD_DATA
+                LDA SD_FAT_OFFSET
+                JSR SD_READ_FAT_SECTOR
                 
-                ; Read the First Root Sector - only for FAT12 and FAT16, FAT32 only uses Data area
-                ;LDA #$6400
-                ;STA SD_DATA
-                ;JSR SD_READ_ROOT_SECTOR
+                ; READ FILE starting at cluster $83 - SUBWAVE.RAD
+                LDA #$83
+                JSR SD_READ_FILE
                 
-                ; Read the First Data Sector 
-                ;LDA #$6600
-                ;STA SD_DATA
-                ;JSR SD_READ_DATA_SECTOR
+                
     SDCARD_DONE
                 BRL SDCARD_DONE
-                
-INVALID_SIG_MSG .text 'Invalid MBR Signature',$D,0
 
-
-; *****************************************************************************
-; * Load the FAT table
-; *****************************************************************************
-SD_READ_FAT_SECTOR
-                .al
-                .xl
-                LDA SD_FAT_OFFSET
-                ASL A
-                PHP
-                STA SDC_SD_ADDR_15_8_REG
-                LDA SD_FAT_OFFSET+2
-                ASL A
-                PLP
-                setas
-                STA SDC_SD_ADDR_31_24_REG
-                LDA #0
-                STA SDC_SD_ADDR_7_0_REG
-                JSL ISDOS_READ_BLOCK
-                ; check for errors
-                LDA SDC_TRANS_ERROR_REG
-                BEQ SD_CONTINUE_FAT
-                ERROR_MSG SD_FAT_ERROR_MSG, SD_CONTINUE_FAT
-                
-    SD_CONTINUE_FAT
-                setal
-                RTS
                 
 ; *****************************************************************************
-; * Load the ROOT table
+; * Load the sixth sector in data area
 ; *****************************************************************************
 SD_READ_DATA_SECTOR
                 .al
@@ -129,7 +99,7 @@ SD_READ_DATA_SECTOR
                 LDA SD_DATA_OFFSET
                 CLC
                 ADC #6
-                ASL A; this may cause a carry
+                ASL A ; this may cause a carry
                 PHP
                 STA SDC_SD_ADDR_15_8_REG
                 LDA SD_DATA_OFFSET+2

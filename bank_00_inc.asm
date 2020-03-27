@@ -40,7 +40,7 @@ OPL2_BLOCK       = $000036 ;
 ; SD Card (CH376S) Variables
 SDCARD_FILE_PTR  = $000038 ; 3 Bytes Pointer to Filename to open
 SDCARD_BYTE_NUM  = $00003C ; 2 Bytes
-SDCARD_PRSNT_MNT = $00003F ; 1 Byte, Indicate that the SDCard is Present and that it is Mounted
+SDCARD_PRSNT_MNT = $00003F ; 1 Byte, 0: Card not present, 1: Card present
 
 ; RAD File Player
 RAD_STARTLINE    = $000040 ; 1 Byte

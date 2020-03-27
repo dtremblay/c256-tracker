@@ -59,7 +59,7 @@ setdbr          .macro          ; Set the B (Data bank) register
                 .databank \1
                 PLP
                 PLA             ; end setdbr macro 
-                .endm 
+                .endm
 
 
 ERROR_MSG       .macro
@@ -72,4 +72,4 @@ ERROR_MSG       .macro
                 JSL PUTS
                 PLB
                 BRL \2
-                .endm
+                .endm 

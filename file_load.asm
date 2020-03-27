@@ -4,16 +4,12 @@ LOAD_FILE_DISPLAY
             LDA #2
             STA STATE_MACHINE
             
-            ; initialize the search string
-            LDA #'/'
-            STA sd_card_dir_string
-            LDA #'*'
-            STA sd_card_dir_string+1
-            LDA #'0'
-            
+            ; initialize the SD Card
             JSL ISDOS_INIT
             
+            
     LOAD_DIRECTORY
+            ; no file selected
             LDA #0
             STA SDOS_LINE_SELECT
             
@@ -49,7 +45,9 @@ LOAD_SDCARD_DATA
             BEQ LOAD_SDCARD_DATA_DONE ; if SD not present, exit
             
             ; show files from the SDRAM
-            JSL ISDOS_DIR
+            JSL ISDOS_READ_MBR_BOOT
+            ; read the root directory
+            JSL ISDOS_READ_ROOT_DIR
             
     LOAD_SDCARD_DATA_DONE
             

@@ -1,6 +1,7 @@
 .cpu "65816"
 .include "macros_inc.asm"
 .include "bank_00_inc.asm"
+.include "kernel_inc.asm"
 .include "timer_def.asm"
 .include "math_def.asm"
 .include "io_def.asm"
@@ -144,7 +145,9 @@ TRACKER
                 
                 ; we allow input of data via MIDI
                 JSR INIT_MIDI
-                ;JSR DISPLAY_ORDERS
+                JSL RAD_INIT_PLAYER
+
+                JSR DISPLAY_ORDERS
                 JSR DISPLAY_PATTERN
                 
           
@@ -951,6 +954,9 @@ PATTERNS .for pattern=1, pattern <= 36, pattern += 1 ; 64548 bytes total
     .next
 .next
 ORDERS    .fill 120, 0
+
+* = RAD_FILE_TEMP
+.binary "RAD_Files/island industrial.rad"
 
 * = $3A0000
 .include "bpm.asm"

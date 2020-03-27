@@ -1,5 +1,3 @@
-
-
 EFFECT_NONE              = $00
 EFFECT_NOTE_SLIDE_UP     = $01
 EFFECT_NOTE_SLIDE_DOWN   = $02
