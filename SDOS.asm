@@ -25,7 +25,10 @@ SD_FAT16                = $5F25 ; 1 byte - write 1 for FAT16, 0 for FAT12
 CLUSTER_PTR             = $5F26 ; 2 bytes
 LOG_CLUSTER_PTR         = $5F28 ; 4 bytes
 SD_DATA                 = $0080 ; 3 bytes - used indirect addressing
-
+SD_MULT_AREA            = $0088 ; 4 bytes
+SD_BLK_BEGIN            = $6000 ; 512 bytes
+SD_BTSCT_BEGIN          = $6200 ; 512 bytes
+SD_ROOT_BEGIN           = $6400 ; 512 bytes
 FAT_DATA                = $6600 ; 512 bytes
 
 simplefilestruct .struct
@@ -111,12 +114,29 @@ ISDOS_INIT
                 LDA #1
                 STA SDCARD_PRSNT_MNT 
                 
-                BRA SD_INIT_DONE
+                ERROR_MSG sd_card_present, SD_INIT_DONE
               
     SD_INIT_DONE
                 TURN_OFF_SD_LED
                 RTL
 
+; MULTIPLY A NUMBER by 512 - 32 bits
+CALC_OFFSET_BYTES
+                .al
+                LDA SD_MULT_AREA + 2
+                ASL A
+                STA SD_MULT_AREA + 3
+                CLC
+                LDA SD_MULT_AREA
+                ASL A
+                STA SD_MULT_AREA + 1
+                BCC CALC_DONE
+                INC SD_MULT_AREA + 2
+    CALC_DONE
+                setas
+                stz SD_MULT_AREA
+                setal
+                RTS
 ;******************************************************************************
 ; ISDOS_READ_MASTERBOOTRECORD
 ; Read the Master Boot Record - offset 0
@@ -125,8 +145,8 @@ ISDOS_INIT
 ; Affects:
 ;   None
 ;******************************************************************************
-SD_BLK_BEGIN = $6000
 ISDOS_READ_MBR_BOOT
+                .as
                 LDA SDCARD_PRSNT_MNT ; this must be non-zero
                 BNE RMBR_CARD_PRESENT
                 ERROR_MSG sd_cant_read_mbr_msg, RMBR_DONE
@@ -161,50 +181,55 @@ ISDOS_READ_MBR_BOOT
                 setal
                 LDX #446 ; offset to first partition
                 LDA SD_BLK_BEGIN,X + 8
-                STA SD_FIRST_SECTOR
+                STA SD_MULT_AREA
                 LDA SD_BLK_BEGIN,X + 10
-                STA SD_FIRST_SECTOR+2
+                STA SD_MULT_AREA + 2
+                JSR CALC_OFFSET_BYTES
+                
+                ; store the value for 
+                LDA SD_MULT_AREA
+                STA SD_FIRST_SECTOR
+                STA SDC_SD_ADDR_7_0_REG
+                LDA SD_MULT_AREA + 2
+                STA SD_FIRST_SECTOR + 2
+                STA SDC_SD_ADDR_23_16_REG
+                
+                LDA #SD_BTSCT_BEGIN
+                STA SD_DATA
                 
         ; read the FAT Boot Sector - this overwrites the MBR record
-                LDA SD_FIRST_SECTOR
-                ASL A
-                STA SDC_SD_ADDR_15_8_REG
                 setas
-                LDA SD_FIRST_SECTOR+2
-                STA SDC_SD_ADDR_31_24_REG
-                LDA #0
-                STA SDC_SD_ADDR_7_0_REG
                 JSL ISDOS_READ_BLOCK
                 
                 ; check for errors
                 LDA SDC_TRANS_ERROR_REG
                 BEQ SD_CONTINUE_2
-                ERROR_MSG SD_FIRST_SECTOR_MSG, RMBR_DONE
+                ERROR_MSG SD_BOOT_SECTOR_MSG, RMBR_DONE
                 
     SD_CONTINUE_2
                 setal
                 LDX #0
                 ; bytes per sector
-                LDA SD_BLK_BEGIN,X + $B
+                LDA SD_BTSCT_BEGIN,X + $B
                 STA SD_BYTES_PER_SECTOR
                 
                 setas
                 ; logical sectors per cluster
-                LDA SD_BLK_BEGIN,X + $D
+                LDA SD_BTSCT_BEGIN,X + $D
                 STA SD_SECTORS_PER_CLUSTER
                 
                 setal
                 ; number of fat tables
-                LDA SD_BLK_BEGIN,X + $10
+                LDA SD_BTSCT_BEGIN,X + $10
                 AND #$FF
                 STA SD_FAT_COUNT
                 
                 ; number of root entries
-                LDA SD_BLK_BEGIN,X + $11
+                LDA SD_BTSCT_BEGIN,X + $11
                 STA SD_ROOT_ENTRIES
 
                 ; how many sectors do we have - small <= 65535
-                LDA SD_BLK_BEGIN,X + $13
+                LDA SD_BTSCT_BEGIN,X + $13
                 BEQ SD_LARGE_SECTORS
                 STA SD_SECTORS
                 LDA #0
@@ -227,9 +252,9 @@ ISDOS_READ_MBR_BOOT
                 BRA SD_FAT12
     SD_LARGE_SECTORS
                 ; large sectors > 65535
-                LDA SD_BLK_BEGIN,X + $20
+                LDA SD_BTSCT_BEGIN,X + $20
                 STA SD_SECTORS
-                LDA SD_BLK_BEGIN,X + $22
+                LDA SD_BTSCT_BEGIN,X + $22
                 STA SD_SECTORS + 2
     SD_SMALL_SECTORS
                 setas
@@ -237,9 +262,9 @@ ISDOS_READ_MBR_BOOT
                 STA SD_FAT16
                 setal
     SD_FAT12
-                LDA SD_BLK_BEGIN,X + $E
+                LDA SD_BTSCT_BEGIN,X + $E
                 STA SD_RESERVED_SECTORS
-                LDA SD_BLK_BEGIN,X + $16
+                LDA SD_BTSCT_BEGIN,X + $16
                 STA SD_SECTORS_PER_FAT
                 
                 JSR COMPUTE_FAT_ROOT_DATA_OFFSETS
@@ -274,7 +299,7 @@ ISDOS_READ_BLOCK
                 ; check for errors
                 LDA SDC_TRANS_ERROR_REG
                 BEQ SD_READ_BLOCK_OK
-                ERROR_MSG SD_FIRST_SECTOR_MSG, SR_DONE
+                ERROR_MSG sd_read_failure, SR_DONE
                 
                 ; SDC_RX_FIFO_DATA_CNT_HI and SDC_RX_FIFO_DATA_CNT_LO may contain how many bytes were read
     SD_READ_BLOCK_OK
@@ -285,13 +310,6 @@ ISDOS_READ_BLOCK
                 INY
                 CPY #512
                 BNE SR_READ_LOOP
-                BRA SR_DONE
-                
-    SD_READ_BLOCK_FAILED
-                LDA #`sd_read_failure
-                PHA
-                PLB
-                LDX #<>sd_read_failure
                 
     SR_DONE
                 ; discard all other bytes
@@ -383,28 +401,27 @@ ISDOS_READ_ROOT_DIR
                 LDA #0  ; reset the root entries offset
                 STA SD_DIR_OFFSET
                 
-                LDA #$6200
+                LDA #SD_ROOT_BEGIN
                 STA SD_DATA
                 
                 ; read the root sector
     NEXT_SECTOR
-                LDA SD_ROOT_OFFSET
-                CLC
-                ADC SD_DIR_OFFSET
-                ASL A ; this may cause a carry
-                PHP
-                STA SDC_SD_ADDR_15_8_REG
-                
-                LDA SD_ROOT_OFFSET+2
+                LDA SD_DIR_OFFSET
                 ASL A
-                PLP
-                setas
-                BCC RT_NO_CARRY
-                INC A
-        RT_NO_CARRY
-                STA SDC_SD_ADDR_31_24_REG
-                LDA #0
+                XBA
+                STA SD_MULT_AREA
+                CLC
+                ADC SD_ROOT_OFFSET
+                PHP
                 STA SDC_SD_ADDR_7_0_REG
+                LDA SD_ROOT_OFFSET+2
+                PLP
+                BCC SR_READ_BLOCK
+                INC A
+                
+        SR_READ_BLOCK
+                STA SDC_SD_ADDR_23_16_REG
+                setas
                 JSL ISDOS_READ_BLOCK
                 ; check for errors
                 LDA SDC_TRANS_ERROR_REG
@@ -888,8 +905,13 @@ COMPUTE_FAT_ROOT_DATA_OFFSETS
                 .al
                 ; compute the FAT sector offset
                 LDA SD_RESERVED_SECTORS ; 16 bit value
-                STA ADDER_A
+                STA SD_MULT_AREA
                 LDA #0
+                STA SD_MULT_AREA + 2
+                JSR CALC_OFFSET_BYTES ; compute the byte offset
+                LDA SD_MULT_AREA
+                STA ADDER_A
+                LDA SD_MULT_AREA + 2
                 STA ADDER_A+2
                 
                 LDA SD_FIRST_SECTOR ; 32 bit value
@@ -909,8 +931,13 @@ COMPUTE_FAT_ROOT_DATA_OFFSETS
                 LDA SD_SECTORS_PER_FAT
                 STA UNSIGNED_MULT_B
                 LDA UNSIGNED_MULT_RESULT
-                STA ADDER_A
+                STA SD_MULT_AREA
                 LDA UNSIGNED_MULT_RESULT + 2
+                STA SD_MULT_AREA + 2
+                JSR CALC_OFFSET_BYTES ; compute the byte offset
+                LDA SD_MULT_AREA
+                STA ADDER_A
+                LDA SD_MULT_AREA + 2
                 STA ADDER_A + 2
                 LDA SD_FAT_OFFSET
                 STA ADDER_B
@@ -927,8 +954,13 @@ COMPUTE_FAT_ROOT_DATA_OFFSETS
                 LDA SD_ROOT_OFFSET + 2
                 STA ADDER_A + 2
                 LDA #32 ; the root contains 512 entries at 32 bytes each
-                STA ADDER_B
+                STA SD_MULT_AREA
                 LDA #0
+                STA SD_MULT_AREA + 2
+                JSR CALC_OFFSET_BYTES
+                LDA SD_MULT_AREA
+                STA ADDER_B
+                LDA SD_MULT_AREA + 2
                 STA ADDER_B + 2
                 
                 LDA ADDER_R
@@ -941,12 +973,14 @@ COMPUTE_FAT_ROOT_DATA_OFFSETS
 ;
 ; MESSAGES
 ;
-sd_card_dir_string      .text '/*' ,$00
-                        .fill 128-3,0  ; leave space for the path
+;sd_card_dir_string      .text '/*' ,$00
+;                        .fill 128-3,0  ; leave space for the path
+sd_card_tester          .text "00 - Welcome to the SDCard Tester", $d, 0
+sd_card_present         .text "01 - Card Present", $d, 0
 sd_no_card_msg          .text "01 - NO SDCARD PRESENT", $0D, $00
 sd_cant_read_mbr_msg    .text "02 - Can't read MBR - No Card present", $D, $0
 sd_read_failure         .text "03 - Error during read operation", $d, $0
-SD_FIRST_SECTOR_MSG     .text "04 - Error reading boot sector", $d, $0
+SD_BOOT_SECTOR_MSG     .text "04 - Error reading Boot sector", $d, $0
 SD_FAT_ERROR_MSG        .text "05 - Error reading FAT sector", $d, $0
 SD_ROOT_ERROR_MSG       .text "05 - Error reading Root sector", $d, $0
 SD_DATA_ERROR_MSG       .text "05 - Error reading Data sector", $d, $0

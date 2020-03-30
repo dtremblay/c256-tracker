@@ -59,19 +59,22 @@ RVECTOR_EIRQ    .addr HIRQ     ; FFFE
 ; *****************************************************************************
 ; *****************************************************************************
 * = $5000
-.include "SDOS.asm"
 
 SDCARD
                 setas
                 setxl
                 JSL CLEAR_DISPLAY
-                
                 ; initialize the SD Card
                 JSL ISDOS_INIT
                 JSL ISDOS_READ_MBR_BOOT
-                
                 ; read the root sectors
                 JSL ISDOS_READ_ROOT_DIR
+                
+    SDCARD_DONE
+                BRL SDCARD_DONE
+                
+                
+                
                 
                 ; These are temporary sub-routines to help me debug
                 ; READ the First FAT Sectors
@@ -83,44 +86,10 @@ SDCARD
                 
                 ; READ FILE starting at cluster $83 - SUBWAVE.RAD
                 LDA #$83
-                JSR SD_READ_FILE
+                ;JSR SD_READ_FILE
                 
                 
-    SDCARD_DONE
-                BRL SDCARD_DONE
-
-                
-; *****************************************************************************
-; * Load the sixth sector in data area
-; *****************************************************************************
-SD_READ_DATA_SECTOR
-                .al
-                .xl
-                LDA SD_DATA_OFFSET
-                CLC
-                ADC #6
-                ASL A ; this may cause a carry
-                PHP
-                STA SDC_SD_ADDR_15_8_REG
-                LDA SD_DATA_OFFSET+2
-                ASL A
-                PLP
-                setas
-                BCC DT_NO_CARRY
-                INC A
-        DT_NO_CARRY
-                STA SDC_SD_ADDR_31_24_REG
-                LDA #0
-                STA SDC_SD_ADDR_7_0_REG
-                JSL ISDOS_READ_BLOCK
-                ; check for errors
-                LDA SDC_TRANS_ERROR_REG
-                BEQ SD_CONTINUE_DATA
-                ERROR_MSG SD_DATA_ERROR_MSG, SD_CONTINUE_DATA
-                
-    SD_CONTINUE_DATA
-                setal
-                RTS
+    
 
 CLEAR_DISPLAY
                 .as
@@ -194,6 +163,8 @@ CLEAR_DISPLAY
                 
                 RTL
                
+.include "SDOS.asm"
+
 ; *****************************************************************************
 ; * Output text to screen - temporary until SDOS is finished
 ; *****************************************************************************
@@ -259,6 +230,38 @@ DISPLAY_BLOCK
                 PLB
                 RTL
 
+; *****************************************************************************
+; * Load the sixth sector in data area
+; *****************************************************************************
+SD_READ_DATA_SECTOR
+                .al
+                .xl
+                LDA SD_DATA_OFFSET
+                CLC
+                ADC #6
+                ASL A ; this may cause a carry
+                PHP
+                STA SDC_SD_ADDR_15_8_REG
+                LDA SD_DATA_OFFSET+2
+                ASL A
+                PLP
+                setas
+                BCC DT_NO_CARRY
+                INC A
+        DT_NO_CARRY
+                STA SDC_SD_ADDR_31_24_REG
+                LDA #0
+                STA SDC_SD_ADDR_7_0_REG
+                JSL ISDOS_READ_BLOCK
+                ; check for errors
+                LDA SDC_TRANS_ERROR_REG
+                BEQ SD_CONTINUE_DATA
+                ERROR_MSG SD_DATA_ERROR_MSG, SD_CONTINUE_DATA
+                
+    SD_CONTINUE_DATA
+                setal
+                RTS
+                
 ; *****************************************************************************
 ; * Only display the 4 MBR Partition Records
 ; *****************************************************************************
