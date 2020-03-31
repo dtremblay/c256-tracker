@@ -652,16 +652,11 @@ ISDOS_EXEC    BRK;
 SD_READ_FAT_SECTOR
                 .al
                 .xl
-                ASL A
-                PHP
-                STA SDC_SD_ADDR_15_8_REG
-                LDA SD_FAT_OFFSET+2
-                ASL A
-                PLP
-                setas
-                STA SDC_SD_ADDR_31_24_REG
-                LDA #0
+                LDA SD_FAT_OFFSET
                 STA SDC_SD_ADDR_7_0_REG
+                LDA SD_FAT_OFFSET + 2
+                STA SDC_SD_ADDR_23_16_REG
+                setas
                 JSL ISDOS_READ_BLOCK
                 ; check for errors
                 LDA SDC_TRANS_ERROR_REG

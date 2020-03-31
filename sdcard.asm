@@ -78,6 +78,8 @@ SDCARD
                 STA SD_DATA
                 LDA SD_FAT_OFFSET
                 JSR SD_READ_FAT_SECTOR
+                setas
+                JSR DISPLAY_BLOCK
 
     SDCARD_DONE
                 BRL SDCARD_DONE
@@ -92,16 +94,18 @@ SDCARD
 CLEAR_DISPLAY
                 .as
                 .xl
+                setal
                 LDA #128
                 STA COLS_PER_LINE
                 LDA #64
                 STA LINES_MAX
-
+        
                 ; set the visible display size - 80 x 60
                 LDA #80
                 STA COLS_VISIBLE
                 LDA #60
                 STA LINES_VISIBLE
+                setas
                 LDA #16
                 STA BORDER_X_SIZE
                 STA BORDER_Y_SIZE
@@ -188,6 +192,7 @@ DISPLAY_BLOCK
                 STA LINE_COUNTER
                 
                 LDX SD_DATA
+                LDY CURSORPOS
     DB_LINE_LOOP
                 LDA #0
                 XBA
