@@ -70,19 +70,17 @@ SDCARD
                 ; read the root sectors
                 JSL ISDOS_READ_ROOT_DIR
                 
-    SDCARD_DONE
-                BRL SDCARD_DONE
-                
-                
-                
                 
                 ; These are temporary sub-routines to help me debug
                 ; READ the First FAT Sectors
                 setal
-                LDA #$6400 ; store the block at SD_DATA
+                LDA #$6600 ; store the block at SD_DATA
                 STA SD_DATA
                 LDA SD_FAT_OFFSET
                 JSR SD_READ_FAT_SECTOR
+
+    SDCARD_DONE
+                BRL SDCARD_DONE
                 
                 ; READ FILE starting at cluster $83 - SUBWAVE.RAD
                 LDA #$83

@@ -401,15 +401,14 @@ ISDOS_READ_ROOT_DIR
                 LDA #0  ; reset the root entries offset
                 STA SD_DIR_OFFSET
                 
+    NEXT_SECTOR
                 LDA #SD_ROOT_BEGIN
                 STA SD_DATA
                 
                 ; read the root sector
-    NEXT_SECTOR
                 LDA SD_DIR_OFFSET
                 ASL A
                 XBA
-                STA SD_MULT_AREA
                 CLC
                 ADC SD_ROOT_OFFSET
                 PHP
@@ -481,9 +480,6 @@ ISDOS_READ_ROOT_DIR
                 AND #$1E0
                 CMP #$1E0
                 BNE RD_SKIP_NEXT
-                
-                LDA #$6200
-                STA SD_DATA
                 
                 ; ensure we don't go over the maximum number of sectors in the ROOT section
                 LDA SD_DIR_OFFSET
