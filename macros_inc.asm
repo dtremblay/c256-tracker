@@ -64,6 +64,7 @@ setdbr          .macro          ; Set the B (Data bank) register
 
 ERROR_MSG       .macro
                 setas
+                PHX
                 LDA #`\1
                 PHB
                 PHA
@@ -71,5 +72,21 @@ ERROR_MSG       .macro
                 LDX #<>\1
                 JSL PUTS
                 PLB
+                PLX
                 BRL \2
                 .endm 
+                
+TURN_ON_SD_LED  .macro
+                ; turn on the LED
+                LDA GABE_MSTR_CTRL
+                AND #~GABE_CTRL_SDC_LED
+                ORA #GABE_CTRL_SDC_LED
+                STA GABE_MSTR_CTRL
+                .endm
+                
+TURN_OFF_SD_LED .macro
+                ; turn off the LED
+                LDA GABE_MSTR_CTRL
+                AND #~GABE_CTRL_SDC_LED
+                STA GABE_MSTR_CTRL
+                .endm

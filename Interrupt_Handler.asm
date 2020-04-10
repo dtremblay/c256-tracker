@@ -276,7 +276,6 @@ NOT_RIGHT_BRACKET
                 BRL KB_CHECK_B_DONE
 
 KB_NORM_SC      
-
                 LDA KEYBOARD_SC_TMP
                 
                 setxs
@@ -381,7 +380,7 @@ START_SOF
                 
 GO_LOAD_FILE
                 PLA
-                JSL LOAD_FILE
+                JSL READ_FILE
                 JMP KB_CHECK_B_DONE
 
 KB_SET_SHIFT    LDA KEYBOARD_SC_FLG
@@ -444,6 +443,7 @@ TIMER0_INTERRUPT
                 
                 ; we now have to increment the line count
     INCR_LINE
+                TURN_ON_SD_LED
                 CLC
                 SED
                 INC LINE_NUM_HEX
@@ -472,6 +472,7 @@ TIMER0_INTERRUPT
                 LDA #0  ; reset the tick to 0
     TICK_DONE
                 STA @lTICK
+                TURN_OFF_SD_LED
                 ; TODO deal with effects
                 ;JSR APPLY_EFFECTS
                 RTS

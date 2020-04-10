@@ -20,10 +20,10 @@ SD_SECTORS              = $5F18 ; 4 bytes
 SD_ROOT_ENTRIES         = $5F1C ; 2 bytes
 SD_DIR_OFFSET           = $5F20 ; 2 bytes - use this to read the root directory
 SD_NEXT_CLUSTER         = $5F22 ; 2 bytes - use this to point to the next file cluster in the FAT
-SD_SECTORS_PER_CLUSTER  = $5F24 ; 1 byte
-SD_FAT16                = $5F25 ; 1 byte - write 1 for FAT16, 0 for FAT12
-CLUSTER_PTR             = $5F26 ; 2 bytes
-LOG_CLUSTER_PTR         = $5F28 ; 4 bytes
+SD_SECTORS_PER_CLUSTER  = $5F24 ; 2 byte
+SD_FAT16                = $5F26 ; 1 byte - write 1 for FAT16, 0 for FAT12
+CLUSTER_PTR             = $5F27 ; 2 bytes
+LOG_CLUSTER_PTR         = $5F29 ; 4 bytes
 SD_DATA                 = $0080 ; 3 bytes - used indirect addressing
 SD_MULT_AREA            = $0088 ; 4 bytes
 SD_BLK_BEGIN            = $6000 ; 512 bytes
@@ -55,21 +55,6 @@ fatrec  .struct
       size_l        .word 0
       size_h        .word 0
   .ends
-                
-TURN_ON_SD_LED  .macro
-                ; turn on the LED
-                LDA GABE_MSTR_CTRL
-                AND #~GABE_CTRL_SDC_LED
-                ORA #GABE_CTRL_SDC_LED
-                STA GABE_MSTR_CTRL
-                .endm
-                
-TURN_OFF_SD_LED .macro
-                ; turn off the LED
-                LDA GABE_MSTR_CTRL
-                AND #~GABE_CTRL_SDC_LED
-                STA GABE_MSTR_CTRL
-                .endm
 
 ;******************************************************************************
 ; ISDOS_INIT
@@ -107,14 +92,13 @@ ISDOS_INIT
                 ; check for errors
                 LDA SDC_TRANS_ERROR_REG
                 BEQ SD_INIT_SUCCESS
-                ERROR_MSG sd_no_card_msg, SD_INIT_DONE
+                BRA SD_INIT_DONE
                 
     SD_INIT_SUCCESS
                 ; SD Card is present
                 LDA #1
                 STA SDCARD_PRSNT_MNT 
-                
-                ERROR_MSG sd_card_present, SD_INIT_DONE
+                BRA SD_INIT_DONE
               
     SD_INIT_DONE
                 TURN_OFF_SD_LED
@@ -123,7 +107,7 @@ ISDOS_INIT
 ; MULTIPLY A NUMBER by 512 - 32 bits
 CALC_OFFSET_BYTES
                 .al
-                LDA SD_MULT_AREA + 2
+                LDA SD_MULT_AREA + 2 ; high 16-bits
                 ASL A
                 STA SD_MULT_AREA + 3
                 CLC
@@ -131,7 +115,7 @@ CALC_OFFSET_BYTES
                 ASL A
                 STA SD_MULT_AREA + 1
                 BCC CALC_DONE
-                INC SD_MULT_AREA + 2
+                INC SD_MULT_AREA + 3
     CALC_DONE
                 setas
                 stz SD_MULT_AREA
@@ -149,7 +133,7 @@ ISDOS_READ_MBR_BOOT
                 .as
                 LDA SDCARD_PRSNT_MNT ; this must be non-zero
                 BNE RMBR_CARD_PRESENT
-                ERROR_MSG sd_cant_read_mbr_msg, RMBR_DONE
+                RTL
 
     RMBR_CARD_PRESENT
         ; read sector 0 - the Master Boot Record
@@ -168,7 +152,7 @@ ISDOS_READ_MBR_BOOT
                 ; check for errors
                 LDA SDC_TRANS_ERROR_REG
                 BEQ SD_CONTINUE_1
-                ERROR_MSG sd_cant_read_mbr_msg, RMBR_DONE
+                RTL
                 
     SD_CONTINUE_1
                 ; Read the MBR signature - it should be 55 AA
@@ -176,7 +160,7 @@ ISDOS_READ_MBR_BOOT
                 LDA SD_BLK_BEGIN + 510
                 CMP #$AA55
                 BEQ VALID_SIG
-                ERROR_MSG INVALID_SIG_MSG, RMBR_DONE
+                RTL
     VALID_SIG
                 setal
                 LDX #446 ; offset to first partition
@@ -204,7 +188,7 @@ ISDOS_READ_MBR_BOOT
                 ; check for errors
                 LDA SDC_TRANS_ERROR_REG
                 BEQ SD_CONTINUE_2
-                ERROR_MSG SD_BOOT_SECTOR_MSG, RMBR_DONE
+                RTL
                 
     SD_CONTINUE_2
                 setal
@@ -392,33 +376,35 @@ DISPLAY_FAT_NAME
                 
 
 ;******************************************************************************
-;* Read the directory from the Data section
+;* Read the directory from the Data section and 
+; *     display volume, dir and file names.
 ;******************************************************************************
-ISDOS_READ_ROOT_DIR
+ISDOS_DISPLAY_ROOT_DIR
                 .as
                 .xl
                 setal
                 LDA #0  ; reset the root entries offset
                 STA SD_DIR_OFFSET
                 
-    NEXT_SECTOR
+    RD_NEXT_SECTOR
                 LDA #SD_ROOT_BEGIN
                 STA SD_DATA
                 
                 ; read the root sector
-                LDA SD_DIR_OFFSET
+                LDA SD_DIR_OFFSET ; multiply by 512
                 ASL A
                 XBA
-                CLC
-                ADC SD_ROOT_OFFSET
-                PHP
-                STA SDC_SD_ADDR_7_0_REG
+                ; add the ROOT offset
+                STA ADDER_A
+                LDA #0
+                STA ADDER_A + 2
+                LDA SD_ROOT_OFFSET
+                STA ADDER_B
                 LDA SD_ROOT_OFFSET+2
-                PLP
-                BCC SR_READ_BLOCK
-                INC A
-                
-        SR_READ_BLOCK
+                STA ADDER_B + 2
+                LDA ADDER_R
+                STA SDC_SD_ADDR_7_0_REG
+                LDA ADDER_R + 2
                 STA SDC_SD_ADDR_23_16_REG
                 setas
                 JSL ISDOS_READ_BLOCK
@@ -489,7 +475,7 @@ ISDOS_READ_ROOT_DIR
                 
                 STA SD_DIR_OFFSET ; next sector
                 ; A must 16-bit now.
-                JMP NEXT_SECTOR
+                JMP RD_NEXT_SECTOR
                 
                 
         RD_SKIP_NEXT
@@ -551,111 +537,186 @@ ISDOS_READ_ROOT_DIR
                 ; LDA #$D
                 ; JSL PUTC
                 JMP RD_SKIP
+              
 
-; ***************************************************************
-; * Clear the current FAT record
-; ***************************************************************
-ISDOS_CLEAR_FAT_REC
-              LDY #0
-              LDA #0
-    CLEAR_LOOP
-              STA [SDOS_FILE_REC_PTR],Y
-              INY
-              CPY #32
-              BNE CLEAR_LOOP
-              RTS
-              
-;////////////////////////////////////////////////////////
-; ISDOS_DIR
-;   Upon the Call of this Routine Display the Files on the SDCARD
-; Inputs:
-;   Pointer to the ASCII File name by
-; Located @ $000030..$000032 - SDCARD_FLNMPTR_L
-; Affects:
-;   None
-ISDOS_DIR
-              setas
-              setxl
-              ;** JSR ISDOS_MOUNT_CARD;     First to See if the Card is Present
-              
-              JSR ISDOS_CLEAR_FAT_REC
-              
-              STZ SDOS_LINE_SELECT
+; *****************************************************************************
+; * Store the data into our abbreviate FAT structure
+; *   Type
+; *   Filename
+; *   Start Cluster
+; *   Size
+; *****************************************************************************
+STORE_FAT_DATA
+                .as
+                LDY #11
+                CMP #$10
+                BEQ SF_DIR
+                LDA #1
+        SF_DIR
+                STA [SDOS_FILE_REC_PTR],Y
+                LDY #0
+                LDX #11
+    SF_LOOP_NAME
+                LDA [SD_DATA],Y
+                STA [SDOS_FILE_REC_PTR],Y
+                INY
+                DEX
+                BNE SF_LOOP_NAME
+                
+                setal
+                ;read the start cluster
+                LDY #fatrec.cluster
+                LDA [SD_DATA],Y
+                LDY #16
+                STA [SDOS_FILE_REC_PTR],Y
+                ; read the file size
+                LDY #fatrec.size_l
+                LDA [SD_DATA],Y
+                LDY #12
+                STA [SDOS_FILE_REC_PTR],Y
+                LDY #fatrec.size_h
+                LDA [SD_DATA],Y
+                LDY #14
+                STA [SDOS_FILE_REC_PTR],Y
+                
+                ;advance the pointer
+                LDA SDOS_FILE_REC_PTR
+                CLC
+                ADC #18
+                STA SDOS_FILE_REC_PTR
+                
+                setas
+                RTS
 
-              ;JSR SDOS_FILE_OPEN     ; Now that the file name is set, go open File
-
-              LDX #0 ; count the number of items displayed - limit to 38
-    ISDOS_NEXT_ENTRY
-              LDA #CH_CMD_RD_DATA0
-              STA SDCARD_CMD
-              ;** JSR DLYCMD_2_DTA;      ; Wait 1.5us
-              LDA SDCARD_DATA        ;  Load Data Length - should be 32 - we don't care.
-              
-              ; populate the FAT records - only copy the filename, type and size
-              LDY #0
-    FAT_REC_LOOP
-              ;** JSR DLYDTA_2_DTA       ; Wait 0.6us
-              LDA SDCARD_DATA
-              STA [SDOS_FILE_REC_PTR],Y
-              INY
-              CPY #32
-              BNE FAT_REC_LOOP
-              
-              ; copy the filelength bytes from 28-31 to 12-15.
-              setal
-              LDY #28
-              LDA [SDOS_FILE_REC_PTR],Y
-              LDY #12
-              STA [SDOS_FILE_REC_PTR],Y
-              LDY #30
-              LDA [SDOS_FILE_REC_PTR],Y
-              LDY #14
-              STA [SDOS_FILE_REC_PTR],Y
-              
-              ; move the file pointer ahead
-              LDA SDOS_FILE_REC_PTR
-              CLC
-              ADC #$10
-              STA SDOS_FILE_REC_PTR
-              setas
-              INX
-              CPX #64
-              BEQ ISDOS_DIR_DONE
-              
-              ;** JSR DLYCMD_2_DTA;      ; Wait 1.5us
-              
-              ; Ask Controller to go fetch the next entry in the Directory
-              LDA #CH_CMD_FILE_ENUM_GO
-              STA SDCARD_CMD
-              ;** JSR SDCARD_WAIT_4_INT       ; Go Wait for Interrupt
-              CMP #CH376S_STAT_DSK_RD
-              BEQ ISDOS_NEXT_ENTRY
-
-    ISDOS_DIR_DONE
-              ;JSR SDOS_FILE_CLOSE
-              RTL
-
-; Upon the Call of this Routine will Change the pointer to a new Sub-Directory
-ISDOS_CHDIR   BRK;
-
-; Upon the Call of this Routine this will Save a file defined by the given name and Location
-ISDOS_SAVE    BRK;
-
-; Load a File ".FNX" and execute it
-ISDOS_EXEC    BRK;
-
-              
+; *****************************************************************************
+; * Read the root directory and parse into an 18 byte struct, 56 max (1024 bytes)
+; *****************************************************************************
+ISDOS_PARSE_ROOT_DIR
+                .as
+                .xl
+                setal
+                LDA #0  ; reset the root entries offset
+                STA SD_DIR_OFFSET
+                
+    SP_NEXT_SECTOR
+                LDA #SD_ROOT_BEGIN
+                STA SD_DATA
+                
+                ; read the root sector
+                LDA SD_DIR_OFFSET ; multiply by 512
+                ASL A
+                XBA
+                ; add the ROOT offset
+                STA ADDER_A
+                LDA #0
+                STA ADDER_A + 2
+                LDA SD_ROOT_OFFSET
+                STA ADDER_B
+                LDA SD_ROOT_OFFSET+2
+                STA ADDER_B + 2
+                LDA ADDER_R
+                STA SDC_SD_ADDR_7_0_REG
+                LDA ADDER_R + 2
+                STA SDC_SD_ADDR_23_16_REG
+                setas
+                JSL ISDOS_READ_BLOCK
+                ; check for errors
+                LDA SDC_TRANS_ERROR_REG
+                BEQ SP_DIR_ENTRY
+                JML SP_DONE
+                
+    SP_DIR_ENTRY
+                LDA [SD_DATA]
+                BNE SP_CONTINUE ; if first byte is 0, entry is available and there are no following entries
+                JML SP_DONE
+                
+    SP_CONTINUE
+                CMP #$E5
+                BEQ SP_SKIP
+    SP_LOOP
+                ; check the file type
+                LDY #fatrec.type
+                LDA [SD_DATA],Y
+                
+                CMP #$F ; long file name
+                BNE SP_NOT_VFAT
+                JML SP_SKIP
+                
+        SP_NOT_VFAT
+                BIT #2 ; hidden
+                BEQ SP_NOT_HIDDEN
+                BRA SP_SKIP
+                
+        SP_NOT_HIDDEN
+                BIT #8 ; volume name
+                BEQ SP_NOT_VOLUME
+                JML SP_SKIP
+                
+        SP_NOT_VOLUME
+                BIT #$10 ; directory
+                BEQ SP_NOT_DIRECTORY
+                JSR STORE_FAT_DATA
+                BRA SP_SKIP
+                
+        SP_NOT_DIRECTORY
+                JSR STORE_FAT_DATA
+                
+    SP_SKIP
+                setal
+                LDA SD_DATA
+                AND #$1E0  ; each record in FAT is $20 bytes long
+                CMP #$1E0
+                BNE SP_SKIP_NEXT
+                
+                ; ensure we don't go over the maximum number of sectors in the ROOT section
+                LDA SD_DIR_OFFSET
+                INC A
+                CMP SD_ROOT_ENTRIES
+                BCS SP_DONE
+                
+                STA SD_DIR_OFFSET ; next sector
+                ; A must 16-bit now.
+                JMP SP_NEXT_SECTOR
+                
+                
+        SP_SKIP_NEXT
+                LDA SD_DATA
+                CLC
+                ADC #$20
+                STA SD_DATA
+                setas
+                
+                JML SP_DIR_ENTRY
+                
+    SP_DONE
+                RTL
+                
 ; *****************************************************************************
 ; * Load the FAT table
 ; * A must contain the sector to read
 ; *****************************************************************************
-SD_READ_FAT_SECTOR
+ISDOS_READ_FAT_SECTOR
                 .al
                 .xl
+                STA SD_MULT_AREA
+                LDA #0
+                STA SD_MULT_AREA + 2
+                JSR CALC_OFFSET_BYTES
+                LDA SD_MULT_AREA
+                STA ADDER_A
+                LDA SD_MULT_AREA + 2
+                STA ADDER_A + 2
+                
+                ; add the FAT offset
                 LDA SD_FAT_OFFSET
+                STA ADDER_B
+                LDA SD_FAT_OFFSET+2
+                STA ADDER_B + 2
+                LDA ADDER_R
                 STA SDC_SD_ADDR_7_0_REG
-                LDA SD_FAT_OFFSET + 2
+                LDA ADDER_R + 2
                 STA SDC_SD_ADDR_23_16_REG
+                
                 setas
                 JSL ISDOS_READ_BLOCK
                 ; check for errors
@@ -665,12 +726,71 @@ SD_READ_FAT_SECTOR
                 
     SD_CONTINUE_FAT
                 setal
-                RTS
+                RTL
+                
+
+; *****************************************************************************
+; * Load Data Cluster
+; * A must contain the cluster to read - this cluster is multiplied by 
+; *   sectors by cluster.
+; *****************************************************************************
+ISDOS_READ_DATA_CLUSTER
+                .al
+                .xl
+                PHA
+                LDX #0
+    SDR_NEXT_SECTOR
+                STA SD_MULT_AREA
+                LDA #0
+                STA SD_MULT_AREA + 2
+                JSR CALC_OFFSET_BYTES
+                
+                
+                LDA SD_MULT_AREA
+                STA ADDER_A
+                LDA SD_MULT_AREA + 2
+                STA ADDER_A + 2
+                
+                ; add the Data offset
+                LDA SD_DATA_OFFSET
+                STA ADDER_B
+                LDA SD_DATA_OFFSET+2
+                STA ADDER_B + 2
+                LDA ADDER_R
+                STA SDC_SD_ADDR_7_0_REG
+                LDA ADDER_R + 2
+                STA SDC_SD_ADDR_23_16_REG
+
+                setas
+                JSL ISDOS_READ_BLOCK
+                ; check for errors
+                LDA SDC_TRANS_ERROR_REG
+                BEQ SD_CONTINUE_DATA
+                ERROR_MSG SD_DATA_ERROR_MSG, SD_CONTINUE_DATA_DONE
+                
+    SD_CONTINUE_DATA
+                setal
+                LDA SD_DATA
+                CLC
+                ADC #$200
+                STA SD_DATA
+                PLA
+                INC A
+                PHA
+                INX
+                CPX SD_SECTORS_PER_CLUSTER
+                BNE SDR_NEXT_SECTOR
+                
+    SD_CONTINUE_DATA_DONE
+                setal
+                PLA
+                RTL
+
                 
 ; *****************************************************************************
 ; * A contains the cluster to start at
 ; *****************************************************************************
-SD_READ_FILE
+ISDOS_READ_FILE
                 .al
                 .xl
                 LDA #FAT_DATA ; store the block at SD_DATA
@@ -693,7 +813,7 @@ SD_READ_FILE
                 AND #$FF
                 CLC
                 ADC SD_FAT_OFFSET
-                JSR SD_READ_FAT_SECTOR
+                JSR ISDOS_READ_FAT_SECTOR
               
                 ; Place the data here:
                 LDA #FAT_DATA+$200 ; store the block at SD_DATA
@@ -750,144 +870,7 @@ SD_READ_FILE
                 BNE SD_READNEXT_SECTOR_16
               
     SD_READ_FINISHED
-              RTL
-
-; ISDOS_READ_FILE
-; Go Open and Read a file and store it to prefedined address
-; Inputs:
-;  Name @ SDOS_FILE_NAME, Pointer to Store the DATA: @ SDCARD_FILE_PTR ($00:00030)
-; Affects:
-;   A, X probably Y and CC and the whole thing... So don't asume anything...
-; Returns:
-; Well, you ought to have your file loaded where you asked it.
-ISDOS_READ_FILE
-              .as
-              ;JSR SDOS_FILE_OPEN   ; open the file
-              
-              ; If successful, get the file sizeof
-              LDA SDCARD_DATA
-              CMP #CH376S_STAT_SUCCESS ; if the file open successfully, let's go on.
-              BEQ SDOS_READ_FILE_KEEP_GOING
-              BRL SDOS_READ_DONE
-              
-    SDOS_READ_FILE_KEEP_GOING
-
-              setal
-              JSR SDOS_SET_FILE_LENGTH;
-              LDA #$0000
-              STA @lSDCARD_BYTE_NUM; Just make sure the High Part of the Size is Zero
-              STA @lSDOS_BYTE_PTR   ; Clear the Byte Pointer 32 Bytes Register
-              STA @lSDOS_BYTE_PTR+2 ; This is to Relocated the Pointer after you passed the 64K Boundary
-              ; Second Step, Setup the Amount of Data to Send
-              ; Set the Transfer Size, I will try 256 bytes
-              setas
-    SDOS_READ_FILE_GO_FETCH_A_NEW_64KBlock
-              LDA #CH_CMD_BYTE_READ
-              STA SDCARD_CMD;
-              ;** JSR DLYCMD_2_DTA;   ; 3us Delay to get the Value Return
-              LDA @lSDOS_BYTE_NUMBER
-              STA SDCARD_DATA
-              ;** JSR DLYDTA_2_DTA;   ; 1.5us Delay to get the Value Return
-              LDA @lSDOS_BYTE_NUMBER+1
-              STA SDCARD_DATA
-              ;** JSR SDCARD_WAIT_4_INT
-              CMP #CH376S_STAT_DSK_RD ;
-              BEQ SDOS_READ_FILE_GO_FETCH_A_NEW_BLOCK
-              BRL SDOS_READ_DONE
-    SDOS_READ_FILE_GO_FETCH_A_NEW_BLOCK
-              ; Go Read 1 Block and Store it @ ($00:0030)
-              ;**** JSR SDOS_READ_BLOCK
-              LDA #CH_CMD_BYTE_RD_GO
-              STA SDCARD_CMD
-              ;Now let's go to Poll the INTERRUPT and wait for
-              ;** JSR SDCARD_WAIT_4_INT
-              CMP #CH376S_STAT_DSK_RD ;
-              BNE SDOS_READ_PROC_DONE
-              JSR SDOS_ADJUST_POINTER  ; Go Adjust the Address
-              BRA SDOS_READ_FILE_GO_FETCH_A_NEW_BLOCK
-              
-    SDOS_READ_PROC_DONE
-              setal
-              LDA @lSDOS_BYTE_NUMBER  ; Load the Previously number of Byte
-              CMP #$FFFF
-              BNE SDOS_READ_DONE                  ; if it equal 64K, then the file is bigger than 64K
-              ; Now let's go compute the Nu Value for the Next Batch
-              LDA @lADDER_R
-              STA @lADDER_A
-              LDA @lADDER_R+2
-              STA @lADDER_A+2
-              JSR SDOS_SET_FILE_LENGTH ;
-              JSR SDOS_COMPUTE_LOCATE_POINTER
-              setas
-              JSR SDOS_BYTE_LOCATE    ; Apply the new location for the CH376S
-              ;** JSR SDCARD_WAIT_4_INT
-              CMP #CH376S_STAT_SUCCESS ;
-              BNE SDOS_READ_PROC_DONE
-              ; Check to see that we have Loaded all the bytes.
-              BRA SDOS_READ_FILE_GO_FETCH_A_NEW_64KBlock ; Let's go fetch a new block of 64K or less
-
-    SDOS_READ_DONE
-              setas
-              RTL
-
-SDOS_ADJUST_POINTER
-              setal
-              CLC
-              LDA SDCARD_FILE_PTR ;Load the Pointer
-              ADC SDCARD_BYTE_NUM
-              STA SDCARD_FILE_PTR;
-              setas
-              LDA SDCARD_FILE_PTR+2;
-              ADC #$00          ; This is just add up the Carry
-              STA SDCARD_FILE_PTR+2;
-    SDOS_ADJ_DONE
-              RTS
-
-SDOS_BYTE_LOCATE  ; Reposition the Pointer of the CH376S when the File is > 64K
-              setas
-              LDA #CH_CMD_BYTE_LOCATE
-              STA SDCARD_CMD
-              ;** JSR DLYCMD_2_DTA
-              LDA @lSDOS_BYTE_PTR
-              STA SDCARD_DATA
-              ;** JSR DLYDTA_2_DTA
-              LDA @lSDOS_BYTE_PTR+1
-              STA SDCARD_DATA
-              ;** JSR DLYDTA_2_DTA
-              LDA @lSDOS_BYTE_PTR+2
-              STA SDCARD_DATA
-              ;** JSR DLYDTA_2_DTA
-              LDA @lSDOS_BYTE_PTR+3
-              STA SDCARD_DATA
-              RTS
-
-; This will increment the pointer for the CH376S
-SDOS_COMPUTE_LOCATE_POINTER
-              setal
-              CLC
-              LDA @lSDOS_BYTE_PTR ; $00330
-              ADC #$FFFF
-              STA @lSDOS_BYTE_PTR
-              LDA @lSDOS_BYTE_PTR+2
-              ADC #$0000          ; this is to Add the Carry
-              STA @lSDOS_BYTE_PTR+2
-              RTS
-
-; ********************************************************
-; * Prepare the buffer for reading - max 64k bytes
-; ********************************************************
-SDOS_SET_FILE_LENGTH
-              LDA SDOS_FILE_SIZE + 2
-              BEQ SFL_DONE
-              
-              ; the file is too large, just exit
-              PLY ; deplete the stack to return back to the long jump
-              RTL
-              
-    SFL_DONE
-              LDA SDOS_FILE_SIZE
-              STA @lSDOS_BYTE_NUMBER
-              RTS
+                RTL
               
 ; *****************************************************************************
 ; * Add MBR offset and Reserved Sectors
@@ -964,8 +947,6 @@ COMPUTE_FAT_ROOT_DATA_OFFSETS
 ;
 ; MESSAGES
 ;
-;sd_card_dir_string      .text '/*' ,$00
-;                        .fill 128-3,0  ; leave space for the path
 sd_card_tester          .text "00 - Welcome to the SDCard Tester", $d, 0
 sd_card_present         .text "01 - Card Present", $d, 0
 sd_no_card_msg          .text "01 - NO SDCARD PRESENT", $0D, $00
@@ -983,14 +964,3 @@ sd_dir_name             .text "Directory  : ", $0
 sd_filename             .text "Filename   : ", $0
 sd_cluster_str          .text ", Cluster:", $0
 sd_filesize_str         .text ", Size:", $0
-
-sd_card_err0        .text "ERROR IN READIND CARD", $d, $0
-sd_card_err1        .text "ERROR LOADING FILE", $00
-sd_card_msg0        .text "Name: ", $0D,$00
-sd_card_msg1        .text "SDCARD DETECTED", $00
-sd_card_msg2        .text "SDCARD MOUNTED", $00
-sd_card_msg3        .text "FAILED TO MOUNT SDCARD", $0D, $00
-sd_card_msg4        .text "FILE OPENED", $0D, $00
-sd_card_msg5        .text "END OF LINE...", $00
-sd_card_msg6        .text "FILE FOUND, LOADING...", $00
-sd_card_msg7        .text "FILE LOADED", $00

@@ -68,7 +68,7 @@ SDCARD
                 JSL ISDOS_INIT
                 JSL ISDOS_READ_MBR_BOOT
                 ; read the root sectors
-                JSL ISDOS_READ_ROOT_DIR
+                JSL ISDOS_DISPLAY_ROOT_DIR
                 
                 
                 ; These are temporary sub-routines to help me debug
@@ -76,8 +76,26 @@ SDCARD
                 setal
                 LDA #$6600 ; store the block at SD_DATA
                 STA SD_DATA
-                LDA SD_FAT_OFFSET
-                JSR SD_READ_FAT_SECTOR
+                LDA #0
+                JSL ISDOS_READ_FAT_SECTOR
+                
+                LDA #$6800 ; store the block at SD_DATA
+                STA SD_DATA
+                LDA #1
+                JSL ISDOS_READ_FAT_SECTOR
+                
+                LDA #$6A00 ; store the block at SD_DATA
+                STA SD_DATA
+                LDA #(4-2) * 2
+                JSL ISDOS_READ_DATA_CLUSTER
+                
+                LDA #$6E00 ; store the block at SD_DATA
+                STA SD_DATA
+                LDA #(5-2) * 2
+                JSL ISDOS_READ_DATA_CLUSTER
+                
+                LDA #$6E00 ; store the block at SD_DATA
+                STA SD_DATA
                 setas
                 JSR DISPLAY_BLOCK
 
@@ -232,38 +250,6 @@ DISPLAY_BLOCK
                 
                 PLB
                 RTL
-
-; *****************************************************************************
-; * Load the sixth sector in data area
-; *****************************************************************************
-SD_READ_DATA_SECTOR
-                .al
-                .xl
-                LDA SD_DATA_OFFSET
-                CLC
-                ADC #6
-                ASL A ; this may cause a carry
-                PHP
-                STA SDC_SD_ADDR_15_8_REG
-                LDA SD_DATA_OFFSET+2
-                ASL A
-                PLP
-                setas
-                BCC DT_NO_CARRY
-                INC A
-        DT_NO_CARRY
-                STA SDC_SD_ADDR_31_24_REG
-                LDA #0
-                STA SDC_SD_ADDR_7_0_REG
-                JSL ISDOS_READ_BLOCK
-                ; check for errors
-                LDA SDC_TRANS_ERROR_REG
-                BEQ SD_CONTINUE_DATA
-                ERROR_MSG SD_DATA_ERROR_MSG, SD_CONTINUE_DATA
-                
-    SD_CONTINUE_DATA
-                setal
-                RTS
                 
 ; *****************************************************************************
 ; * Only display the 4 MBR Partition Records

@@ -859,7 +859,7 @@ DISPLAY_MSG
                 .as
                 .xl
                 PHB
-                .setdbr `<sd_card_dir_string
+                .setdbr `<sd_card_tester
     MSG_LOOP
                 LDA $0,b,x      ; read from the string
                 BEQ MSG_DONE
