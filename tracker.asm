@@ -211,6 +211,7 @@ ENABLE_IRQS
 ; *******************************************************************************
 RESET_STATE_MACHINE
                 .as
+                .xl
                 LDA #0
                 STA STATE_MACHINE
                 STA RAD_ORDER_NUM

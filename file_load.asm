@@ -106,7 +106,7 @@ COPY_CHAR   LDA FILE_LOAD_SCREEN,X
 ; ****************************************************************
 POPULATE_FILES
             .as
-            .xs
+            .xl
             ; reset the file pointer
             STZ SDOS_FILE_REC_PTR
             STZ SDOS_FILE_REC_PTR+1
@@ -144,7 +144,7 @@ POPULATE_FILES
         
 READ_FILE
             .as
-            .xs
+            .xl
             LDA #0
             XBA
             LDA SDOS_LINE_SELECT
@@ -161,8 +161,7 @@ READ_FILE
             LDA [SDOS_FILE_REC_PTR],Y
             ; TODO JSL ISDOS_READ_FILE
             setas
-            JSR EXIT_FILE
-            setxs
+            JSL EXIT_FILE
             RTL
 ; ****************************************************************
 ; * EXIT the Load File Screen
@@ -170,14 +169,12 @@ READ_FILE
 EXIT_FILE
             .as
             .xl
-            
             JSR RESET_STATE_MACHINE
             JSR DRAW_DISPLAY
             JSR LOAD_INSTRUMENT
             JSR DISPLAY_PATTERN
             JSR DISPLAY_ORDERS
-            
-            RTS
+            RTL
             
 DISPLAY_FILENAME
             RTS

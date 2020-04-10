@@ -379,6 +379,7 @@ START_SOF
                 JMP KB_CHECK_B_DONE
                 
 GO_LOAD_FILE
+                .xl
                 PLA
                 JSL READ_FILE
                 JMP KB_CHECK_B_DONE
