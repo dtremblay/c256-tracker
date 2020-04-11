@@ -48,6 +48,14 @@ LOAD_SDCARD_DATA
             ; read the root directory
             JSL ISDOS_PARSE_ROOT_DIR
             
+            setal
+            LDA #FAT_DATA
+            STA SD_DATA
+            LDA #0
+            STA SD_DATA + 2
+            STA SD_DATA_FAT_PAGE
+            JSL ISDOS_READ_FAT_SECTOR
+            setas
     LOAD_SDCARD_DATA_DONE
             
             RTS
@@ -155,12 +163,25 @@ READ_FILE
             STA UNSIGNED_MULT_B
             LDA UNSIGNED_MULT_RESULT
             STA SDOS_FILE_REC_PTR
-            JSR DISPLAY_FILENAME
+            
+            ; prepare the file pointer
+            LDA #<>RAD_FILE_TEMP
+            STA SD_DATA
+            LDA #`RAD_FILE_TEMP
+            STA SD_DATA + 2
+            
             ; get the cluster number
             LDY #16
             LDA [SDOS_FILE_REC_PTR],Y
-            ; TODO JSL ISDOS_READ_FILE
+            JSL ISDOS_READ_FILE
+            
             setas
+            
+            JSL OPL2_INIT
+            
+            ; load the song
+            JSL RAD_INIT_PLAYER
+            ; close the file loading menu
             JSL EXIT_FILE
             RTL
 ; ****************************************************************
@@ -171,10 +192,10 @@ EXIT_FILE
             .xl
             JSR RESET_STATE_MACHINE
             JSR DRAW_DISPLAY
-            JSR LOAD_INSTRUMENT
+            JSR DISPLAY_FILENAME
+            ;JSR LOAD_INSTRUMENT
             JSR DISPLAY_PATTERN
             JSR DISPLAY_ORDERS
-            RTL
+            JSR DISPLAY_SPEED
             
-DISPLAY_FILENAME
-            RTS
+            RTL

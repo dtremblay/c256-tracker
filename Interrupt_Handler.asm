@@ -444,7 +444,11 @@ TIMER0_INTERRUPT
                 
                 ; we now have to increment the line count
     INCR_LINE
+                LDA LINE_NUM_HEX
+                BIT #3
+                BNE NO_LED
                 TURN_ON_SD_LED
+        NO_LED
                 CLC
                 SED
                 INC LINE_NUM_HEX

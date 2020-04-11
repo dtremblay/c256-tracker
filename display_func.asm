@@ -383,6 +383,32 @@ DRAW_LINE_DONE
                 PLB
                 RTS
                 
+DISPLAY_FILENAME
+                .as
+                .xl
+                LDY #0
+                LDX #23*128 + 51
+        DF_LOOP
+                LDA [SDOS_FILE_REC_PTR],Y
+                PHY
+                TXY
+                STA [SCREENBEGIN], Y
+                INX
+                PLY
+                INY
+                CPY #8
+                BNE DF_NOT_DOT
+                LDA #'.'
+                PHY
+                TXY
+                STA [SCREENBEGIN], Y
+                INX
+                PLY
+        DF_NOT_DOT
+                CPY #11
+                BNE DF_LOOP
+                RTS
+                
 ; ****************************************************
 ; * Y contains the current draw location (after MVN).
 ; * TAB_COUNTER contains the line to draw.

@@ -17,7 +17,7 @@ line3     .byte $c2
           .fill (SCREEN_WIDTH - 40) / 2, 0
           .text 'C256 Foenix Tracker' ; 19 characters
           .fill 4, 0
-          .text '[Version 0.2.0]' ; 15 characters
+          .text '[Version 0.3.0]' ; 15 characters
           .fill (SCREEN_WIDTH - 40) / 2, 0
           .byte $c2
           .fill UNUSED_SCR, 0
@@ -452,7 +452,7 @@ line24
           .text 'Speed:  N'  ; 9 chars
           .byte $c2
           .fill 2, 0
-          .text 'File: adlibsp.rad' ; 17 chars
+          .text 'File:            ' ; 17 chars
           .fill 17, 0
           .byte $c2
           .fill UNUSED_SCR, 0

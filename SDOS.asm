@@ -25,6 +25,8 @@ SD_FAT16                = $5F26 ; 1 byte - write 1 for FAT16, 0 for FAT12
 CLUSTER_PTR             = $5F27 ; 2 bytes
 LOG_CLUSTER_PTR         = $5F29 ; 4 bytes
 SD_DATA                 = $0080 ; 3 bytes - used indirect addressing
+SD_TMP_DATA             = $0083 ; 3 bytes - used indirect addressing
+SD_DATA_FAT_PAGE        = $0086 ; 2 bytes - last FAT page that was loaded
 SD_MULT_AREA            = $0088 ; 4 bytes
 SD_BLK_BEGIN            = $6000 ; 512 bytes
 SD_BTSCT_BEGIN          = $6200 ; 512 bytes
@@ -141,6 +143,8 @@ ISDOS_READ_MBR_BOOT
                 ; where is the data going to be written to
                 LDA #SD_BLK_BEGIN
                 STA SD_DATA
+                LDA #0
+                STA SD_DATA + 2
                 
                 ; initialize registers to load MBR
                 LDA #0
@@ -180,6 +184,8 @@ ISDOS_READ_MBR_BOOT
                 
                 LDA #SD_BTSCT_BEGIN
                 STA SD_DATA
+                LDA #0
+                STA SD_DATA + 2
                 
         ; read the FAT Boot Sector - this overwrites the MBR record
                 setas
@@ -201,6 +207,8 @@ ISDOS_READ_MBR_BOOT
                 ; logical sectors per cluster
                 LDA SD_BTSCT_BEGIN,X + $D
                 STA SD_SECTORS_PER_CLUSTER
+                LDA #0
+                STA SD_SECTORS_PER_CLUSTER + 1
                 
                 setal
                 ; number of fat tables
@@ -223,7 +231,6 @@ ISDOS_READ_MBR_BOOT
                 LDA SD_SECTORS
                 STA D0_OPERAND_B
                 LDA SD_SECTORS_PER_CLUSTER
-                AND #$FF
                 STA D0_OPERAND_A
                 LDA D0_RESULT
                 CMP #$FF7
@@ -266,7 +273,7 @@ ISDOS_READ_BLOCK
                 ; check if the SD Card is present
                 LDA SDCARD_PRSNT_MNT
                 BNE SR_CARD_PRESENT
-                ERROR_MSG sd_no_card_msg, SR_DONE
+                BRA SR_DONE
 
     SR_CARD_PRESENT
                 LDA #SDC_TRANS_READ_BLK
@@ -283,7 +290,7 @@ ISDOS_READ_BLOCK
                 ; check for errors
                 LDA SDC_TRANS_ERROR_REG
                 BEQ SD_READ_BLOCK_OK
-                ERROR_MSG sd_read_failure, SR_DONE
+                BRA SR_DONE
                 
                 ; SDC_RX_FIFO_DATA_CNT_HI and SDC_RX_FIFO_DATA_CNT_LO may contain how many bytes were read
     SD_READ_BLOCK_OK
@@ -389,6 +396,8 @@ ISDOS_DISPLAY_ROOT_DIR
     RD_NEXT_SECTOR
                 LDA #SD_ROOT_BEGIN
                 STA SD_DATA
+                LDA #0
+                STA SD_DATA + 2
                 
                 ; read the root sector
                 LDA SD_DIR_OFFSET ; multiply by 512
@@ -546,7 +555,7 @@ ISDOS_DISPLAY_ROOT_DIR
 ; *   Start Cluster
 ; *   Size
 ; *****************************************************************************
-STORE_FAT_DATA
+STORE_FILE_LIST
                 .as
                 LDY #11
                 CMP #$10
@@ -601,6 +610,8 @@ ISDOS_PARSE_ROOT_DIR
     SP_NEXT_SECTOR
                 LDA #SD_ROOT_BEGIN
                 STA SD_DATA
+                LDA #0
+                STA SD_DATA + 2
                 
                 ; read the root sector
                 LDA SD_DIR_OFFSET ; multiply by 512
@@ -655,11 +666,11 @@ ISDOS_PARSE_ROOT_DIR
         SP_NOT_VOLUME
                 BIT #$10 ; directory
                 BEQ SP_NOT_DIRECTORY
-                JSR STORE_FAT_DATA
+                JSR STORE_FILE_LIST
                 BRA SP_SKIP
                 
         SP_NOT_DIRECTORY
-                JSR STORE_FAT_DATA
+                JSR STORE_FILE_LIST
                 
     SP_SKIP
                 setal
@@ -722,7 +733,7 @@ ISDOS_READ_FAT_SECTOR
                 ; check for errors
                 LDA SDC_TRANS_ERROR_REG
                 BEQ SD_CONTINUE_FAT
-                ERROR_MSG SD_FAT_ERROR_MSG, SD_CONTINUE_FAT
+                ; ERROR_MSG SD_FAT_ERROR_MSG, SD_CONTINUE_FAT
                 
     SD_CONTINUE_FAT
                 setal
@@ -731,12 +742,20 @@ ISDOS_READ_FAT_SECTOR
 
 ; *****************************************************************************
 ; * Load Data Cluster
-; * A must contain the cluster to read - this cluster is multiplied by 
-; *   sectors by cluster.
+; * A must contain the cluster to read;
+; *   subsctract 2 and then multiplied by sectors by cluster.
 ; *****************************************************************************
 ISDOS_READ_DATA_CLUSTER
                 .al
                 .xl
+                ; offset by 2 and multiply by sectors by cluster
+                SEC
+                SBC #2
+                STA UNSIGNED_MULT_A
+                LDA SD_SECTORS_PER_CLUSTER
+                STA UNSIGNED_MULT_B
+                LDA UNSIGNED_MULT_RESULT
+                
                 PHA
                 LDX #0
     SDR_NEXT_SECTOR
@@ -766,7 +785,12 @@ ISDOS_READ_DATA_CLUSTER
                 ; check for errors
                 LDA SDC_TRANS_ERROR_REG
                 BEQ SD_CONTINUE_DATA
-                ERROR_MSG SD_DATA_ERROR_MSG, SD_CONTINUE_DATA_DONE
+                
+                LDA #$FF
+                STA CLUSTER_PTR
+                STA CLUSTER_PTR + 1
+                BRA SD_CONTINUE_DATA_DONE
+
                 
     SD_CONTINUE_DATA
                 setal
@@ -774,6 +798,11 @@ ISDOS_READ_DATA_CLUSTER
                 CLC
                 ADC #$200
                 STA SD_DATA
+                ; TODO - check if there's a carry
+                BCC SD_CONT_NO_CARRY
+                INC SD_DATA + 2
+                
+    SD_CONT_NO_CARRY
                 PLA
                 INC A
                 PHA
@@ -788,89 +817,109 @@ ISDOS_READ_DATA_CLUSTER
 
                 
 ; *****************************************************************************
-; * A contains the cluster to start at
+; * A contains the cluster to start at.
+; * SD_DATA must contain the pointer to write file data to.
 ; *****************************************************************************
 ISDOS_READ_FILE
                 .al
                 .xl
-                LDA #FAT_DATA ; store the block at SD_DATA
-                STA SD_DATA
                 STA CLUSTER_PTR
                 
-                ; READ the FAT for our starting cluster 
-                ; for FAT12, table entries are 1.5 bytes, FAT16 are 2 bytes
+    SD_CLUSTER_LOOP
+                
+                JSL ISDOS_READ_DATA_CLUSTER
                 
                 LDA SD_FAT16
-                BNE SD_RAD_FAT16
-              
-                ; each FAT table page contains 340 entries
-              
-    SD_RAD_FAT16
-                PLA
-                ; the first byte is the FAT table page/sector
+                AND #$1
+                ASL
+                TAX
+                JSR (READ_FAT_TABLE,X)
+                
                 LDA CLUSTER_PTR
+                CMP #$FFFF
+                BNE SD_CLUSTER_LOOP
+                
+                RTL
+                
+READ_FAT_TABLE  .word <>FAT12_GET_NEXT_CLUSTER
+                .word <>FAT16_GET_NEXT_CLUSTER
+                
+; *****************************************************************************
+; * Read the FAT12 to determine the next cluster to read.
+; *****************************************************************************
+FAT12_GET_NEXT_CLUSTER
+                ; maintain the location of file pointer
+                LDA SD_DATA
+                STA SD_TMP_DATA
+                LDA SD_DATA + 2
+                STA SD_TMP_DATA + 2
+                
+                ; TODO load the FAT table
+                ; TODO find the next sector
+                LDA #FAT_DATA
+                STA SD_DATA
+                LDA #0
+                STA SD_DATA + 2
+                
+                ; read the FAT page to read
+                LDA CLUSTER_PTR 
                 XBA
                 AND #$FF
-                CLC
-                ADC SD_FAT_OFFSET
-                JSR ISDOS_READ_FAT_SECTOR
-              
-                ; Place the data here:
-                LDA #FAT_DATA+$200 ; store the block at SD_DATA
+                JSL ISDOS_READ_FAT_SECTOR
+                
+                LDA #$FFF
+                STA CLUSTER_PTR
+                
+                RTS
+                
+; *****************************************************************************
+; * Read the FAT16 to determine the next cluster to read.
+; *****************************************************************************
+FAT16_GET_NEXT_CLUSTER
+                
+                ; read the FAT page to read
+                LDA CLUSTER_PTR 
+                XBA
+                AND #$FF
+                
+                ; avoid reloading the page
+                CMP SD_DATA_FAT_PAGE
+                BEQ SKIP_FAT_LOADING
+                
+                ; **************************************
+                ; maintain the location of file pointer
+                LDA SD_DATA
+                STA SD_TMP_DATA
+                LDA SD_DATA + 2
+                STA SD_TMP_DATA + 2
+                
+                ; TODO load the FAT table
+                ; TODO find the next sector
+                LDA #FAT_DATA
                 STA SD_DATA
-                
-                ; read the file data
-                LDA SD_SECTORS_PER_CLUSTER
-                AND #$FF
-                TAY ; this will be used to read logical sectors
-                STA UNSIGNED_MULT_A
-                LDA CLUSTER_PTR
-                STA UNSIGNED_MULT_B
-                LDA UNSIGNED_MULT_RESULT
-                STA LOG_CLUSTER_PTR
-                LDA UNSIGNED_MULT_RESULT + 2
-                STA LOG_CLUSTER_PTR + 2
-                
-    SD_READNEXT_SECTOR_16
-                LDA LOG_CLUSTER_PTR
-                CLC
-                ADC SD_DATA_OFFSET
-                ASL A
-                PHP
-                STA SDC_SD_ADDR_15_8_REG
-                LDA LOG_CLUSTER_PTR + 2
-                ASL A
-                PLP
-                setas
-                BCC SD_READ16_NO_CARRY
-                INC A
-        SD_READ16_NO_CARRY
-                STA SDC_SD_ADDR_31_24_REG
                 LDA #0
-                STA SDC_SD_ADDR_7_0_REG
-                JSL ISDOS_READ_BLOCK
-                ; check for errors
-                LDA SDC_TRANS_ERROR_REG
-                BEQ SD_READ16_CONTINUE_DATA
-                ERROR_MSG SD_DATA_ERROR_MSG, SD_READ_FINISHED
+                STA SD_DATA + 2
                 
-    SD_READ16_CONTINUE_DATA
-                setal
-                INC LOG_CLUSTER_PTR
-                DEY
-                BNE SD_READNEXT_SECTOR_16
+                ; load the FAT page
+                STA SD_DATA_FAT_PAGE
+                JSL ISDOS_READ_FAT_SECTOR
                 
-                ; the second byte is the address within the page
+                LDA SD_TMP_DATA
+                STA SD_DATA
+                LDA SD_TMP_DATA + 2
+                STA SD_DATA + 2
+                ; ***************************************
+                
+        SKIP_FAT_LOADING
+                ; now read the 16-bit value
                 LDA CLUSTER_PTR
                 AND #$FF
-                ASL A
-                TAX
-                LDA FAT_DATA,X
-                CMP #$FFFF
-                BNE SD_READNEXT_SECTOR_16
-              
-    SD_READ_FINISHED
-                RTL
+                ASL A ; multiply by 2
+                TAY
+                LDA FAT_DATA,Y
+                STA CLUSTER_PTR
+
+                RTS
               
 ; *****************************************************************************
 ; * Add MBR offset and Reserved Sectors
@@ -952,7 +1001,7 @@ sd_card_present         .text "01 - Card Present", $d, 0
 sd_no_card_msg          .text "01 - NO SDCARD PRESENT", $0D, $00
 sd_cant_read_mbr_msg    .text "02 - Can't read MBR - No Card present", $D, $0
 sd_read_failure         .text "03 - Error during read operation", $d, $0
-SD_BOOT_SECTOR_MSG     .text "04 - Error reading Boot sector", $d, $0
+SD_BOOT_SECTOR_MSG      .text "04 - Error reading Boot sector", $d, $0
 SD_FAT_ERROR_MSG        .text "05 - Error reading FAT sector", $d, $0
 SD_ROOT_ERROR_MSG       .text "05 - Error reading Root sector", $d, $0
 SD_DATA_ERROR_MSG       .text "05 - Error reading Data sector", $d, $0

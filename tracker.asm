@@ -12,6 +12,7 @@
 MOUSE_BUTTONS_REG= $380F00 ; bit 2=middle, bit 1=right, bit 0=left
 INSTR_REC_LEN    = INSTRUMENT_BAGPIPE1 - INSTRUMENT_ACCORDN
 FIFTY_HZ_COUNT   = 286360
+SLOW_TIMER       = 786703
 SCRN_COPY        = $001000
 SCRN_COPY_CLR    = $001000 + 800
 SDCARD_LIST      = $340000
@@ -137,15 +138,12 @@ TRACKER
                 JSL IOPL2_TONE_TEST
 
                 JSR ENABLE_IRQS
-                JSR INIT_TIMER0_50HZ
-                
                 JSL OPL2_INIT
                 
                 CLI
                 
                 ; we allow input of data via MIDI
                 JSR INIT_MIDI
-                JSL RAD_INIT_PLAYER
 
                 JSR DISPLAY_ORDERS
                 JSR DISPLAY_PATTERN
@@ -304,7 +302,7 @@ INIT_TIMER0_BPM
 ; *************************************************************************
 ; * Initialize the timer for 50Hz
 ; *************************************************************************
-INIT_TIMER0_50HZ
+INIT_TIMER0
                 .as
                 PHB
                 
@@ -317,15 +315,6 @@ INIT_TIMER0_50HZ
                 STA TIMER0_CHARGE_L
                 STA TIMER0_CHARGE_M
                 STA TIMER0_CHARGE_H
-                
-                LDA #<FIFTY_HZ_COUNT
-                STA TIMER0_CMP_L
-                
-                LDA #>FIFTY_HZ_COUNT
-                STA TIMER0_CMP_M
-                
-                LDA #<`FIFTY_HZ_COUNT
-                STA TIMER0_CMP_H
                 
                 LDA #TMR0_CMP_RECLR  ; count up from "CHARGE" value to TIMER_CMP
                 STA TIMER0_CMP_REG
@@ -955,9 +944,6 @@ PATTERNS .for pattern=1, pattern <= 36, pattern += 1 ; 64548 bytes total
     .next
 .next
 ORDERS    .fill 120, 0
-
-* = RAD_FILE_TEMP
-.binary "RAD_Files/island industrial.rad"
 
 * = $3A0000
 .include "bpm.asm"

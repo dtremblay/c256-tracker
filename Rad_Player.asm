@@ -32,7 +32,16 @@ note_array          .byte $43, $90, $44, $91, $45, $46, $92, $47, $93, $41, $94,
 ; ************************************************************************************************
 RAD_INIT_PLAYER
             JSL OPL2_INIT   ; Init OPL2
-              
+            JSR RAD_ALL_NOTES_OFF
+            
+            ; zero the pattern memory
+            LDX #0
+            LDA #0
+    RI_RESET
+            STA PATTERNS,X
+            INX
+            BNE RI_RESET
+            
             ; READ the RAD file
             setaxl
             LDA #<>RAD_FILE_TEMP ; Set the Pointer where the File Begins
@@ -66,7 +75,33 @@ READ_VERSION_10
             JSR PARSER_RAD_FILE_INSTRUMENT_10; Go Parse the Instrument and Order list
             JSR PROCESS_ORDER_LIST_10
             JSR READ_PATTERNS_10
-            JSR DISPLAY_SPEED
+            
+            LDY #$11
+            LDA [OPL2_ADDY_PTR_LO],Y
+            BIT #$40
+            BEQ NORMAL_TIMER
+            
+            LDA #<SLOW_TIMER
+            STA TIMER0_CMP_L
+            
+            LDA #>SLOW_TIMER
+            STA TIMER0_CMP_M
+            
+            LDA #<`SLOW_TIMER
+            STA TIMER0_CMP_H
+            BRA SET_TIMER
+
+    NORMAL_TIMER
+            LDA #<FIFTY_HZ_COUNT
+            STA TIMER0_CMP_L
+            
+            LDA #>FIFTY_HZ_COUNT
+            STA TIMER0_CMP_M
+            
+            LDA #<`FIFTY_HZ_COUNT
+            STA TIMER0_CMP_H
+    SET_TIMER
+            JSR INIT_TIMER0
             RTL  ; End of READ_VERSION_10
 
 ADLIB_OFFSETS .byte 7,1,8,2,9,3,10,4,5,11,6

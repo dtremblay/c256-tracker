@@ -59,6 +59,7 @@ OPL2_TONE_TESTING_L2
                 RTL
 
 OPL2_INIT
+                .as
                 setal
                 ; Just Making sure all the necessary variables are cleared before doing anything
                 LDA #$0000
@@ -75,6 +76,8 @@ OPL2_INIT
                 STA RAD_ADDR + 2
                 
                 setas
+                LDA #1
+                STA OPL3_R_OPL3_MODE
                 RTL
 
 
