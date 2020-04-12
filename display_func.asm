@@ -407,6 +407,24 @@ DISPLAY_FILENAME
         DF_NOT_DOT
                 CPY #11
                 BNE DF_LOOP
+                
+                ; add the version
+                TXY
+                INY
+                INY
+                LDA #'v'
+                STA [SCREENBEGIN], Y
+                
+                INY
+                LDA @lTuneInfo.version
+                BIT #2
+                BNE DF_V2
+                LDA #'1'
+                BRA DF_DONE
+        DF_V2
+                LDA #'2'
+    DF_DONE
+                STA [SCREENBEGIN], Y
                 RTS
                 
 ; ****************************************************
@@ -695,6 +713,12 @@ DISPLAY_SPEED
                 LDA @lTuneInfo.InitialSpeed
                 LDY #23*128 + 40
                 JSR WRITE_HEX
+                LDA @lTuneInfo.hasSlowTimer
+                BEQ DS_DONE
+                LDA #'*'
+                LDY #23*128 + 39
+                STA [SCREENBEGIN], Y
+        DS_DONE
                 PLY
                 RTS
                 

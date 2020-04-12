@@ -12,12 +12,7 @@ FNUMBER_MIN = $0156
 FNUMBER_MAX = $02AE
 
 SongData .struct
-patternOffsets      .word $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000
-                    .word $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000
-                    .word $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000
-                    .word $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000, $0000
-orderListOffset     .word $00000000
-
+version             .byte $00 ; bit 1 is RAD 1, bit 2 is RAD 2
 songLength          .byte $00
 InitialSpeed        .byte $06
 hasSlowTimer        .byte $00 ;BOOL $00 = False, $01 = True
@@ -66,12 +61,18 @@ RAD_INIT_PLAYER
 ; ************************************************************************************************
 READ_VERSION_21
             ;not implemented
+            LDA #2
+            STA @lTuneInfo.version
             RTL  ; End of READ_VERSION_21
 
 ; ************************************************************************************************
 ; Read a RAD file version 1.1
 ; ************************************************************************************************
 READ_VERSION_10
+            .as
+            LDA #1
+            STA @lTuneInfo.version
+            
             JSR PARSER_RAD_FILE_INSTRUMENT_10; Go Parse the Instrument and Order list
             JSR PROCESS_ORDER_LIST_10
             JSR READ_PATTERNS_10
@@ -80,6 +81,9 @@ READ_VERSION_10
             LDA [OPL2_ADDY_PTR_LO],Y
             BIT #$40
             BEQ NORMAL_TIMER
+            
+            LDA #1
+            STA @lTuneInfo.hasSlowTimer
             
             LDA #<SLOW_TIMER
             STA TIMER0_CMP_L
@@ -92,6 +96,9 @@ READ_VERSION_10
             BRA SET_TIMER
 
     NORMAL_TIMER
+            LDA #0
+            STA @lTuneInfo.hasSlowTimer
+    
             LDA #<FIFTY_HZ_COUNT
             STA TIMER0_CMP_L
             

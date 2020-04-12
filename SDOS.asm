@@ -886,6 +886,7 @@ FAT16_GET_NEXT_CLUSTER
                 CMP SD_DATA_FAT_PAGE
                 BEQ SKIP_FAT_LOADING
                 
+                PHA
                 ; **************************************
                 ; maintain the location of file pointer
                 LDA SD_DATA
@@ -901,6 +902,7 @@ FAT16_GET_NEXT_CLUSTER
                 STA SD_DATA + 2
                 
                 ; load the FAT page
+                PLA
                 STA SD_DATA_FAT_PAGE
                 JSL ISDOS_READ_FAT_SECTOR
                 
