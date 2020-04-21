@@ -94,6 +94,9 @@ ISDOS_INIT
                 ; check for errors
                 LDA SDC_TRANS_ERROR_REG
                 BEQ SD_INIT_SUCCESS
+                
+                LDX #<>sd_no_card_msg
+                JSR DISPLAY_MSG
                 BRA SD_INIT_DONE
                 
     SD_INIT_SUCCESS
@@ -389,6 +392,11 @@ DISPLAY_FAT_NAME
 ISDOS_DISPLAY_ROOT_DIR
                 .as
                 .xl
+                LDA SDCARD_PRSNT_MNT ; this must be non-zero
+                BNE RD_CARD_PRESENT
+                RTL
+                
+    RD_CARD_PRESENT
                 setal
                 LDA #0  ; reset the root entries offset
                 STA SD_DIR_OFFSET
@@ -420,7 +428,10 @@ ISDOS_DISPLAY_ROOT_DIR
                 ; check for errors
                 LDA SDC_TRANS_ERROR_REG
                 BEQ RD_DIR_ENTRY
-                ERROR_MSG SD_ROOT_ERROR_MSG, RD_DONE
+                
+                LDX #<>SD_ROOT_ERROR_MSG
+                JSR DISPLAY_MSG
+                BRA RD_DONE
                 
                 
     RD_DIR_ENTRY
@@ -497,7 +508,6 @@ ISDOS_DISPLAY_ROOT_DIR
                 JML RD_DIR_ENTRY
                 
     RD_DONE
-                
                 RTL
                 
 ; ********************** JSR AREA *********************
@@ -603,6 +613,11 @@ STORE_FILE_LIST
 ISDOS_PARSE_ROOT_DIR
                 .as
                 .xl
+                LDA SDCARD_PRSNT_MNT
+                BNE SP_CARD_PRESENT
+                RTL
+                
+    SP_CARD_PRESENT
                 setal
                 LDA #0  ; reset the root entries offset
                 STA SD_DIR_OFFSET
@@ -709,6 +724,15 @@ ISDOS_PARSE_ROOT_DIR
 ISDOS_READ_FAT_SECTOR
                 .al
                 .xl
+                PHA
+                LDA SDCARD_PRSNT_MNT
+                AND #$FF
+                BNE RF_CARD_PRESENT
+                PLA
+                RTL
+                
+    RF_CARD_PRESENT
+                PLA
                 STA SD_MULT_AREA
                 LDA #0
                 STA SD_MULT_AREA + 2
@@ -733,7 +757,10 @@ ISDOS_READ_FAT_SECTOR
                 ; check for errors
                 LDA SDC_TRANS_ERROR_REG
                 BEQ SD_CONTINUE_FAT
-                ; ERROR_MSG SD_FAT_ERROR_MSG, SD_CONTINUE_FAT
+                
+                LDX #<>SD_FAT_ERROR_MSG
+                JSR DISPLAY_MSG
+                BRA SD_CONTINUE_FAT
                 
     SD_CONTINUE_FAT
                 setal
@@ -748,6 +775,15 @@ ISDOS_READ_FAT_SECTOR
 ISDOS_READ_DATA_CLUSTER
                 .al
                 .xl
+                PHA
+                LDA SDCARD_PRSNT_MNT
+                AND #$FF
+                BNE SDR_CARD_PRESENT
+                PLA
+                RTL
+                
+    SDR_CARD_PRESENT
+                PLA
                 ; offset by 2 and multiply by sectors by cluster
                 SEC
                 SBC #2
@@ -823,6 +859,15 @@ ISDOS_READ_DATA_CLUSTER
 ISDOS_READ_FILE
                 .al
                 .xl
+                PHA
+                LDA SDCARD_PRSNT_MNT
+                AND #$FF
+                BNE SD_CARD_PRESENT
+                PLA
+                RTL
+                
+    SD_CARD_PRESENT
+                PLA
                 STA CLUSTER_PTR
                 
     SD_CLUSTER_LOOP
@@ -834,9 +879,7 @@ ISDOS_READ_FILE
                 ASL
                 TAX
                 JSR (READ_FAT_TABLE,X)
-                
-                LDA CLUSTER_PTR
-                CMP #$FFFF
+                ; the last command is a compare
                 BNE SD_CLUSTER_LOOP
                 
                 RTL
@@ -848,6 +891,32 @@ READ_FAT_TABLE  .word <>FAT12_GET_NEXT_CLUSTER
 ; * Read the FAT12 to determine the next cluster to read.
 ; *****************************************************************************
 FAT12_GET_NEXT_CLUSTER
+                .al
+                LDA CLUSTER_PTR  ; a FAT12 page contains about 340 entries
+                LSR A            ; this may result in a carry, if the cluster to read is odd
+                BCC F12_NC_NO_CARRY
+                CLC
+                ADC CLUSTER_PTR
+                TAY
+                LDA FAT_DATA,Y
+                LSR A
+                LSR A
+                LSR A
+                LSR A ; divide by 16
+                BRA F12_NC_CONTINUE
+                
+    F12_NC_NO_CARRY
+                ADC CLUSTER_PTR
+                TAY
+                LDA FAT_DATA,Y
+                AND #$FFF
+
+    F12_NC_CONTINUE
+                STA CLUSTER_PTR
+                CMP #$FFF
+                RTS
+                
+                .comment
                 ; maintain the location of file pointer
                 LDA SD_DATA
                 STA SD_TMP_DATA
@@ -871,6 +940,7 @@ FAT12_GET_NEXT_CLUSTER
                 STA CLUSTER_PTR
                 
                 RTS
+                .endc
                 
 ; *****************************************************************************
 ; * Read the FAT16 to determine the next cluster to read.
@@ -920,7 +990,7 @@ FAT16_GET_NEXT_CLUSTER
                 TAY
                 LDA FAT_DATA,Y
                 STA CLUSTER_PTR
-
+                CMP #$FFFF
                 RTS
               
 ; *****************************************************************************
@@ -999,7 +1069,7 @@ COMPUTE_FAT_ROOT_DATA_OFFSETS
 ; MESSAGES
 ;
 sd_card_tester          .text "00 - Welcome to the SDCard Tester", $d, 0
-sd_card_present         .text "01 - Card Present", $d, 0
+sd_card_present_msg     .text "01 - Card Present", $d, 0
 sd_no_card_msg          .text "01 - NO SDCARD PRESENT", $0D, $00
 sd_cant_read_mbr_msg    .text "02 - Can't read MBR - No Card present", $D, $0
 sd_read_failure         .text "03 - Error during read operation", $d, $0

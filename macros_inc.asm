@@ -60,21 +60,6 @@ setdbr          .macro          ; Set the B (Data bank) register
                 PLP
                 PLA             ; end setdbr macro 
                 .endm
-
-
-ERROR_MSG       .macro
-                setas
-                PHX
-                LDA #`\1
-                PHB
-                PHA
-                PLB
-                LDX #<>\1
-                JSL PUTS
-                PLB
-                PLX
-                BRL \2
-                .endm 
                 
 TURN_ON_SD_LED  .macro
                 ; turn on the LED

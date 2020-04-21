@@ -64,12 +64,14 @@ SDCARD
                 setas
                 setxl
                 JSL CLEAR_DISPLAY
+                
+                LDX #<>sd_card_tester
+                JSR DISPLAY_MSG
                 ; initialize the SD Card
                 JSL ISDOS_INIT
                 JSL ISDOS_READ_MBR_BOOT
                 ; read the root sectors
                 JSL ISDOS_DISPLAY_ROOT_DIR
-                
                 
                 ; These are temporary sub-routines to help me debug
                 ; READ the First FAT Sectors
@@ -86,25 +88,16 @@ SDCARD
                 
                 LDA #$6A00 ; store the block at SD_DATA
                 STA SD_DATA
-                LDA #(4-2) * 2
-                JSL ISDOS_READ_DATA_CLUSTER
+                LDA #4
+                JSL ISDOS_READ_FILE
                 
-                LDA #$6E00 ; store the block at SD_DATA
-                STA SD_DATA
-                LDA #(5-2) * 2
-                JSL ISDOS_READ_DATA_CLUSTER
-                
-                LDA #$6E00 ; store the block at SD_DATA
+                LDA #$6A00 ; read file may change SD_DATA pointer
                 STA SD_DATA
                 setas
                 JSR DISPLAY_BLOCK
 
     SDCARD_DONE
                 BRL SDCARD_DONE
-                
-                ; READ FILE starting at cluster $83 - SUBWAVE.RAD
-                LDA #$83
-                ;JSR SD_READ_FILE
                 
                 
     
@@ -187,11 +180,18 @@ CLEAR_DISPLAY
 
 ; *****************************************************************************
 ; * Output text to screen - temporary until SDOS is finished
+; * X contains the address of the message in the bank
 ; *****************************************************************************
 DISPLAY_MSG
                 .as
                 .xl
-                RTL
+                LDA #`sd_card_tester
+                PHB
+                PHA
+                PLB
+                JSL PUTS
+                PLB
+                RTS
                 
                 
 ; *****************************************************************************

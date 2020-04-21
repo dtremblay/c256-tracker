@@ -48,12 +48,15 @@ RAD_INIT_PLAYER
             LDY #$0010
             LDA [OPL2_ADDY_PTR_LO],Y
             CMP #$10 ; BCD version 1.0 or 2.1
-            BNE LOAD_VERSION_21
+            BNE RI_LOAD_VERSION_21
             JSL READ_VERSION_10
             RTL  ; End of RAD_INIT_PLAYER
 
-    LOAD_VERSION_21
+    RI_LOAD_VERSION_21
+            CMP #$21
+            BNE RI_INVALID
             JSL READ_VERSION_21
+    RI_INVALID
             RTL  ; End of RAD_INIT_PLAYER
 
 ; ************************************************************************************************
@@ -63,24 +66,19 @@ READ_VERSION_21
             ;not implemented
             LDA #2
             STA @lTuneInfo.version
+            JSR READ_TIMER
+            JSR PARSER_RAD_FILE_INSTRUMENT_21; Parse the Instrument
+            
             RTL  ; End of READ_VERSION_21
 
 ; ************************************************************************************************
-; Read a RAD file version 1.1
+; The timer setting is at offset $11 for both 1.0 and 2.1 RAD Formats
 ; ************************************************************************************************
-READ_VERSION_10
-            .as
-            LDA #1
-            STA @lTuneInfo.version
-            
-            JSR PARSER_RAD_FILE_INSTRUMENT_10; Go Parse the Instrument and Order list
-            JSR PROCESS_ORDER_LIST_10
-            JSR READ_PATTERNS_10
-            
+READ_TIMER
             LDY #$11
             LDA [OPL2_ADDY_PTR_LO],Y
             BIT #$40
-            BEQ NORMAL_TIMER
+            BEQ RT_NOT_SLOW
             
             LDA #1
             STA @lTuneInfo.hasSlowTimer
@@ -95,7 +93,18 @@ READ_VERSION_10
             STA TIMER0_CMP_H
             BRA SET_TIMER
 
-    NORMAL_TIMER
+    RT_NOT_SLOW
+            BIT #$20
+            BEQ RT_NOT_BPM
+            
+            INY
+            setal
+            LDA [OPL2_ADDY_PTR_LO],Y
+            setas
+            INY
+            BRA SET_TIMER
+            
+    RT_NOT_BPM
             LDA #0
             STA @lTuneInfo.hasSlowTimer
     
@@ -109,12 +118,28 @@ READ_VERSION_10
             STA TIMER0_CMP_H
     SET_TIMER
             JSR INIT_TIMER0
+            RTS
+
+; ************************************************************************************************
+; Read a RAD file version 1.1
+; ************************************************************************************************
+READ_VERSION_10
+            .as
+            LDA #1
+            STA @lTuneInfo.version
+            
+            JSR PARSER_RAD_FILE_INSTRUMENT_10; Parse the Instrument
+            JSR PROCESS_ORDER_LIST_10 ; Parse the Order List
+            JSR READ_PATTERNS_10
+            
+            JSR READ_TIMER
             RTL  ; End of READ_VERSION_10
 
 ADLIB_OFFSETS .byte 7,1,8,2,9,3,10,4,5,11,6
 
 ; ************************************************************************************************
-; Read the instrument table
+; Read the instrument table. 
+; RAD V1.0 Format
 ; ************************************************************************************************
 PARSER_RAD_FILE_INSTRUMENT_10
             INY ; $11 bit 7: description, bit6: slow timer, bits4..0: speed
@@ -140,10 +165,10 @@ PARSER_RAD_FILE_INSTRUMENT_10
             STA RAD_ADDR + 2
             
             ; Let's Read Some Instruments HERE
-    ProcessNextInstruments
+    ProcessNextInstruments_10
             setas
             LDA [OPL2_ADDY_PTR_LO],Y  ; Read Instrument Number
-            BEQ DoneProcessingInstrument;
+            BEQ DoneProcessingInstrument_10
             
             setal
             ; find the address of the instrument by multiplying by the record length
@@ -190,12 +215,39 @@ PARSER_RAD_FILE_INSTRUMENT_10
             BNE BLANK_INSTR_DESCR
             PLY
             
-            BRA ProcessNextInstruments;
+            BRA ProcessNextInstruments_10
             
-    DoneProcessingInstrument
+    DoneProcessingInstrument_10
             INY
             RTS
 
+; ************************************************************************************************
+; Read the instrument table. 
+; RAD V2.1 Format
+; ************************************************************************************************
+PARSER_RAD_FILE_INSTRUMENT_21
+    PR_LOOP
+            ; skip the description
+            LDA [OPL2_ADDY_PTR_LO],Y
+            INY
+            CMP #0
+            BNE PR_LOOP
+            
+            ; Let's Init the Address Point for the instrument Tables
+            LDA #<`INSTRUMENT_ACCORDN
+            STA RAD_ADDR + 2
+            
+            ; Let's Read Some Instruments HERE
+    ProcessNextInstruments_21
+            setas
+            LDA [OPL2_ADDY_PTR_LO],Y  ; Read Instrument Number
+            BEQ DoneProcessingInstrument_21
+            
+            ; TODO _ CONTINUE HERE
+            
+    DoneProcessingInstrument_21
+            INY
+            RTS
 ; ************************************************************************************************
 ; * Read the orders list
 ; ************************************************************************************************

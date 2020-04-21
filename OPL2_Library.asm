@@ -76,6 +76,8 @@ OPL2_INIT
                 STA RAD_ADDR + 2
                 
                 setas
+                ;LDA $2F
+                ;STA OPL3_R_CONN_SEL
                 LDA #1
                 STA OPL3_R_OPL3_MODE
                 RTL

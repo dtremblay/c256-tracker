@@ -87,6 +87,7 @@ RVECTOR_EIRQ    .addr HIRQ     ; FFFE
 .include "Interrupt_Handler.asm" ; Interrupt Handler Routines
 .include "midi.asm"
 .include "display_func.asm"
+.include "SDOS.asm"
 
 ; Draw the screen
 ; Top portion is the instruments editor (left) and order list (right)
@@ -94,6 +95,7 @@ RVECTOR_EIRQ    .addr HIRQ     ; FFFE
 ; we'll need to figure out how to do stereo, left- and right-only.
 
 TRACKER
+                .as
                 ; Setup the Interrupt Controller
                 ; For Now all Interrupt are Falling Edge Detection (IRQ)
                 LDA #$FF
@@ -333,17 +335,17 @@ INIT_TIMER0
 INIT_OPL2_TMRS
                 .as
                 LDA #$80 ; Reset OPL2 Interrupts
-                STA OPL3_R_IRQ ; byte 4 of OPL2
+                STA OPL3_L_IRQ ; byte 4 of OPL2
                 
                 ; wait 80 us
                 JSR WAIT_80
                 
                 LDA #$10
-                STA OPL3_R_TIMER1 ; byte 2 of OPL2
-                STA OPL3_R_TIMER2 ; byte 2 of OPL2
+                STA OPL3_L_TIMER1 ; byte 2 of OPL2
+                STA OPL3_L_TIMER2 ; byte 2 of OPL2
 
                 LDA #$3 ; enable timers 1 and 2
-                STA OPL3_R_IRQ ; byte 4 of OPL2
+                STA OPL3_L_IRQ ; byte 4 of OPL2
                 
                 RTS
 
@@ -615,6 +617,7 @@ LOAD_SUSTAIN_RELEASE_RATE
 LOAD_FEEDBACK_ALGO
                 LDA [INSTR_ADDR]
                 PHA
+                ORA #$F0 ; Channel B
                 STA @lOPL3_R_FEEDBACK,X
                 AND #FEEDBACK
                 LSR A
@@ -947,4 +950,3 @@ ORDERS    .fill 120, 0
 
 * = $3A0000
 .include "bpm.asm"
-.include "SDOS.asm"

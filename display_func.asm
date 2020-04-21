@@ -1058,3 +1058,4 @@ SELECT_PREVIOUS_FILE
                 JSL TEXT_COLOUR_SELECTED
 
                 RTL
+                

@@ -1,43 +1,43 @@
 ; Direct Access to Right Channel
-; R = Right
-OPL3_R_BASE               = $AFE600
-OPL3_R_BASE_LL            = $E600
-OPL3_R_BASE_HL            = $00AF
-OPL3_R_TEST               = $AFE601 ; TEST
-OPL3_R_TIMER1             = $AFE602 ; TIMER-1
-OPL3_R_TIMER2             = $AFE603 ; TIMER-2
-OPL3_R_IRQ                = $AFE604 ;
-OPL3_R_OPL3_MODE          = $AFE605 ; Set bit 0 to 1 if you want to use in OPL3 Mode
-OPL3_R_CSM                = $AFE608 ;
-OPL3_R_AM_VID_EG_KSR_MULT = $AFE620 ; $40..$35 (21 Registers)
-OPL3_R_KSL_TL             = $AFE640;  $40..$55 (21 Registers)
-OPL3_R_AR_DR              = $AFE660;  $60..$75 (21 Registers)
-OPL3_R_SL_RR              = $AFE680;  $80..$95 (21 Registers)
-OPL3_R_FNumber            = $AFE6A0;  $A0..$A8
-OPL3_R_KON_BLOCK_FNumber  = $AFE6B0;  $B0..$B9
-OPL3_R_DPTH_RHYTM         = $AFE6BD;  $BD
-OPL3_R_FEEDBACK           = $AFE6C0;  $C0..$C9
-OPL3_R_WAVE_SELECT        = $AFE6E0;  $E0..$F5
+; R = Right => A1 =H
+OPL3_R_BASE               = $AFE700
+; delete OPL3_R_BASE_LL            = $E600
+; delete OPL3_R_BASE_HL            = $00AF
+OPL3_R_TEST               = $AFE701 ; TEST
+OPL3_R_CONN_SEL           = $AFE704 ; six bits for 4 op channels
+OPL3_R_OPL3_MODE          = $AFE705 ; Set bit 0 to 1 if you want to use in OPL3 Mode
+; delete OPL3_R_CSM                = $AFE608 ;
+OPL3_R_AM_VID_EG_KSR_MULT = $AFE720 ; $40..$35 (21 Registers)
+OPL3_R_KSL_TL             = $AFE740;  $40..$55 (21 Registers)
+OPL3_R_AR_DR              = $AFE760;  $60..$75 (21 Registers)
+OPL3_R_SL_RR              = $AFE780;  $80..$95 (21 Registers)
+OPL3_R_FNumber            = $AFE7A0;  $A0..$A8
+OPL3_R_KON_BLOCK_FNumber  = $AFE7B0;  $B0..$B9
+OPL3_R_DPTH_RHYTM         = $AFE7BD;  $BD
+OPL3_R_FEEDBACK           = $AFE7C0;  $C0..$C9
+OPL3_R_WAVE_SELECT        = $AFE7E0;  $E0..$F5
 
 ; Direct Access to Left Channel
-; L = Left
-OPL3_L_BASE               = $AFE700
-OPL3_L_BASE_LL            = $E700
-OPL3_L_BASE_HL            = $00AF
-OPL3_L_TEST               = $AFE701 ; TEST
-OPL3_L_TIMER1             = $AFE702 ; TIMER-1
-OPL3_L_TIMER2             = $AFE703 ; TIMER-2
-OPL3_L_IRQ                = $AFE704 ;
-OPL3_L_CSM                = $AFE708 ;
-OPL3_L_AM_VID_EG_KSR_MULT = $AFE720 ; $40..$35 (21 Registers)
-OPL3_L_KSL_TL             = $AFE740;  $40..$55 (21 Registers)
-OPL3_L_AR_DR              = $AFE760;  $60..$75 (21 Registers)
-OPL3_L_SL_RR              = $AFE780;  $80..$95 (21 Registers)
-OPL3_L_FNumber            = $AFE7A0;  $A0..$A8
-OPL3_L_KON_BLOCK_FNumber  = $AFE7B0;  $B0..$B9
-OPL3_L_DPTH_RHYTM         = $AFE7BD;  $BD
-OPL3_L_FEEDBACK           = $AFE7C0;  $C0..$C9
-OPL3_L_WAVE_SELECT        = $AFE7E0;  $E0..$F5
+; L = Left => A1 = L
+OPL3_L_TIMER1             = $AFE602 ; TIMER-1
+OPL3_L_TIMER2             = $AFE603 ; TIMER-2
+OPL3_L_IRQ                = $AFE604 ;
+.comment OPL3_L_BASE               = $AFE700
+    ;OPL3_L_BASE_LL            = $E700
+    ;OPL3_L_BASE_HL            = $00AF
+    OPL3_L_TEST               = $AFE701 ; TEST
+   
+    OPL3_L_CSM                = $AFE708 ;
+    OPL3_L_AM_VID_EG_KSR_MULT = $AFE720 ; $40..$35 (21 Registers)
+    OPL3_L_KSL_TL             = $AFE740;  $40..$55 (21 Registers)
+    OPL3_L_AR_DR              = $AFE760;  $60..$75 (21 Registers)
+    OPL3_L_SL_RR              = $AFE780;  $80..$95 (21 Registers)
+    OPL3_L_FNumber            = $AFE7A0;  $A0..$A8
+    OPL3_L_KON_BLOCK_FNumber  = $AFE7B0;  $B0..$B9
+    OPL3_L_DPTH_RHYTM         = $AFE7BD;  $BD
+    OPL3_L_FEEDBACK           = $AFE7C0;  $C0..$C9
+    OPL3_L_WAVE_SELECT        = $AFE7E0;  $E0..$F5 
+.endc
 
 TREMOLO    = $80
 VIBRATO    = $40
