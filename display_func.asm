@@ -920,7 +920,7 @@ DISPLAY_MSG
                 
                 PLB
                 
-                RTL
+                RTS
                 
 ; ****************************************************
 ; * Display data stored in "current_fat_record".
