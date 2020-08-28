@@ -22,7 +22,8 @@ OPL3_R_WAVE_SELECT        = $AFE7E0;  $E0..$F5
 OPL3_L_TIMER1             = $AFE602 ; TIMER-1
 OPL3_L_TIMER2             = $AFE603 ; TIMER-2
 OPL3_L_IRQ                = $AFE604 ;
-.comment OPL3_L_BASE               = $AFE700
+.comment 
+    OPL3_L_BASE               = $AFE700
     ;OPL3_L_BASE_LL            = $E700
     ;OPL3_L_BASE_HL            = $00AF
     OPL3_L_TEST               = $AFE701 ; TEST

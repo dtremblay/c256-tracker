@@ -11,6 +11,9 @@ EFFECT_SET_SPEED         = $0F
 FNUMBER_MIN = $0156
 FNUMBER_MAX = $02AE
 
+FIFTY_HZ_COUNT   = 286360
+SLOW_TIMER       = 786703
+
 SongData .struct
 version             .byte $00 ; bit 1 is RAD 1, bit 2 is RAD 2
 songLength          .byte $00
@@ -21,6 +24,7 @@ hasSlowTimer        .byte $00 ;BOOL $00 = False, $01 = True
 ; special characters for notes
                     ;     C    C#   D    D#   E    F    F#   G    G#   A    A#   B    
 note_array          .byte $43, $90, $44, $91, $45, $46, $92, $47, $93, $41, $94, $42, $43
+TuneInfo .dstruct SongData
 
 ; ************************************************************************************************
 ; We are assuming that the RAD File is already Loaded Somewhere
@@ -1004,6 +1008,3 @@ RAD_SETINSTRUMENT
               STA [OPL2_IND_ADDY_LL]
               PLY
               RTS
-
-* = $170000
-TuneInfo .dstruct SongData

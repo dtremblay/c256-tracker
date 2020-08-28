@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.54.1900 listing file
 ; 64tass.exe --long-address -x --intel-hex -o tracker.hex --list tracker.lst tracker.asm
-; Wed Apr 22 22:04:40 2020
+; Thu Aug 27 22:51:02 2020
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -762,8 +762,6 @@
 
 =$380f00				MOUSE_BUTTONS_REG= $380F00 ; bit 2=middle, bit 1=right, bit 0=left
 =22					INSTR_REC_LEN    = INSTRUMENT_BAGPIPE1 - INSTRUMENT_ACCORDN
-=286360					FIFTY_HZ_COUNT   = 286360
-=786703					SLOW_TIMER       = 786703
 =$001000				SCRN_COPY        = $001000
 =4896					SCRN_COPY_CLR    = $001000 + 800
 =$340000				SDCARD_LIST      = $340000
@@ -4518,7 +4516,7 @@
 .385a06	8f 4c 01 00	sta $00014c	                STA @lINT_MASK_REG0
 .385a0a	a9 00		lda #$00	                LDA #0  ; record mode
 .385a0c	8f 15 0f 38	sta $380f15	                STA STATE_MACHINE
-.385a10	20 93 72	jsr $387293	                JSR RAD_ALL_NOTES_OFF
+.385a10	20 97 72	jsr $387297	                JSR RAD_ALL_NOTES_OFF
 .385a13	68		pla		                PLA
 .385a14					        KB_CHECK_B_DONE_R
 .385a14	4c 80 5a	jmp $385a80	                JMP KB_CHECK_B_DONE
@@ -4530,7 +4528,7 @@
 .385a22					    CONTINUE_FROM_CURRENT_LOCATION
 .385a22	a9 01		lda #$01	                LDA #1
 .385a24	8f 15 0f 38	sta $380f15	                STA STATE_MACHINE
-.385a28	20 b1 72	jsr $3872b1	                JSR RAD_PLAYNOTES
+.385a28	20 b5 72	jsr $3872b5	                JSR RAD_PLAYNOTES
 .385a2b	af 4c 01 00	lda $00014c	                LDA @lINT_MASK_REG0
 .385a2f	29 fb		and #$fb	                AND #~(FNX0_INT02_TMR0)
 .385a31	8f 4c 01 00	sta $00014c	                STA @lINT_MASK_REG0
@@ -4578,7 +4576,7 @@
 .385a94	f0 45		beq $385adb	                BEQ EDIT_MODE
 .385a96	af 16 0f 38	lda $380f16	                LDA @lTICK
 .385a9a	1a		inc a		                INC A
-.385a9b	cf 02 00 17	cmp $170002	                CMP @lTuneInfo.InitialSpeed
+.385a9b	cf 69 70 38	cmp $387069	                CMP @lTuneInfo.InitialSpeed
 .385a9f	d0 3c		bne $385add	                BNE TICK_DONE
 .385aa1					    INCR_LINE
 .385aa1	a5 6c		lda $6c		                LDA LINE_NUM_HEX
@@ -4606,7 +4604,7 @@
 .385ad0	af 15 0f 38	lda $380f15	                LDA STATE_MACHINE
 .385ad4	29 01		and #$01	                AND #1
 .385ad6	f0 03		beq $385adb	                BEQ EDIT_MODE
-.385ad8	20 b1 72	jsr $3872b1	                JSR RAD_PLAYNOTES
+.385ad8	20 b5 72	jsr $3872b5	                JSR RAD_PLAYNOTES
 .385adb					    EDIT_MODE
 .385adb	a9 00		lda #$00	                LDA #0  ; reset the tick to 0
 .385add					    TICK_DONE
@@ -5202,7 +5200,7 @@
 .385f7d	a9 76		lda #$76	                LDA #'v'
 .385f7f	97 0c		sta [$0c],y	                STA [SCREENBEGIN], Y
 .385f81	c8		iny		                INY
-.385f82	af 00 00 17	lda $170000	                LDA @lTuneInfo.version
+.385f82	af 67 70 38	lda $387067	                LDA @lTuneInfo.version
 .385f86	89 02		bit #$02	                BIT #2
 .385f88	d0 04		bne $385f8e	                BNE DF_V2
 .385f8a	a9 31		lda #$31	                LDA #'1'
@@ -5415,10 +5413,10 @@
 =3329					PTTRN_HL_SCR     = 128 * 26 + 1
 .3860af					DISPLAY_SPEED
 .3860af	5a		phy		                PHY
-.3860b0	af 02 00 17	lda $170002	                LDA @lTuneInfo.InitialSpeed
+.3860b0	af 69 70 38	lda $387069	                LDA @lTuneInfo.InitialSpeed
 .3860b4	a0 a8 0b	ldy #$0ba8	                LDY #23*128 + 40
 .3860b7	20 b1 5d	jsr $385db1	                JSR WRITE_HEX
-.3860ba	af 03 00 17	lda $170003	                LDA @lTuneInfo.hasSlowTimer
+.3860ba	af 6a 70 38	lda $38706a	                LDA @lTuneInfo.hasSlowTimer
 .3860be	f0 07		beq $3860c7	                BEQ DS_DONE
 .3860c0	a9 2a		lda #$2a	                LDA #'*'
 .3860c2	a0 a7 0b	ldy #$0ba7	                LDY #23*128 + 39
@@ -5484,7 +5482,7 @@
 .386127	20 6d 61	jsr $38616d	                JSR DISPLAY_ACTIVE_CHANNELS
 .38612a	60		rts		                RTS
 .38612b					DISPLAY_ORDERS
-.38612b	af 01 00 17	lda $170001	                LDA @lTuneInfo.songLength
+.38612b	af 68 70 38	lda $387068	                LDA @lTuneInfo.songLength
 .38612f	f0 3b		beq $38616c	                BEQ DO_DONE
 .386131	c9 0e		cmp #$0e	                CMP #14
 .386133	90 02		bcc $386137	                BCC DO_DISPLAY_ORDERS
@@ -6681,7 +6679,7 @@
 .386aa1	eb		xba		                XBA
 .386aa2	af 48 00 00	lda $000048	                LDA @lRAD_ORDER_NUM
 .386aa6	1a		inc a		                INC A
-.386aa7	cf 01 00 17	cmp $170001	                CMP @lTuneInfo.songLength
+.386aa7	cf 68 70 38	cmp $387068	                CMP @lTuneInfo.songLength
 .386aab	d0 02		bne $386aaf	                BNE LOAD_ORDER
 .386aad	a9 00		lda #$00	                LDA #0
 .386aaf					        LOAD_ORDER
@@ -7317,7 +7315,7 @@
 .387034	22 3d 67 38	jsl $38673d	            JSL ISDOS_READ_FILE
 .387038	e2 20		sep #$20	                SEP #$20        ; set A short
 .38703a	22 b1 30 38	jsl $3830b1	            JSL OPL2_INIT
-.38703e	22 67 70 38	jsl $387067	            JSL RAD_INIT_PLAYER
+.38703e	22 6b 70 38	jsl $38706b	            JSL RAD_INIT_PLAYER
 .387042	22 47 70 38	jsl $387047	            JSL EXIT_FILE
 .387046	6b		rtl		            RTL
 .387047					EXIT_FILE
@@ -7345,6 +7343,8 @@
 =$0f					EFFECT_SET_SPEED         = $0F
 =$0156					FNUMBER_MIN = $0156
 =$02ae					FNUMBER_MAX = $02AE
+=286360					FIFTY_HZ_COUNT   = 286360
+=786703					SLOW_TIMER       = 786703
 .0000					SongData
 >0000	00				version             .byte $00 ; bit 1 is RAD 1, bit 2 is RAD 2
 >0001	00				songLength          .byte $00
@@ -7352,781 +7352,781 @@
 >0003	00				hasSlowTimer        .byte $00 ;BOOL $00 = False, $01 = True
 >38705a	43 90 44 91 45 46 92 47		note_array          .byte $43, $90, $44, $91, $45, $46, $92, $47, $93, $41, $94, $42, $43
 >387062	93 41 94 42 43
-.387067					RAD_INIT_PLAYER
-.387067	22 b1 30 38	jsl $3830b1	            JSL OPL2_INIT   ; Init OPL2
-.38706b	20 93 72	jsr $387293	            JSR RAD_ALL_NOTES_OFF
-.38706e	a2 00 00	ldx #$0000	            LDX #0
-.387071	a9 00		lda #$00	            LDA #0
-.387073					    RI_RESET
-.387073	9f 00 00 39	sta $390000,x	            STA PATTERNS,X
-.387077	e8		inx		            INX
-.387078	d0 f9		bne $387073	            BNE RI_RESET
-.38707a	c2 30		rep #$30	                REP #$30        ; set A&X long
-.38707c	a9 00 80	lda #$8000	            LDA #<>RAD_FILE_TEMP ; Set the Pointer where the File Begins
-.38707f	85 08		sta $08		            STA OPL2_ADDY_PTR_LO;
-.387081	a9 37 00	lda #$0037	            LDA #<`RAD_FILE_TEMP
-.387084	85 0a		sta $0a		            STA OPL2_ADDY_PTR_HI;
-.387086	e2 20		sep #$20	                SEP #$20        ; set A short
-.387088	a0 10 00	ldy #$0010	            LDY #$0010
-.38708b	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y
-.38708d	c9 10		cmp #$10	            CMP #$10 ; BCD version 1.0 or 2.1
-.38708f	d0 05		bne $387096	            BNE RI_LOAD_VERSION_21
-.387091	22 f3 70 38	jsl $3870f3	            JSL READ_VERSION_10
-.387095	6b		rtl		            RTL  ; End of RAD_INIT_PLAYER
-.387096					    RI_LOAD_VERSION_21
-.387096	c9 21		cmp #$21	            CMP #$21
-.387098	d0 04		bne $38709e	            BNE RI_INVALID
-.38709a	22 9f 70 38	jsl $38709f	            JSL READ_VERSION_21
-.38709e					    RI_INVALID
-.38709e	6b		rtl		            RTL  ; End of RAD_INIT_PLAYER
-.38709f					READ_VERSION_21
-.38709f	a9 02		lda #$02	            LDA #2
-.3870a1	8f 00 00 17	sta $170000	            STA @lTuneInfo.version
-.3870a5	20 ac 70	jsr $3870ac	            JSR READ_TIMER
-.3870a8	20 7e 71	jsr $38717e	            JSR PARSER_RAD_FILE_INSTRUMENT_21; Parse the Instrument
-.3870ab	6b		rtl		            RTL  ; End of READ_VERSION_21
-.3870ac					READ_TIMER
-.3870ac	a0 11 00	ldy #$0011	            LDY #$11
-.3870af	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y
-.3870b1	89 40		bit #$40	            BIT #$40
-.3870b3	f0 17		beq $3870cc	            BEQ RT_NOT_SLOW
-.3870b5	a9 01		lda #$01	            LDA #1
-.3870b7	8f 03 00 17	sta $170003	            STA @lTuneInfo.hasSlowTimer
-.3870bb	a9 0f		lda #$0f	            LDA #<SLOW_TIMER
-.3870bd	8d 65 01	sta $0165	            STA TIMER0_CMP_L
-.3870c0	a9 01		lda #$01	            LDA #>SLOW_TIMER
-.3870c2	8d 66 01	sta $0166	            STA TIMER0_CMP_M
-.3870c5	a9 0c		lda #$0c	            LDA #<`SLOW_TIMER
-.3870c7	8d 67 01	sta $0167	            STA TIMER0_CMP_H
-.3870ca	80 23		bra $3870ef	            BRA SET_TIMER
-.3870cc					    RT_NOT_SLOW
-.3870cc	89 20		bit #$20	            BIT #$20
-.3870ce	f0 0a		beq $3870da	            BEQ RT_NOT_BPM
-.3870d0	c8		iny		            INY
-.3870d1	c2 20		rep #$20	                REP #$20        ; set A long
-.3870d3	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y
-.3870d5	e2 20		sep #$20	                SEP #$20        ; set A short
-.3870d7	c8		iny		            INY
-.3870d8	80 15		bra $3870ef	            BRA SET_TIMER
-.3870da					    RT_NOT_BPM
-.3870da	a9 00		lda #$00	            LDA #0
-.3870dc	8f 03 00 17	sta $170003	            STA @lTuneInfo.hasSlowTimer
-.3870e0	a9 98		lda #$98	            LDA #<FIFTY_HZ_COUNT
-.3870e2	8d 65 01	sta $0165	            STA TIMER0_CMP_L
-.3870e5	a9 5e		lda #$5e	            LDA #>FIFTY_HZ_COUNT
-.3870e7	8d 66 01	sta $0166	            STA TIMER0_CMP_M
-.3870ea	a9 04		lda #$04	            LDA #<`FIFTY_HZ_COUNT
-.3870ec	8d 67 01	sta $0167	            STA TIMER0_CMP_H
-.3870ef					    SET_TIMER
-.3870ef	20 13 6b	jsr $386b13	            JSR INIT_TIMER0
-.3870f2	60		rts		            RTS
-.3870f3					READ_VERSION_10
-.3870f3	a9 01		lda #$01	            LDA #1
-.3870f5	8f 00 00 17	sta $170000	            STA @lTuneInfo.version
-.3870f9	20 11 71	jsr $387111	            JSR PARSER_RAD_FILE_INSTRUMENT_10; Parse the Instrument
-.3870fc	20 91 71	jsr $387191	            JSR PROCESS_ORDER_LIST_10 ; Parse the Order List
-.3870ff	20 b6 71	jsr $3871b6	            JSR READ_PATTERNS_10
-.387102	20 ac 70	jsr $3870ac	            JSR READ_TIMER
-.387105	6b		rtl		            RTL  ; End of READ_VERSION_10
->387106	07 01 08 02 09 03 0a 04		ADLIB_OFFSETS .byte 7,1,8,2,9,3,10,4,5,11,6
->38710e	05 0b 06
-.387111					PARSER_RAD_FILE_INSTRUMENT_10
-.387111	c8		iny		            INY ; $11 bit 7: description, bit6: slow timer, bits4..0: speed
-.387112	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y
-.387114	29 1f		and #$1f	            AND #$1F
-.387116	8f 02 00 17	sta $170002	            STA @lTuneInfo.InitialSpeed
-.38711a	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y
-.38711c	29 80		and #$80	            AND #$80
-.38711e	f0 07		beq $387127	            BEQ READ_INSTR_DATA
-.387120					    Not_Done_With_Description
-.387120	c8		iny		            INY ; Move the Pointer Forward
-.387121	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y
-.387123	c9 00		cmp #$00	            CMP #$00  ; Check for the End of Text
-.387125	d0 f9		bne $387120	            BNE Not_Done_With_Description
-.387127					    READ_INSTR_DATA
-.387127	c8		iny		            INY ; This points after either After Description or next to Offset 0x11
-.387128	a9 38		lda #$38	            LDA #<`INSTRUMENT_ACCORDN
-.38712a	85 f2		sta $f2		            STA RAD_ADDR + 2
-.38712c					    ProcessNextInstruments_10
-.38712c	e2 20		sep #$20	                SEP #$20        ; set A short
-.38712e	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y  ; Read Instrument Number
-.387130	f0 4a		beq $38717c	            BEQ DoneProcessingInstrument_10
-.387132	c2 20		rep #$20	                REP #$20        ; set A long
-.387134	3a		dec a		            DEC A
-.387135	8f 00 01 00	sta $000100	            STA @lUNSIGNED_MULT_A
-.387139	a9 16 00	lda #$0016	            LDA #INSTR_REC_LEN
-.38713c	8f 02 01 00	sta $000102	            STA @lUNSIGNED_MULT_B
-.387140	af 04 01 00	lda $000104	            LDA @lUNSIGNED_MULT_RESULT  ; not sure why this one requires a long address - bank is still 0
-.387144	18		clc		            CLC
-.387145	69 3b 10	adc #$103b	            ADC #<>INSTRUMENT_ACCORDN
-.387148	85 f0		sta $f0		            STA RAD_ADDR
-.38714a	a9 00 00	lda #$0000	            LDA #0
-.38714d	e2 20		sep #$20	                SEP #$20        ; set A short
-.38714f	c8		iny		            INY
-.387150	64 4e		stz $4e		            STZ RAD_TEMP
-.387152	87 f0		sta [$f0]	            STA [RAD_ADDR]  ; Not a drum instrument
-.387154					    Transfer_Instrument_Info
-.387154	a6 4e		ldx $4e		            LDX RAD_TEMP
-.387156	bf 06 71 38	lda $387106,x	            LDA ADLIB_OFFSETS,X  ; RAD uses a different order for registers
-.38715a	aa		tax		            TAX
-.38715b	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y  ; Read Register
-.38715d	5a		phy		            PHY
-.38715e	9b		txy		            TXY
-.38715f	97 f0		sta [$f0],y	            STA [RAD_ADDR],Y  ; Write to the instrument table
-.387161	7a		ply		            PLY
-.387162	c8		iny		            INY
-.387163	e6 4e		inc $4e		            INC RAD_TEMP
-.387165	a5 4e		lda $4e		            LDA RAD_TEMP
-.387167	c9 0b		cmp #$0b	            CMP #11
-.387169	90 e9		bcc $387154	            BCC Transfer_Instrument_Info
-.38716b	5a		phy		            PHY ; store the position in the file on the stack
-.38716c	a0 0c 00	ldy #$000c	            LDY #12 ; beginning of text
-.38716f	a9 20		lda #$20	            LDA #$20
-.387171					    BLANK_INSTR_DESCR
-.387171	97 f0		sta [$f0],y	            STA [RAD_ADDR],Y
-.387173	c8		iny		            INY
-.387174	c0 16 00	cpy #$0016	            CPY #22
-.387177	d0 f8		bne $387171	            BNE BLANK_INSTR_DESCR
-.387179	7a		ply		            PLY
-.38717a	80 b0		bra $38712c	            BRA ProcessNextInstruments_10
-.38717c					    DoneProcessingInstrument_10
-.38717c	c8		iny		            INY
-.38717d	60		rts		            RTS
-.38717e					PARSER_RAD_FILE_INSTRUMENT_21
-.38717e					    PR_LOOP
-.38717e	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y
+.387067					TuneInfo
+>387067	00				version             .byte $00 ; bit 1 is RAD 1, bit 2 is RAD 2
+>387068	00				songLength          .byte $00
+>387069	06				InitialSpeed        .byte $06
+>38706a	00				hasSlowTimer        .byte $00 ;BOOL $00 = False, $01 = True
+.38706b					RAD_INIT_PLAYER
+.38706b	22 b1 30 38	jsl $3830b1	            JSL OPL2_INIT   ; Init OPL2
+.38706f	20 97 72	jsr $387297	            JSR RAD_ALL_NOTES_OFF
+.387072	a2 00 00	ldx #$0000	            LDX #0
+.387075	a9 00		lda #$00	            LDA #0
+.387077					    RI_RESET
+.387077	9f 00 00 39	sta $390000,x	            STA PATTERNS,X
+.38707b	e8		inx		            INX
+.38707c	d0 f9		bne $387077	            BNE RI_RESET
+.38707e	c2 30		rep #$30	                REP #$30        ; set A&X long
+.387080	a9 00 80	lda #$8000	            LDA #<>RAD_FILE_TEMP ; Set the Pointer where the File Begins
+.387083	85 08		sta $08		            STA OPL2_ADDY_PTR_LO;
+.387085	a9 37 00	lda #$0037	            LDA #<`RAD_FILE_TEMP
+.387088	85 0a		sta $0a		            STA OPL2_ADDY_PTR_HI;
+.38708a	e2 20		sep #$20	                SEP #$20        ; set A short
+.38708c	a0 10 00	ldy #$0010	            LDY #$0010
+.38708f	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y
+.387091	c9 10		cmp #$10	            CMP #$10 ; BCD version 1.0 or 2.1
+.387093	d0 05		bne $38709a	            BNE RI_LOAD_VERSION_21
+.387095	22 f7 70 38	jsl $3870f7	            JSL READ_VERSION_10
+.387099	6b		rtl		            RTL  ; End of RAD_INIT_PLAYER
+.38709a					    RI_LOAD_VERSION_21
+.38709a	c9 21		cmp #$21	            CMP #$21
+.38709c	d0 04		bne $3870a2	            BNE RI_INVALID
+.38709e	22 a3 70 38	jsl $3870a3	            JSL READ_VERSION_21
+.3870a2					    RI_INVALID
+.3870a2	6b		rtl		            RTL  ; End of RAD_INIT_PLAYER
+.3870a3					READ_VERSION_21
+.3870a3	a9 02		lda #$02	            LDA #2
+.3870a5	8f 67 70 38	sta $387067	            STA @lTuneInfo.version
+.3870a9	20 b0 70	jsr $3870b0	            JSR READ_TIMER
+.3870ac	20 82 71	jsr $387182	            JSR PARSER_RAD_FILE_INSTRUMENT_21; Parse the Instrument
+.3870af	6b		rtl		            RTL  ; End of READ_VERSION_21
+.3870b0					READ_TIMER
+.3870b0	a0 11 00	ldy #$0011	            LDY #$11
+.3870b3	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y
+.3870b5	89 40		bit #$40	            BIT #$40
+.3870b7	f0 17		beq $3870d0	            BEQ RT_NOT_SLOW
+.3870b9	a9 01		lda #$01	            LDA #1
+.3870bb	8f 6a 70 38	sta $38706a	            STA @lTuneInfo.hasSlowTimer
+.3870bf	a9 0f		lda #$0f	            LDA #<SLOW_TIMER
+.3870c1	8d 65 01	sta $0165	            STA TIMER0_CMP_L
+.3870c4	a9 01		lda #$01	            LDA #>SLOW_TIMER
+.3870c6	8d 66 01	sta $0166	            STA TIMER0_CMP_M
+.3870c9	a9 0c		lda #$0c	            LDA #<`SLOW_TIMER
+.3870cb	8d 67 01	sta $0167	            STA TIMER0_CMP_H
+.3870ce	80 23		bra $3870f3	            BRA SET_TIMER
+.3870d0					    RT_NOT_SLOW
+.3870d0	89 20		bit #$20	            BIT #$20
+.3870d2	f0 0a		beq $3870de	            BEQ RT_NOT_BPM
+.3870d4	c8		iny		            INY
+.3870d5	c2 20		rep #$20	                REP #$20        ; set A long
+.3870d7	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y
+.3870d9	e2 20		sep #$20	                SEP #$20        ; set A short
+.3870db	c8		iny		            INY
+.3870dc	80 15		bra $3870f3	            BRA SET_TIMER
+.3870de					    RT_NOT_BPM
+.3870de	a9 00		lda #$00	            LDA #0
+.3870e0	8f 6a 70 38	sta $38706a	            STA @lTuneInfo.hasSlowTimer
+.3870e4	a9 98		lda #$98	            LDA #<FIFTY_HZ_COUNT
+.3870e6	8d 65 01	sta $0165	            STA TIMER0_CMP_L
+.3870e9	a9 5e		lda #$5e	            LDA #>FIFTY_HZ_COUNT
+.3870eb	8d 66 01	sta $0166	            STA TIMER0_CMP_M
+.3870ee	a9 04		lda #$04	            LDA #<`FIFTY_HZ_COUNT
+.3870f0	8d 67 01	sta $0167	            STA TIMER0_CMP_H
+.3870f3					    SET_TIMER
+.3870f3	20 13 6b	jsr $386b13	            JSR INIT_TIMER0
+.3870f6	60		rts		            RTS
+.3870f7					READ_VERSION_10
+.3870f7	a9 01		lda #$01	            LDA #1
+.3870f9	8f 67 70 38	sta $387067	            STA @lTuneInfo.version
+.3870fd	20 15 71	jsr $387115	            JSR PARSER_RAD_FILE_INSTRUMENT_10; Parse the Instrument
+.387100	20 95 71	jsr $387195	            JSR PROCESS_ORDER_LIST_10 ; Parse the Order List
+.387103	20 ba 71	jsr $3871ba	            JSR READ_PATTERNS_10
+.387106	20 b0 70	jsr $3870b0	            JSR READ_TIMER
+.387109	6b		rtl		            RTL  ; End of READ_VERSION_10
+>38710a	07 01 08 02 09 03 0a 04		ADLIB_OFFSETS .byte 7,1,8,2,9,3,10,4,5,11,6
+>387112	05 0b 06
+.387115					PARSER_RAD_FILE_INSTRUMENT_10
+.387115	c8		iny		            INY ; $11 bit 7: description, bit6: slow timer, bits4..0: speed
+.387116	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y
+.387118	29 1f		and #$1f	            AND #$1F
+.38711a	8f 69 70 38	sta $387069	            STA @lTuneInfo.InitialSpeed
+.38711e	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y
+.387120	29 80		and #$80	            AND #$80
+.387122	f0 07		beq $38712b	            BEQ READ_INSTR_DATA
+.387124					    Not_Done_With_Description
+.387124	c8		iny		            INY ; Move the Pointer Forward
+.387125	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y
+.387127	c9 00		cmp #$00	            CMP #$00  ; Check for the End of Text
+.387129	d0 f9		bne $387124	            BNE Not_Done_With_Description
+.38712b					    READ_INSTR_DATA
+.38712b	c8		iny		            INY ; This points after either After Description or next to Offset 0x11
+.38712c	a9 38		lda #$38	            LDA #<`INSTRUMENT_ACCORDN
+.38712e	85 f2		sta $f2		            STA RAD_ADDR + 2
+.387130					    ProcessNextInstruments_10
+.387130	e2 20		sep #$20	                SEP #$20        ; set A short
+.387132	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y  ; Read Instrument Number
+.387134	f0 4a		beq $387180	            BEQ DoneProcessingInstrument_10
+.387136	c2 20		rep #$20	                REP #$20        ; set A long
+.387138	3a		dec a		            DEC A
+.387139	8f 00 01 00	sta $000100	            STA @lUNSIGNED_MULT_A
+.38713d	a9 16 00	lda #$0016	            LDA #INSTR_REC_LEN
+.387140	8f 02 01 00	sta $000102	            STA @lUNSIGNED_MULT_B
+.387144	af 04 01 00	lda $000104	            LDA @lUNSIGNED_MULT_RESULT  ; not sure why this one requires a long address - bank is still 0
+.387148	18		clc		            CLC
+.387149	69 3b 10	adc #$103b	            ADC #<>INSTRUMENT_ACCORDN
+.38714c	85 f0		sta $f0		            STA RAD_ADDR
+.38714e	a9 00 00	lda #$0000	            LDA #0
+.387151	e2 20		sep #$20	                SEP #$20        ; set A short
+.387153	c8		iny		            INY
+.387154	64 4e		stz $4e		            STZ RAD_TEMP
+.387156	87 f0		sta [$f0]	            STA [RAD_ADDR]  ; Not a drum instrument
+.387158					    Transfer_Instrument_Info
+.387158	a6 4e		ldx $4e		            LDX RAD_TEMP
+.38715a	bf 0a 71 38	lda $38710a,x	            LDA ADLIB_OFFSETS,X  ; RAD uses a different order for registers
+.38715e	aa		tax		            TAX
+.38715f	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y  ; Read Register
+.387161	5a		phy		            PHY
+.387162	9b		txy		            TXY
+.387163	97 f0		sta [$f0],y	            STA [RAD_ADDR],Y  ; Write to the instrument table
+.387165	7a		ply		            PLY
+.387166	c8		iny		            INY
+.387167	e6 4e		inc $4e		            INC RAD_TEMP
+.387169	a5 4e		lda $4e		            LDA RAD_TEMP
+.38716b	c9 0b		cmp #$0b	            CMP #11
+.38716d	90 e9		bcc $387158	            BCC Transfer_Instrument_Info
+.38716f	5a		phy		            PHY ; store the position in the file on the stack
+.387170	a0 0c 00	ldy #$000c	            LDY #12 ; beginning of text
+.387173	a9 20		lda #$20	            LDA #$20
+.387175					    BLANK_INSTR_DESCR
+.387175	97 f0		sta [$f0],y	            STA [RAD_ADDR],Y
+.387177	c8		iny		            INY
+.387178	c0 16 00	cpy #$0016	            CPY #22
+.38717b	d0 f8		bne $387175	            BNE BLANK_INSTR_DESCR
+.38717d	7a		ply		            PLY
+.38717e	80 b0		bra $387130	            BRA ProcessNextInstruments_10
+.387180					    DoneProcessingInstrument_10
 .387180	c8		iny		            INY
-.387181	c9 00		cmp #$00	            CMP #0
-.387183	d0 f9		bne $38717e	            BNE PR_LOOP
-.387185	a9 38		lda #$38	            LDA #<`INSTRUMENT_ACCORDN
-.387187	85 f2		sta $f2		            STA RAD_ADDR + 2
-.387189					    ProcessNextInstruments_21
-.387189	e2 20		sep #$20	                SEP #$20        ; set A short
-.38718b	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y  ; Read Instrument Number
-.38718d	f0 00		beq $38718f	            BEQ DoneProcessingInstrument_21
-.38718f					    DoneProcessingInstrument_21
-.38718f	c8		iny		            INY
-.387190	60		rts		            RTS
-.387191					PROCESS_ORDER_LIST_10
-.387191	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y  ; Read Song Length
-.387193	8f 01 00 17	sta $170001	            STA @lTuneInfo.songLength
-.387197	aa		tax		            TAX
-.387198	c8		iny		            INY
-.387199	c2 20		rep #$20	                REP #$20        ; set A long
-.38719b	a9 24 fc	lda #$fc24	            LDA #<>ORDERS
-.38719e	85 f0		sta $f0		            STA RAD_ADDR
-.3871a0	a9 39 00	lda #$0039	            LDA #<`ORDERS
-.3871a3	85 f2		sta $f2		            STA RAD_ADDR + 2
-.3871a5	e2 20		sep #$20	                SEP #$20        ; set A short
-.3871a7					    READ_ORDER
-.3871a7	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y
-.3871a9	c8		iny		            INY
-.3871aa	87 f0		sta [$f0]	            STA [RAD_ADDR]
-.3871ac	e6 f0		inc $f0		            INC RAD_ADDR
-.3871ae	b0 02		bcs $3871b2	            BCS ORDER_CONTINUE
-.3871b0	e6 f1		inc $f1		            INC RAD_ADDR + 1
-.3871b2					    ORDER_CONTINUE
-.3871b2	ca		dex		            DEX
-.3871b3	d0 f2		bne $3871a7	            BNE READ_ORDER
-.3871b5	60		rts		            RTS
-.3871b6					READ_PATTERNS_10
-.3871b6	64 f3		stz $f3		            STZ RAD_PATTRN
-.3871b8	a9 39		lda #$39	            LDA #<`PATTERNS
-.3871ba	85 f6		sta $f6		            STA RAD_PTN_DEST + 2
-.3871bc					    NEXT_PATTERN
-.3871bc	c2 20		rep #$20	                REP #$20        ; set A long
-.3871be	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y
-.3871c0	f0 1f		beq $3871e1	            BEQ SKIP_PATTERN
-.3871c2	5a		phy		            PHY
-.3871c3	a8		tay		            TAY
-.3871c4	a5 f3		lda $f3		            LDA RAD_PATTRN
-.3871c6	29 ff 00	and #$00ff	            AND #$00FF
-.3871c9	8f 00 01 00	sta $000100	            STA @lUNSIGNED_MULT_A
-.3871cd	a9 01 07	lda #$0701	            LDA #PATTERN_BYTES
-.3871d0	8f 02 01 00	sta $000102	            STA @lUNSIGNED_MULT_B
-.3871d4	af 04 01 00	lda $000104	            LDA @lUNSIGNED_MULT_RESULT
-.3871d8	1a		inc a		            INC A ; skip the pattern byte
-.3871d9	85 f4		sta $f4		            STA RAD_PTN_DEST
-.3871db	e2 20		sep #$20	                SEP #$20        ; set A short
-.3871dd	20 ee 71	jsr $3871ee	            JSR READ_PATTERN_10
-.3871e0	7a		ply		            PLY
-.3871e1					    SKIP_PATTERN
-.3871e1	c8		iny		            INY
-.3871e2	c8		iny		            INY
-.3871e3	e2 20		sep #$20	                SEP #$20        ; set A short
-.3871e5	e6 f3		inc $f3		            INC RAD_PATTRN
-.3871e7	a5 f3		lda $f3		            LDA RAD_PATTRN
-.3871e9	c9 20		cmp #$20	            CMP #32
-.3871eb	d0 cf		bne $3871bc	            BNE NEXT_PATTERN
-.3871ed	60		rts		            RTS
-.3871ee					READ_PATTERN_10
-.3871ee	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y ; read the line number - bit 7 indicates the last line
-.3871f0	8f 42 00 00	sta $000042	            STA @lRAD_LINE
-.3871f4	c8		iny		            INY
-.3871f5	c2 20		rep #$20	                REP #$20        ; set A long
-.3871f7	29 7f 00	and #$007f	            AND #$7F
-.3871fa	8f 00 01 00	sta $000100	            STA @lUNSIGNED_MULT_A
-.3871fe	a9 1c 00	lda #$001c	            LDA #LINE_BYTES
-.387201	8f 02 01 00	sta $000102	            STA @lUNSIGNED_MULT_B
-.387205	af 04 01 00	lda $000104	            LDA @lUNSIGNED_MULT_RESULT
-.387209	1a		inc a		            INC A ; skip the line number
-.38720a	8f fa 00 00	sta $0000fa	            STA @lRAD_LINE_PTR
-.38720e	e2 20		sep #$20	                SEP #$20        ; set A short
-.387210					    READ_NOTE
-.387210	a6 fa		ldx $fa		            LDX RAD_LINE_PTR ; X contains the offset in the destination memory
-.387212	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y ; channel - bit 7 indicates the last note
-.387214	c8		iny		            INY
-.387215	8f f9 00 00	sta $0000f9	            STA @lRAD_LAST_NOTE
-.387219	29 0f		and #$0f	            AND #$F
-.38721b	8f f7 00 00	sta $0000f7	            STA @lRAD_CHANNEL
-.38721f	c2 20		rep #$20	                REP #$20        ; set A long
-.387221	8a		txa		            TXA
-.387222	18		clc		            CLC
-.387223	65 f7		adc $f7		            ADC RAD_CHANNEL ; multiply channel by 3
-.387225	65 f7		adc $f7		            ADC RAD_CHANNEL
-.387227	65 f7		adc $f7		            ADC RAD_CHANNEL
-.387229	aa		tax		            TAX
-.38722a	e2 20		sep #$20	                SEP #$20        ; set A short
-.38722c	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y ; note / octave
-.38722e	5a		phy		            PHY
-.38722f	9b		txy		            TXY
-.387230	97 f4		sta [$f4],y	            STA [RAD_PTN_DEST],Y
-.387232	7a		ply		            PLY
-.387233	c8		iny		            INY
-.387234	e8		inx		            INX
-.387235	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y ; instrument/effect
-.387237	5a		phy		            PHY
-.387238	9b		txy		            TXY
-.387239	97 f4		sta [$f4],y	            STA [RAD_PTN_DEST],Y
-.38723b	7a		ply		            PLY
-.38723c	c8		iny		            INY
-.38723d	e8		inx		            INX
-.38723e	29 0f		and #$0f	            AND #$F
-.387240	f0 09		beq $38724b	            BEQ CHECK_LASTNOTE
-.387242	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y ; effect parameter
-.387244	5a		phy		            PHY
-.387245	9b		txy		            TXY
-.387246	97 f4		sta [$f4],y	            STA [RAD_PTN_DEST],Y
-.387248	7a		ply		            PLY
-.387249	c8		iny		            INY
-.38724a	e8		inx		            INX
-.38724b					     CHECK_LASTNOTE
-.38724b	af f9 00 00	lda $0000f9	            LDA @lRAD_LAST_NOTE
-.38724f	10 bf		bpl $387210	            BPL READ_NOTE
-.387251	af 42 00 00	lda $000042	            LDA @lRAD_LINE
-.387255	10 97		bpl $3871ee	            BPL READ_PATTERN_10
-.387257	60		rts		            RTS
-.387258					DRAW_BLANKS
-.387258	5a		phy		            PHY
-.387259	da		phx		            PHX
-.38725a	a2 12 00	ldx #$0012	            LDX #18
-.38725d	a0 00 00	ldy #$0000	            LDY #0
-.387260	a9 2d		lda #$2d	            LDA #'-'
-.387262					    BL_NEXT
-.387262	97 0c		sta [$0c],y	            STA [SCREENBEGIN], Y
-.387264	c8		iny		            INY
-.387265	ca		dex		            DEX
-.387266	d0 fa		bne $387262	            BNE BL_NEXT
-.387268	fa		plx		            PLX
-.387269	7a		ply		            PLY
-.38726a	60		rts		            RTS
-.38726b					DISPLAY_RAD_PTN_DEST
-.38726b	5a		phy		            PHY
-.38726c	a5 f6		lda $f6		            LDA RAD_PTN_DEST+2
-.38726e	20 b1 5d	jsr $385db1	            JSR WRITE_HEX
-.387271	c8		iny		            INY
-.387272	c8		iny		            INY
-.387273	a5 f5		lda $f5		            LDA RAD_PTN_DEST+1
-.387275	20 b1 5d	jsr $385db1	            JSR WRITE_HEX
-.387278	c8		iny		            INY
-.387279	c8		iny		            INY
-.38727a	a5 f4		lda $f4		            LDA RAD_PTN_DEST
-.38727c	20 b1 5d	jsr $385db1	            JSR WRITE_HEX
-.38727f	7a		ply		            PLY
-.387280	60		rts		            RTS
-.387281					WRITE_A_LNG
-.387281	48		pha		            PHA
-.387282	48		pha		            PHA
-.387283	e2 20		sep #$20	                SEP #$20        ; set A short
-.387285	68		pla		            PLA
-.387286	20 b1 5d	jsr $385db1	            JSR WRITE_HEX
-.387289	88		dey		            DEY
-.38728a	88		dey		            DEY
-.38728b	68		pla		            PLA
-.38728c	20 b1 5d	jsr $385db1	            JSR WRITE_HEX
-.38728f	c2 20		rep #$20	                REP #$20        ; set A long
-.387291	68		pla		            PLA
-.387292	60		rts		            RTS
-.387293					RAD_ALL_NOTES_OFF
-.387293	5a		phy		            PHY
-.387294	c2 20		rep #$20	                REP #$20        ; set A long
-.387296	a9 00 e7	lda #$e700	            LDA #<>OPL3_R_BASE
-.387299	85 2c		sta $2c		            STA OPL2_IND_ADDY_LL
-.38729b	a9 af 00	lda #$00af	            LDA #`OPL3_R_BASE
-.38729e	85 2e		sta $2e		            STA OPL2_IND_ADDY_LL + 2
-.3872a0	e2 20		sep #$20	                SEP #$20        ; set A short
-.3872a2	a0 a0 00	ldy #$00a0	            LDY #$A0
-.3872a5	a9 00		lda #$00	            LDA #0
-.3872a7					        NEXT_NOTE_OFF
-.3872a7	97 2c		sta [$2c],y	            STA [OPL2_IND_ADDY_LL],Y
-.3872a9	c8		iny		            INY
-.3872aa	c0 b9 00	cpy #$00b9	            CPY #$B9
-.3872ad	d0 f8		bne $3872a7	            BNE NEXT_NOTE_OFF
-.3872af	7a		ply		            PLY
-.3872b0	60		rts		            RTS
-.3872b1					RAD_PLAYNOTES
-.3872b1	5a		phy		            PHY
-.3872b2	20 58 72	jsr $387258	            JSR DRAW_BLANKS
-.3872b5	c2 20		rep #$20	                REP #$20        ; set A long
-.3872b7	af 18 0f 38	lda $380f18	            LDA PATTERN_NUM
-.3872bb	29 ff 00	and #$00ff	            AND #$FF
-.3872be	3a		dec a		            DEC A ; start at 0
-.3872bf	8f 00 01 00	sta $000100	            STA @lUNSIGNED_MULT_A
-.3872c3	a9 01 07	lda #$0701	            LDA #PATTERN_BYTES
-.3872c6	8f 02 01 00	sta $000102	            STA @lUNSIGNED_MULT_B
-.3872ca	af 04 01 00	lda $000104	            LDA @lUNSIGNED_MULT_RESULT
-.3872ce	1a		inc a		            INC A ; skip the pattern number byte
-.3872cf	85 f4		sta $f4		            STA RAD_PTN_DEST
-.3872d1	e2 20		sep #$20	                SEP #$20        ; set A short
-.3872d3	a9 39		lda #$39	            LDA #<`PATTERNS
-.3872d5	85 f6		sta $f6		            STA RAD_PTN_DEST + 2
-.3872d7	a0 00 01	ldy #$0100	            LDY #128 * 2
-.3872da	20 6b 72	jsr $38726b	            JSR DISPLAY_RAD_PTN_DEST ; display the address of the pattern
-.3872dd	c2 20		rep #$20	                REP #$20        ; set A long
-.3872df	a5 6c		lda $6c		            LDA LINE_NUM_HEX
-.3872e1	29 7f 00	and #$007f	            AND #$7F
-.3872e4	8f 00 01 00	sta $000100	            STA @lUNSIGNED_MULT_A
-.3872e8	a9 1c 00	lda #$001c	            LDA #LINE_BYTES
-.3872eb	8f 02 01 00	sta $000102	            STA @lUNSIGNED_MULT_B
-.3872ef	af 04 01 00	lda $000104	            LDA @lUNSIGNED_MULT_RESULT
-.3872f3	1a		inc a		            INC A  ; skip the line number byte
-.3872f4	a0 82 00	ldy #$0082	            LDY #128 + 2
-.3872f7	20 81 72	jsr $387281	            JSR WRITE_A_LNG ; display the line offset from the pattern address
-.3872fa	a8		tay		            TAY ; Y contains the line offset
-.3872fb	a9 00 00	lda #$0000	            LDA #0
-.3872fe	e2 20		sep #$20	                SEP #$20        ; set A short
-.387300	64 28		stz $28		            STZ OPL2_REG_REGION
-.387302					    PN_NEXT_NOTE
-.387302	8f 27 00 00	sta $000027	            STA @lOPL2_CHANNEL
-.387306	aa		tax		            TAX
-.387307	bf b6 6e 38	lda $386eb6,x	            LDA CHANNELS,X
-.38730b	d0 05		bne $387312	            BNE PN_PLAY_NOTE
-.38730d	c8		iny		            INY ; skip the channel data
-.38730e	c8		iny		            INY
-.38730f	c8		iny		            INY
-.387310	80 58		bra $38736a	            BRA PN_CONTINUE
-.387312					    PN_PLAY_NOTE
-.387312	b7 f4		lda [$f4],y	            LDA [RAD_PTN_DEST],Y  ; octave/note
-.387314	29 7f		and #$7f	            AND #$7F
-.387316	20 d1 74	jsr $3874d1	            JSR RAD_WRITE_OCT_NOTE
-.387319	b7 f4		lda [$f4],y	            LDA [RAD_PTN_DEST],Y  ; bit 7 is bit 4 of the instrument number
-.38731b	29 80		and #$80	            AND #$80
-.38731d	4a		lsr a		            LSR A
-.38731e	4a		lsr a		            LSR A
-.38731f	4a		lsr a		            LSR A
-.387320	85 4e		sta $4e		            STA RAD_TEMP
-.387322	c8		iny		            INY
-.387323	b7 f4		lda [$f4],y	            LDA [RAD_PTN_DEST],Y  ; instrument/effect
-.387325	29 f0		and #$f0	            AND #$F0
-.387327	4a		lsr a		            LSR A
-.387328	4a		lsr a		            LSR A
-.387329	4a		lsr a		            LSR A
-.38732a	4a		lsr a		            LSR A
-.38732b	65 4e		adc $4e		            ADC RAD_TEMP
-.38732d	f0 14		beq $387343	            BEQ SKIP_INSTRUMENT
-.38732f	3a		dec a		            DEC A  ; instruments are starting at 0
-.387330	8f 6a 00 00	sta $00006a	            STA @lINSTR_NUMBER
-.387334	5a		phy		            PHY
-.387335	a6 27		ldx $27		            LDX OPL2_CHANNEL
-.387337	a9 00		lda #$00	            LDA #0
-.387339	eb		xba		            XBA
-.38733a	bf 18 10 38	lda $381018,x	            LDA @lregisterOffsets_operator0,X
-.38733e	aa		tax		            TAX
-.38733f	20 52 6b	jsr $386b52	            JSR LOAD_INSTRUMENT
-.387342	7a		ply		            PLY
-.387343					        SKIP_INSTRUMENT
-.387343	af 30 00 00	lda $000030	            LDA @lOPL2_NOTE
-.387347	f0 11		beq $38735a	            BEQ SKIP_NOTE  ; if the note is 0, don't play anything.
-.387349	c9 0f		cmp #$0f	            CMP #$0F ; NOTE OFF
-.38734b	f0 2b		beq $387378	            BEQ RAD_NOTE_OFF
-.38734d	c2 20		rep #$20	                REP #$20        ; set A long
-.38734f	5a		phy		            PHY
-.387350	20 f5 37	jsr $3837f5	            JSR OPL2_GET_REG_OFFSET
-.387353	22 01 32 38	jsl $383201	            JSL OPL2_PLAYNOTE
-.387357	7a		ply		            PLY
-.387358	e2 20		sep #$20	                SEP #$20        ; set A short
-.38735a					        SKIP_NOTE
-.38735a	a9 00		lda #$00	            LDA #0
-.38735c	eb		xba		            XBA
-.38735d	b7 f4		lda [$f4],y	            LDA [RAD_PTN_DEST],Y  ; instrument/effect
-.38735f	c8		iny		            INY
-.387360	29 0f		and #$0f	            AND #$F
-.387362	f0 05		beq $387369	            BEQ SKIP_EFFECT
-.387364	0a		asl a		            ASL A ; double bytes
-.387365	aa		tax		            TAX
-.387366	fc 89 73	jsr ($387389,x)	            JSR (RAD_EFFECT_TABLE,X)
-.387369					        SKIP_EFFECT
-.387369	c8		iny		            INY
-.38736a					    PN_CONTINUE
-.38736a	a9 00		lda #$00	            LDA #0  ; clear B
-.38736c	eb		xba		            XBA
-.38736d	af 27 00 00	lda $000027	            LDA @lOPL2_CHANNEL
-.387371	1a		inc a		            INC A
-.387372	c9 09		cmp #$09	            CMP #9
-.387374	d0 8c		bne $387302	            BNE PN_NEXT_NOTE
-.387376	7a		ply		            PLY
-.387377	60		rts		            RTS
-.387378					RAD_NOTE_OFF
-.387378	af 27 00 00	lda $000027	            LDA @lOPL2_CHANNEL
-.38737c	18		clc		            CLC
-.38737d	69 b0		adc #$b0	            ADC #$B0
-.38737f	85 2c		sta $2c		            STA OPL2_IND_ADDY_LL
-.387381	a9 00		lda #$00	            LDA #0
-.387383	87 2c		sta [$2c]	            STA [OPL2_IND_ADDY_LL]
-.387385	c8		iny		            INY
-.387386	c8		iny		            INY
-.387387	80 e1		bra $38736a	            BRA PN_CONTINUE
-.387389					RAD_EFFECT_TABLE
->387389	a9 73				            .word <>RAD_EFFECT_NONE              ; 00
->38738b	1c 74				            .word <>RAD_EFFECT_NOTE_SLIDE_UP     ; 01
->38738d	1c 74				            .word <>RAD_EFFECT_NOTE_SLIDE_DOWN   ; 02
->38738f	a9 73				            .word <>RAD_EFFECT_NOTE_SLIDE_TO     ; 03
->387391	a9 73				            .word <>RAD_NOOP
->387393	a9 73				            .word <>RAD_EFFECT_NOTE_SLIDE_VOLUME ; 05
->387395	a9 73				            .word <>RAD_NOOP
->387397	a9 73				            .word <>RAD_NOOP
->387399	a9 73				            .word <>RAD_NOOP
->38739b	a9 73				            .word <>RAD_NOOP
->38739d	aa 73				            .word <>RAD_EFFECT_VOLUME_SLIDE      ; 0A
->38739f	a9 73				            .word <>RAD_NOOP
->3873a1	92 74				            .word <>RAD_EFFECT_SET_VOLUME        ; 0C
->3873a3	01 74				            .word <>RAD_EFFECT_PATTERN_BREAK     ; 0D
->3873a5	a9 73				            .word <>RAD_NOOP
->3873a7	12 74				            .word <>RAD_EFFECT_SET_SPEED         ; 0F
-.3873a9					RAD_NOOP
-.3873a9					RAD_EFFECT_NONE
-.3873a9					RAD_EFFECT_NOTE_SLIDE_TO
-.3873a9					RAD_EFFECT_NOTE_SLIDE_VOLUME
-.3873a9	60		rts		            RTS
-.3873aa					RAD_EFFECT_VOLUME_SLIDE
-.3873aa	5a		phy		            PHY
-.3873ab	b7 f4		lda [$f4],y	            LDA [RAD_PTN_DEST],Y ; store value of the effect in RAD_CHANNE_EFFCT
-.3873ad	85 4c		sta $4c		            STA RAD_CHANNE_EFFCT
-.3873af	c2 20		rep #$20	                REP #$20        ; set A long
-.3873b1	a9 00 e7	lda #$e700	            LDA #<>OPL3_R_BASE
-.3873b4	85 2c		sta $2c		            STA OPL2_IND_ADDY_LL
-.3873b6	a9 af 00	lda #$00af	            LDA #`OPL3_R_BASE
-.3873b9	85 2e		sta $2e		            STA OPL2_IND_ADDY_LL + 2
-.3873bb	e2 30		sep #$30	                SEP #$30        ; set A&X short
-.3873bd	a5 27		lda $27		            LDA OPL2_CHANNEL
-.3873bf	aa		tax		            TAX
-.3873c0	bf 18 10 38	lda $381018,x	            LDA @lregisterOffsets_operator0,X
-.3873c4	18		clc		            CLC
-.3873c5	69 40		adc #$40	            ADC #$40
-.3873c7	a8		tay		            TAY
-.3873c8	b7 2c		lda [$2c],y	            LDA [OPL2_IND_ADDY_LL],Y ; volume
-.3873ca	48		pha		            PHA
-.3873cb	29 3f		and #$3f	            AND #$3F
-.3873cd	18		clc		            CLC
-.3873ce	65 4c		adc $4c		            ADC RAD_CHANNE_EFFCT ; check for values greater than 50
-.3873d0	c9 40		cmp #$40	            CMP #$40 ; if there's an overflow, use #$3F (low volume)
-.3873d2	90 02		bcc $3873d6	            BCC NO_OVERFLOW_0
-.3873d4	a9 3f		lda #$3f	            LDA #$3F
-.3873d6					    NO_OVERFLOW_0
-.3873d6	29 3f		and #$3f	            AND #$3F
-.3873d8	85 4e		sta $4e		            STA RAD_TEMP
-.3873da	68		pla		            PLA
-.3873db	29 c0		and #$c0	            AND #$C0
-.3873dd	05 4e		ora $4e		            ORA RAD_TEMP
-.3873df	97 2c		sta [$2c],y	            STA [OPL2_IND_ADDY_LL],Y
-.3873e1	c8		iny		            INY
-.3873e2	c8		iny		            INY
-.3873e3	c8		iny		            INY
-.3873e4	b7 2c		lda [$2c],y	            LDA [OPL2_IND_ADDY_LL],Y ; volume
-.3873e6	48		pha		            PHA
-.3873e7	29 3f		and #$3f	            AND #$3F
-.3873e9	18		clc		            CLC
-.3873ea	65 4c		adc $4c		            ADC RAD_CHANNE_EFFCT
-.3873ec	c9 40		cmp #$40	            CMP #$40 ; if there's an overflow, use #$3F (low volume)
-.3873ee	90 02		bcc $3873f2	            BCC NO_OVERFLOW_1
-.3873f0	a9 3f		lda #$3f	            LDA #$3F
-.3873f2					    NO_OVERFLOW_1
-.3873f2	29 3f		and #$3f	            AND #$3F
-.3873f4	85 4e		sta $4e		            STA RAD_TEMP
-.3873f6	68		pla		            PLA
-.3873f7	29 c0		and #$c0	            AND #$C0
-.3873f9	05 4e		ora $4e		            ORA RAD_TEMP
-.3873fb	97 2c		sta [$2c],y	            STA [OPL2_IND_ADDY_LL],Y
-.3873fd	c2 10		rep #$10	                REP #$10        ; set X long
-.3873ff	7a		ply		            PLY
-.387400	60		rts		            RTS
-.387401					RAD_EFFECT_PATTERN_BREAK
-.387401	b7 f4		lda [$f4],y	            LDA [RAD_PTN_DEST],Y  ; effect parameter
-.387403	3a		dec a		            DEC A ; DECREMENT by 1, because the next timer interrupt will increment at the beginning
-.387404	85 6c		sta $6c		            STA LINE_NUM_HEX
-.387406	a9 00		lda #$00	            LDA #0 ; convert the effect to a decimal line number
-.387408	8f 19 0f 38	sta $380f19	            STA @lLINE_NUM_DEC
-.38740c	20 9e 6a	jsr $386a9e	            JSR INCREMENT_ORDER
-.38740f	7a		ply		            PLY ; don't return to the calling method, return to the parent
-.387410	7a		ply		            PLY
-.387411	60		rts		            RTS
-.387412					RAD_EFFECT_SET_SPEED
-.387412	b7 f4		lda [$f4],y	            LDA [RAD_PTN_DEST],Y  ; effect parameter
-.387414	8f 02 00 17	sta $170002	            STA @lTuneInfo.InitialSpeed
-.387418	20 af 60	jsr $3860af	            JSR DISPLAY_SPEED
-.38741b	60		rts		            RTS
-.38741c					RAD_EFFECT_NOTE_SLIDE_UP
-.38741c					RAD_EFFECT_NOTE_SLIDE_DOWN
-.38741c	5a		phy		            PHY
-.38741d	4a		lsr a		            LSR
-.38741e	85 50		sta $50		            STA RAD_EFFECT ; 1 slide down, 2 slide up
-.387420	b7 f4		lda [$f4],y	            LDA [RAD_PTN_DEST],Y ; store value of the effect in RAD_CHANNE_EFFCT
-.387422	85 4c		sta $4c		            STA RAD_CHANNE_EFFCT
-.387424	c2 20		rep #$20	                REP #$20        ; set A long
-.387426	a9 00 e7	lda #$e700	            LDA #<>OPL3_R_BASE
-.387429	85 2c		sta $2c		            STA OPL2_IND_ADDY_LL
-.38742b	a9 af 00	lda #$00af	            LDA #`OPL3_R_BASE
-.38742e	85 2e		sta $2e		            STA OPL2_IND_ADDY_LL + 2
-.387430	e2 30		sep #$30	                SEP #$30        ; set A&X short
-.387432	a5 27		lda $27		            LDA OPL2_CHANNEL
-.387434	18		clc		            CLC
-.387435	69 a0		adc #$a0	            ADC #$A0
-.387437	a8		tay		            TAY
-.387438	b7 2c		lda [$2c],y	            LDA [OPL2_IND_ADDY_LL],Y ; read low fnumber byte
-.38743a	c2 10		rep #$10	                REP #$10        ; set X long
-.38743c	bb		tyx		            TYX
-.38743d	a0 8a 00	ldy #$008a	            LDY #128 + 10
-.387440	20 b1 5d	jsr $385db1	            JSR WRITE_HEX
-.387443	9b		txy		            TXY
-.387444	e2 10		sep #$10	                SEP #$10        ; set X short
-.387446	48		pha		        PHA ; store A on the stack
-.387447	98		tya		            TYA
-.387448	18		clc		            CLC
-.387449	69 10		adc #$10	            ADC #$10
-.38744b	a8		tay		            TAY
-.38744c	b7 2c		lda [$2c],y	            LDA [OPL2_IND_ADDY_LL],Y ; read bits 0,1 of high fnumber
-.38744e	85 4e		sta $4e		            STA RAD_TEMP  ; store the entire value of $B0
-.387450	c2 10		rep #$10	                REP #$10        ; set X long
-.387452	bb		tyx		            TYX
-.387453	a0 08 01	ldy #$0108	            LDY #256 + 8
-.387456	20 b1 5d	jsr $385db1	            JSR WRITE_HEX
-.387459	29 03		and #$03	            AND #3
-.38745b	a0 88 00	ldy #$0088	            LDY #128 + 8
-.38745e	20 b1 5d	jsr $385db1	            JSR WRITE_HEX
-.387461	9b		txy		            TXY
-.387462	eb		xba		            XBA
-.387463	68		pla		        PLA ; A is now the FNUMBER
-.387464	aa		tax		            TAX ; X is now the FNUMBER
-.387465	a5 50		lda $50		            LDA RAD_EFFECT
-.387467	89 02		bit #$02	            BIT #2
-.387469	f0 0a		beq $387475	            BEQ SLIDE_UP
-.38746b	c2 20		rep #$20	                REP #$20        ; set A long
-.38746d	8a		txa		            TXA
-.38746e	38		sec		            SEC
-.38746f	e5 4c		sbc $4c		            SBC RAD_CHANNE_EFFCT  ; substract the effect parameter
-.387471	e2 20		sep #$20	                SEP #$20        ; set A short
-.387473	80 08		bra $38747d	            BRA FINISH_SLIDE
-.387475					    SLIDE_UP
-.387475	c2 20		rep #$20	                REP #$20        ; set A long
-.387477	8a		txa		            TXA
-.387478	18		clc		            CLC
-.387479	65 4c		adc $4c		            ADC RAD_CHANNE_EFFCT  ; substract the effect parameter
-.38747b	e2 20		sep #$20	                SEP #$20        ; set A short
-.38747d					    FINISH_SLIDE
-.38747d	e2 10		sep #$10	                SEP #$10        ; set X short
-.38747f	eb		xba		            XBA
-.387480	29 03		and #$03	            AND #3
-.387482	05 4e		ora $4e		            ORA RAD_TEMP
-.387484	97 2c		sta [$2c],y	            STA [OPL2_IND_ADDY_LL],Y
-.387486	98		tya		            TYA
-.387487	38		sec		            SEC
-.387488	e9 10		sbc #$10	            SBC #$10
-.38748a	a8		tay		            TAY
-.38748b	eb		xba		            XBA
-.38748c	97 2c		sta [$2c],y	            STA [OPL2_IND_ADDY_LL],Y
-.38748e	c2 10		rep #$10	                REP #$10        ; set X long
-.387490	7a		ply		            PLY
-.387491	60		rts		            RTS
-.387492					RAD_EFFECT_SET_VOLUME
-.387492	5a		phy		            PHY
-.387493	c2 20		rep #$20	                REP #$20        ; set A long
-.387495	a9 00 e7	lda #$e700	            LDA #<>OPL3_R_BASE
-.387498	85 2c		sta $2c		            STA OPL2_IND_ADDY_LL
-.38749a	a9 af 00	lda #$00af	            LDA #`OPL3_R_BASE
-.38749d	85 2e		sta $2e		            STA OPL2_IND_ADDY_LL + 2
-.38749f	e2 20		sep #$20	                SEP #$20        ; set A short
-.3874a1	b7 f4		lda [$f4],y	            LDA [RAD_PTN_DEST],Y  ; effect parameter
-.3874a3	29 7f		and #$7f	            AND #$7F
-.3874a5	f0 01		beq $3874a8	            BEQ HANDLE_ZERO
-.3874a7	3a		dec a		            DEC A
-.3874a8					        HANDLE_ZERO
-.3874a8	49 3f		eor #$3f	            EOR #$3F ; complement
-.3874aa	85 4e		sta $4e		            STA RAD_TEMP
-.3874ac	e2 10		sep #$10	                SEP #$10        ; set X short
-.3874ae	a6 27		ldx $27		            LDX OPL2_CHANNEL
-.3874b0	bf 18 10 38	lda $381018,x	            LDA @lregisterOffsets_operator0,X
-.3874b4	18		clc		            CLC
-.3874b5	69 40		adc #$40	            ADC #$40
-.3874b7	a8		tay		            TAY
-.3874b8	b7 2c		lda [$2c],y	            LDA [OPL2_IND_ADDY_LL],Y
-.3874ba	29 c0		and #$c0	            AND #$C0 ;
-.3874bc	18		clc		            CLC
-.3874bd	65 4e		adc $4e		            ADC RAD_TEMP
-.3874bf	97 2c		sta [$2c],y	            STA [OPL2_IND_ADDY_LL],Y
-.3874c1	c8		iny		            INY
-.3874c2	c8		iny		            INY
-.3874c3	c8		iny		            INY
-.3874c4	b7 2c		lda [$2c],y	            LDA [OPL2_IND_ADDY_LL],Y
-.3874c6	29 c0		and #$c0	            AND #$C0 ;
-.3874c8	18		clc		            CLC
-.3874c9	65 4e		adc $4e		            ADC RAD_TEMP
-.3874cb	97 2c		sta [$2c],y	            STA [OPL2_IND_ADDY_LL],Y
-.3874cd	c2 10		rep #$10	                REP #$10        ; set X long
-.3874cf	7a		ply		            PLY
-.3874d0	60		rts		            RTS
-.3874d1					RAD_WRITE_OCT_NOTE
-.3874d1	5a		phy		            PHY
-.3874d2	48		pha		            PHA
-.3874d3	48		pha		            PHA
-.3874d4	af 27 00 00	lda $000027	            LDA @lOPL2_CHANNEL
-.3874d8	0a		asl a		            ASL A ; multiply the channel by 2 for the screen position
-.3874d9	a8		tay		            TAY
-.3874da	68		pla		            PLA
-.3874db	f0 03		beq $3874e0	            BEQ DONT_DISPLAY_00
-.3874dd	20 b1 5d	jsr $385db1	            JSR WRITE_HEX
-.3874e0					    DONT_DISPLAY_00
-.3874e0	29 70		and #$70	            AND #$70 ; octave
-.3874e2	4a		lsr a		            LSR
-.3874e3	4a		lsr a		            LSR
-.3874e4	4a		lsr a		            LSR
-.3874e5	4a		lsr a		            LSR
-.3874e6	8f 31 00 00	sta $000031	            STA @lOPL2_OCTAVE
-.3874ea	68		pla		            PLA
-.3874eb	29 0f		and #$0f	            AND #$0F ; note
-.3874ed	8f 30 00 00	sta $000030	            STA @lOPL2_NOTE
-.3874f1	7a		ply		            PLY
-.3874f2	60		rts		            RTS
-.3874f3					RAD_SETINSTRUMENT
-.3874f3	5a		phy		              PHY
-.3874f4	e2 20		sep #$20	                SEP #$20        ; set A short
-.3874f6	a9 01		lda #$01	              LDA #$01
-.3874f8	85 26		sta $26		              STA OPL2_OPERATOR
-.3874fa	c2 20		rep #$20	                REP #$20        ; set A long
-.3874fc	a9 38 00	lda #$0038	              LDA #<`INSTRUMENT_ACCORDN
-.3874ff	85 0a		sta $0a		              STA OPL2_ADDY_PTR_HI
-.387501	a5 32		lda $32		              LDA OPL2_PARAMETER0
-.387503	29 ff 00	and #$00ff	              AND #$00FF
-.387506	3a		dec a		              DEC A
-.387507	0a		asl a		              ASL A
-.387508	0a		asl a		              ASL A
-.387509	0a		asl a		              ASL A
-.38750a	0a		asl a		              ASL A
-.38750b	18		clc		              CLC
-.38750c	69 3b 10	adc #$103b	              ADC #<>INSTRUMENT_ACCORDN
-.38750f	85 08		sta $08		              STA OPL2_ADDY_PTR_LO
-.387511	c2 20		rep #$20	                REP #$20        ; set A long
-.387513	a9 20 00	lda #$0020	              LDA #$0020
-.387516	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
-.38751a	e2 20		sep #$20	                SEP #$20        ; set A short
-.38751c	a0 00 00	ldy #$0000	              LDY #$0000
-.38751f	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
-.387521	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
-.387523	c2 20		rep #$20	                REP #$20        ; set A long
-.387525	a9 40 00	lda #$0040	              LDA #$0040
-.387528	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
-.38752c	e2 20		sep #$20	                SEP #$20        ; set A short
-.38752e	a0 02 00	ldy #$0002	              LDY #$0002
-.387531	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
-.387533	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
-.387535	c2 20		rep #$20	                REP #$20        ; set A long
-.387537	a9 60 00	lda #$0060	              LDA #$0060
-.38753a	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
-.38753e	e2 20		sep #$20	                SEP #$20        ; set A short
-.387540	a0 04 00	ldy #$0004	              LDY #$0004
-.387543	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
-.387545	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
-.387547	c2 20		rep #$20	                REP #$20        ; set A long
-.387549	a9 80 00	lda #$0080	              LDA #$0080
-.38754c	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
-.387550	e2 20		sep #$20	                SEP #$20        ; set A short
-.387552	a0 06 00	ldy #$0006	              LDY #$0006
-.387555	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
-.387557	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
-.387559	c2 20		rep #$20	                REP #$20        ; set A long
-.38755b	a9 e0 00	lda #$00e0	              LDA #$00E0
-.38755e	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
-.387562	e2 20		sep #$20	                SEP #$20        ; set A short
-.387564	a0 09 00	ldy #$0009	              LDY #$0009
-.387567	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
-.387569	29 0f		and #$0f	              AND #$0F
-.38756b	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
-.38756d	a9 00		lda #$00	              LDA #$00
-.38756f	85 26		sta $26		              STA OPL2_OPERATOR
-.387571	c2 20		rep #$20	                REP #$20        ; set A long
-.387573	a9 20 00	lda #$0020	              LDA #$0020
-.387576	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
-.38757a	e2 20		sep #$20	                SEP #$20        ; set A short
-.38757c	a0 01 00	ldy #$0001	              LDY #$0001
-.38757f	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
-.387581	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
-.387583	c2 20		rep #$20	                REP #$20        ; set A long
-.387585	a9 40 00	lda #$0040	              LDA #$0040
-.387588	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
-.38758c	e2 20		sep #$20	                SEP #$20        ; set A short
-.38758e	a0 03 00	ldy #$0003	              LDY #$0003
-.387591	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
-.387593	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
-.387595	c2 20		rep #$20	                REP #$20        ; set A long
-.387597	a9 60 00	lda #$0060	              LDA #$0060
-.38759a	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
-.38759e	e2 20		sep #$20	                SEP #$20        ; set A short
-.3875a0	a0 05 00	ldy #$0005	              LDY #$0005
-.3875a3	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
-.3875a5	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
-.3875a7	c2 20		rep #$20	                REP #$20        ; set A long
-.3875a9	a9 80 00	lda #$0080	              LDA #$0080
-.3875ac	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
-.3875b0	e2 20		sep #$20	                SEP #$20        ; set A short
-.3875b2	a0 71 00	ldy #$0071	              LDY #$00071
-.3875b5	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
-.3875b7	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
-.3875b9	c2 20		rep #$20	                REP #$20        ; set A long
-.3875bb	a9 e0 00	lda #$00e0	              LDA #$00E0
-.3875be	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
-.3875c2	e2 20		sep #$20	                SEP #$20        ; set A short
-.3875c4	a0 09 00	ldy #$0009	              LDY #$0009
-.3875c7	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
-.3875c9	29 f0		and #$f0	              AND #$F0
-.3875cb	4a		lsr a		              LSR A
-.3875cc	4a		lsr a		              LSR A
-.3875cd	4a		lsr a		              LSR A
-.3875ce	4a		lsr a		              LSR A
-.3875cf	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
-.3875d1	a5 27		lda $27		              LDA OPL2_CHANNEL
-.3875d3	18		clc		              CLC
-.3875d4	29 0f		and #$0f	              AND #$0F  ; This is just precaution, it should be between 0 to 8
-.3875d6	69 c0		adc #$c0	              ADC #$C0
-.3875d8	85 2a		sta $2a		              STA OPL2_REG_OFFSET
-.3875da	a9 00		lda #$00	              LDA #$00
-.3875dc	85 2b		sta $2b		              STA OPL2_REG_OFFSET+1;
-.3875de	c2 30		rep #$30	                REP #$30        ; set A&X long
-.3875e0	18		clc		              CLC
-.3875e1	a9 00 e7	lda #$e700	              LDA #<>OPL3_R_BASE
-.3875e4	65 2a		adc $2a		              ADC OPL2_REG_OFFSET
-.3875e6	85 2c		sta $2c		              STA OPL2_IND_ADDY_LL
-.3875e8	a9 af 00	lda #$00af	              LDA #`OPL3_R_BASE
-.3875eb	85 2e		sta $2e		              STA OPL2_IND_ADDY_HL
-.3875ed	e2 20		sep #$20	                SEP #$20        ; set A short
-.3875ef	a0 08 00	ldy #$0008	              LDY #$0008
-.3875f2	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
-.3875f4	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
-.3875f6	7a		ply		              PLY
-.3875f7	60		rts		              RTS
-.170000					TuneInfo
->170000	00				version             .byte $00 ; bit 1 is RAD 1, bit 2 is RAD 2
->170001	00				songLength          .byte $00
->170002	06				InitialSpeed        .byte $06
->170003	00				hasSlowTimer        .byte $00 ;BOOL $00 = False, $01 = True
+.387181	60		rts		            RTS
+.387182					PARSER_RAD_FILE_INSTRUMENT_21
+.387182					    PR_LOOP
+.387182	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y
+.387184	c8		iny		            INY
+.387185	c9 00		cmp #$00	            CMP #0
+.387187	d0 f9		bne $387182	            BNE PR_LOOP
+.387189	a9 38		lda #$38	            LDA #<`INSTRUMENT_ACCORDN
+.38718b	85 f2		sta $f2		            STA RAD_ADDR + 2
+.38718d					    ProcessNextInstruments_21
+.38718d	e2 20		sep #$20	                SEP #$20        ; set A short
+.38718f	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y  ; Read Instrument Number
+.387191	f0 00		beq $387193	            BEQ DoneProcessingInstrument_21
+.387193					    DoneProcessingInstrument_21
+.387193	c8		iny		            INY
+.387194	60		rts		            RTS
+.387195					PROCESS_ORDER_LIST_10
+.387195	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y  ; Read Song Length
+.387197	8f 68 70 38	sta $387068	            STA @lTuneInfo.songLength
+.38719b	aa		tax		            TAX
+.38719c	c8		iny		            INY
+.38719d	c2 20		rep #$20	                REP #$20        ; set A long
+.38719f	a9 24 fc	lda #$fc24	            LDA #<>ORDERS
+.3871a2	85 f0		sta $f0		            STA RAD_ADDR
+.3871a4	a9 39 00	lda #$0039	            LDA #<`ORDERS
+.3871a7	85 f2		sta $f2		            STA RAD_ADDR + 2
+.3871a9	e2 20		sep #$20	                SEP #$20        ; set A short
+.3871ab					    READ_ORDER
+.3871ab	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y
+.3871ad	c8		iny		            INY
+.3871ae	87 f0		sta [$f0]	            STA [RAD_ADDR]
+.3871b0	e6 f0		inc $f0		            INC RAD_ADDR
+.3871b2	b0 02		bcs $3871b6	            BCS ORDER_CONTINUE
+.3871b4	e6 f1		inc $f1		            INC RAD_ADDR + 1
+.3871b6					    ORDER_CONTINUE
+.3871b6	ca		dex		            DEX
+.3871b7	d0 f2		bne $3871ab	            BNE READ_ORDER
+.3871b9	60		rts		            RTS
+.3871ba					READ_PATTERNS_10
+.3871ba	64 f3		stz $f3		            STZ RAD_PATTRN
+.3871bc	a9 39		lda #$39	            LDA #<`PATTERNS
+.3871be	85 f6		sta $f6		            STA RAD_PTN_DEST + 2
+.3871c0					    NEXT_PATTERN
+.3871c0	c2 20		rep #$20	                REP #$20        ; set A long
+.3871c2	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y
+.3871c4	f0 1f		beq $3871e5	            BEQ SKIP_PATTERN
+.3871c6	5a		phy		            PHY
+.3871c7	a8		tay		            TAY
+.3871c8	a5 f3		lda $f3		            LDA RAD_PATTRN
+.3871ca	29 ff 00	and #$00ff	            AND #$00FF
+.3871cd	8f 00 01 00	sta $000100	            STA @lUNSIGNED_MULT_A
+.3871d1	a9 01 07	lda #$0701	            LDA #PATTERN_BYTES
+.3871d4	8f 02 01 00	sta $000102	            STA @lUNSIGNED_MULT_B
+.3871d8	af 04 01 00	lda $000104	            LDA @lUNSIGNED_MULT_RESULT
+.3871dc	1a		inc a		            INC A ; skip the pattern byte
+.3871dd	85 f4		sta $f4		            STA RAD_PTN_DEST
+.3871df	e2 20		sep #$20	                SEP #$20        ; set A short
+.3871e1	20 f2 71	jsr $3871f2	            JSR READ_PATTERN_10
+.3871e4	7a		ply		            PLY
+.3871e5					    SKIP_PATTERN
+.3871e5	c8		iny		            INY
+.3871e6	c8		iny		            INY
+.3871e7	e2 20		sep #$20	                SEP #$20        ; set A short
+.3871e9	e6 f3		inc $f3		            INC RAD_PATTRN
+.3871eb	a5 f3		lda $f3		            LDA RAD_PATTRN
+.3871ed	c9 20		cmp #$20	            CMP #32
+.3871ef	d0 cf		bne $3871c0	            BNE NEXT_PATTERN
+.3871f1	60		rts		            RTS
+.3871f2					READ_PATTERN_10
+.3871f2	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y ; read the line number - bit 7 indicates the last line
+.3871f4	8f 42 00 00	sta $000042	            STA @lRAD_LINE
+.3871f8	c8		iny		            INY
+.3871f9	c2 20		rep #$20	                REP #$20        ; set A long
+.3871fb	29 7f 00	and #$007f	            AND #$7F
+.3871fe	8f 00 01 00	sta $000100	            STA @lUNSIGNED_MULT_A
+.387202	a9 1c 00	lda #$001c	            LDA #LINE_BYTES
+.387205	8f 02 01 00	sta $000102	            STA @lUNSIGNED_MULT_B
+.387209	af 04 01 00	lda $000104	            LDA @lUNSIGNED_MULT_RESULT
+.38720d	1a		inc a		            INC A ; skip the line number
+.38720e	8f fa 00 00	sta $0000fa	            STA @lRAD_LINE_PTR
+.387212	e2 20		sep #$20	                SEP #$20        ; set A short
+.387214					    READ_NOTE
+.387214	a6 fa		ldx $fa		            LDX RAD_LINE_PTR ; X contains the offset in the destination memory
+.387216	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y ; channel - bit 7 indicates the last note
+.387218	c8		iny		            INY
+.387219	8f f9 00 00	sta $0000f9	            STA @lRAD_LAST_NOTE
+.38721d	29 0f		and #$0f	            AND #$F
+.38721f	8f f7 00 00	sta $0000f7	            STA @lRAD_CHANNEL
+.387223	c2 20		rep #$20	                REP #$20        ; set A long
+.387225	8a		txa		            TXA
+.387226	18		clc		            CLC
+.387227	65 f7		adc $f7		            ADC RAD_CHANNEL ; multiply channel by 3
+.387229	65 f7		adc $f7		            ADC RAD_CHANNEL
+.38722b	65 f7		adc $f7		            ADC RAD_CHANNEL
+.38722d	aa		tax		            TAX
+.38722e	e2 20		sep #$20	                SEP #$20        ; set A short
+.387230	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y ; note / octave
+.387232	5a		phy		            PHY
+.387233	9b		txy		            TXY
+.387234	97 f4		sta [$f4],y	            STA [RAD_PTN_DEST],Y
+.387236	7a		ply		            PLY
+.387237	c8		iny		            INY
+.387238	e8		inx		            INX
+.387239	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y ; instrument/effect
+.38723b	5a		phy		            PHY
+.38723c	9b		txy		            TXY
+.38723d	97 f4		sta [$f4],y	            STA [RAD_PTN_DEST],Y
+.38723f	7a		ply		            PLY
+.387240	c8		iny		            INY
+.387241	e8		inx		            INX
+.387242	29 0f		and #$0f	            AND #$F
+.387244	f0 09		beq $38724f	            BEQ CHECK_LASTNOTE
+.387246	b7 08		lda [$08],y	            LDA [OPL2_ADDY_PTR_LO],Y ; effect parameter
+.387248	5a		phy		            PHY
+.387249	9b		txy		            TXY
+.38724a	97 f4		sta [$f4],y	            STA [RAD_PTN_DEST],Y
+.38724c	7a		ply		            PLY
+.38724d	c8		iny		            INY
+.38724e	e8		inx		            INX
+.38724f					     CHECK_LASTNOTE
+.38724f	af f9 00 00	lda $0000f9	            LDA @lRAD_LAST_NOTE
+.387253	10 bf		bpl $387214	            BPL READ_NOTE
+.387255	af 42 00 00	lda $000042	            LDA @lRAD_LINE
+.387259	10 97		bpl $3871f2	            BPL READ_PATTERN_10
+.38725b	60		rts		            RTS
+.38725c					DRAW_BLANKS
+.38725c	5a		phy		            PHY
+.38725d	da		phx		            PHX
+.38725e	a2 12 00	ldx #$0012	            LDX #18
+.387261	a0 00 00	ldy #$0000	            LDY #0
+.387264	a9 2d		lda #$2d	            LDA #'-'
+.387266					    BL_NEXT
+.387266	97 0c		sta [$0c],y	            STA [SCREENBEGIN], Y
+.387268	c8		iny		            INY
+.387269	ca		dex		            DEX
+.38726a	d0 fa		bne $387266	            BNE BL_NEXT
+.38726c	fa		plx		            PLX
+.38726d	7a		ply		            PLY
+.38726e	60		rts		            RTS
+.38726f					DISPLAY_RAD_PTN_DEST
+.38726f	5a		phy		            PHY
+.387270	a5 f6		lda $f6		            LDA RAD_PTN_DEST+2
+.387272	20 b1 5d	jsr $385db1	            JSR WRITE_HEX
+.387275	c8		iny		            INY
+.387276	c8		iny		            INY
+.387277	a5 f5		lda $f5		            LDA RAD_PTN_DEST+1
+.387279	20 b1 5d	jsr $385db1	            JSR WRITE_HEX
+.38727c	c8		iny		            INY
+.38727d	c8		iny		            INY
+.38727e	a5 f4		lda $f4		            LDA RAD_PTN_DEST
+.387280	20 b1 5d	jsr $385db1	            JSR WRITE_HEX
+.387283	7a		ply		            PLY
+.387284	60		rts		            RTS
+.387285					WRITE_A_LNG
+.387285	48		pha		            PHA
+.387286	48		pha		            PHA
+.387287	e2 20		sep #$20	                SEP #$20        ; set A short
+.387289	68		pla		            PLA
+.38728a	20 b1 5d	jsr $385db1	            JSR WRITE_HEX
+.38728d	88		dey		            DEY
+.38728e	88		dey		            DEY
+.38728f	68		pla		            PLA
+.387290	20 b1 5d	jsr $385db1	            JSR WRITE_HEX
+.387293	c2 20		rep #$20	                REP #$20        ; set A long
+.387295	68		pla		            PLA
+.387296	60		rts		            RTS
+.387297					RAD_ALL_NOTES_OFF
+.387297	5a		phy		            PHY
+.387298	c2 20		rep #$20	                REP #$20        ; set A long
+.38729a	a9 00 e7	lda #$e700	            LDA #<>OPL3_R_BASE
+.38729d	85 2c		sta $2c		            STA OPL2_IND_ADDY_LL
+.38729f	a9 af 00	lda #$00af	            LDA #`OPL3_R_BASE
+.3872a2	85 2e		sta $2e		            STA OPL2_IND_ADDY_LL + 2
+.3872a4	e2 20		sep #$20	                SEP #$20        ; set A short
+.3872a6	a0 a0 00	ldy #$00a0	            LDY #$A0
+.3872a9	a9 00		lda #$00	            LDA #0
+.3872ab					        NEXT_NOTE_OFF
+.3872ab	97 2c		sta [$2c],y	            STA [OPL2_IND_ADDY_LL],Y
+.3872ad	c8		iny		            INY
+.3872ae	c0 b9 00	cpy #$00b9	            CPY #$B9
+.3872b1	d0 f8		bne $3872ab	            BNE NEXT_NOTE_OFF
+.3872b3	7a		ply		            PLY
+.3872b4	60		rts		            RTS
+.3872b5					RAD_PLAYNOTES
+.3872b5	5a		phy		            PHY
+.3872b6	20 5c 72	jsr $38725c	            JSR DRAW_BLANKS
+.3872b9	c2 20		rep #$20	                REP #$20        ; set A long
+.3872bb	af 18 0f 38	lda $380f18	            LDA PATTERN_NUM
+.3872bf	29 ff 00	and #$00ff	            AND #$FF
+.3872c2	3a		dec a		            DEC A ; start at 0
+.3872c3	8f 00 01 00	sta $000100	            STA @lUNSIGNED_MULT_A
+.3872c7	a9 01 07	lda #$0701	            LDA #PATTERN_BYTES
+.3872ca	8f 02 01 00	sta $000102	            STA @lUNSIGNED_MULT_B
+.3872ce	af 04 01 00	lda $000104	            LDA @lUNSIGNED_MULT_RESULT
+.3872d2	1a		inc a		            INC A ; skip the pattern number byte
+.3872d3	85 f4		sta $f4		            STA RAD_PTN_DEST
+.3872d5	e2 20		sep #$20	                SEP #$20        ; set A short
+.3872d7	a9 39		lda #$39	            LDA #<`PATTERNS
+.3872d9	85 f6		sta $f6		            STA RAD_PTN_DEST + 2
+.3872db	a0 00 01	ldy #$0100	            LDY #128 * 2
+.3872de	20 6f 72	jsr $38726f	            JSR DISPLAY_RAD_PTN_DEST ; display the address of the pattern
+.3872e1	c2 20		rep #$20	                REP #$20        ; set A long
+.3872e3	a5 6c		lda $6c		            LDA LINE_NUM_HEX
+.3872e5	29 7f 00	and #$007f	            AND #$7F
+.3872e8	8f 00 01 00	sta $000100	            STA @lUNSIGNED_MULT_A
+.3872ec	a9 1c 00	lda #$001c	            LDA #LINE_BYTES
+.3872ef	8f 02 01 00	sta $000102	            STA @lUNSIGNED_MULT_B
+.3872f3	af 04 01 00	lda $000104	            LDA @lUNSIGNED_MULT_RESULT
+.3872f7	1a		inc a		            INC A  ; skip the line number byte
+.3872f8	a0 82 00	ldy #$0082	            LDY #128 + 2
+.3872fb	20 85 72	jsr $387285	            JSR WRITE_A_LNG ; display the line offset from the pattern address
+.3872fe	a8		tay		            TAY ; Y contains the line offset
+.3872ff	a9 00 00	lda #$0000	            LDA #0
+.387302	e2 20		sep #$20	                SEP #$20        ; set A short
+.387304	64 28		stz $28		            STZ OPL2_REG_REGION
+.387306					    PN_NEXT_NOTE
+.387306	8f 27 00 00	sta $000027	            STA @lOPL2_CHANNEL
+.38730a	aa		tax		            TAX
+.38730b	bf b6 6e 38	lda $386eb6,x	            LDA CHANNELS,X
+.38730f	d0 05		bne $387316	            BNE PN_PLAY_NOTE
+.387311	c8		iny		            INY ; skip the channel data
+.387312	c8		iny		            INY
+.387313	c8		iny		            INY
+.387314	80 58		bra $38736e	            BRA PN_CONTINUE
+.387316					    PN_PLAY_NOTE
+.387316	b7 f4		lda [$f4],y	            LDA [RAD_PTN_DEST],Y  ; octave/note
+.387318	29 7f		and #$7f	            AND #$7F
+.38731a	20 d5 74	jsr $3874d5	            JSR RAD_WRITE_OCT_NOTE
+.38731d	b7 f4		lda [$f4],y	            LDA [RAD_PTN_DEST],Y  ; bit 7 is bit 4 of the instrument number
+.38731f	29 80		and #$80	            AND #$80
+.387321	4a		lsr a		            LSR A
+.387322	4a		lsr a		            LSR A
+.387323	4a		lsr a		            LSR A
+.387324	85 4e		sta $4e		            STA RAD_TEMP
+.387326	c8		iny		            INY
+.387327	b7 f4		lda [$f4],y	            LDA [RAD_PTN_DEST],Y  ; instrument/effect
+.387329	29 f0		and #$f0	            AND #$F0
+.38732b	4a		lsr a		            LSR A
+.38732c	4a		lsr a		            LSR A
+.38732d	4a		lsr a		            LSR A
+.38732e	4a		lsr a		            LSR A
+.38732f	65 4e		adc $4e		            ADC RAD_TEMP
+.387331	f0 14		beq $387347	            BEQ SKIP_INSTRUMENT
+.387333	3a		dec a		            DEC A  ; instruments are starting at 0
+.387334	8f 6a 00 00	sta $00006a	            STA @lINSTR_NUMBER
+.387338	5a		phy		            PHY
+.387339	a6 27		ldx $27		            LDX OPL2_CHANNEL
+.38733b	a9 00		lda #$00	            LDA #0
+.38733d	eb		xba		            XBA
+.38733e	bf 18 10 38	lda $381018,x	            LDA @lregisterOffsets_operator0,X
+.387342	aa		tax		            TAX
+.387343	20 52 6b	jsr $386b52	            JSR LOAD_INSTRUMENT
+.387346	7a		ply		            PLY
+.387347					        SKIP_INSTRUMENT
+.387347	af 30 00 00	lda $000030	            LDA @lOPL2_NOTE
+.38734b	f0 11		beq $38735e	            BEQ SKIP_NOTE  ; if the note is 0, don't play anything.
+.38734d	c9 0f		cmp #$0f	            CMP #$0F ; NOTE OFF
+.38734f	f0 2b		beq $38737c	            BEQ RAD_NOTE_OFF
+.387351	c2 20		rep #$20	                REP #$20        ; set A long
+.387353	5a		phy		            PHY
+.387354	20 f5 37	jsr $3837f5	            JSR OPL2_GET_REG_OFFSET
+.387357	22 01 32 38	jsl $383201	            JSL OPL2_PLAYNOTE
+.38735b	7a		ply		            PLY
+.38735c	e2 20		sep #$20	                SEP #$20        ; set A short
+.38735e					        SKIP_NOTE
+.38735e	a9 00		lda #$00	            LDA #0
+.387360	eb		xba		            XBA
+.387361	b7 f4		lda [$f4],y	            LDA [RAD_PTN_DEST],Y  ; instrument/effect
+.387363	c8		iny		            INY
+.387364	29 0f		and #$0f	            AND #$F
+.387366	f0 05		beq $38736d	            BEQ SKIP_EFFECT
+.387368	0a		asl a		            ASL A ; double bytes
+.387369	aa		tax		            TAX
+.38736a	fc 8d 73	jsr ($38738d,x)	            JSR (RAD_EFFECT_TABLE,X)
+.38736d					        SKIP_EFFECT
+.38736d	c8		iny		            INY
+.38736e					    PN_CONTINUE
+.38736e	a9 00		lda #$00	            LDA #0  ; clear B
+.387370	eb		xba		            XBA
+.387371	af 27 00 00	lda $000027	            LDA @lOPL2_CHANNEL
+.387375	1a		inc a		            INC A
+.387376	c9 09		cmp #$09	            CMP #9
+.387378	d0 8c		bne $387306	            BNE PN_NEXT_NOTE
+.38737a	7a		ply		            PLY
+.38737b	60		rts		            RTS
+.38737c					RAD_NOTE_OFF
+.38737c	af 27 00 00	lda $000027	            LDA @lOPL2_CHANNEL
+.387380	18		clc		            CLC
+.387381	69 b0		adc #$b0	            ADC #$B0
+.387383	85 2c		sta $2c		            STA OPL2_IND_ADDY_LL
+.387385	a9 00		lda #$00	            LDA #0
+.387387	87 2c		sta [$2c]	            STA [OPL2_IND_ADDY_LL]
+.387389	c8		iny		            INY
+.38738a	c8		iny		            INY
+.38738b	80 e1		bra $38736e	            BRA PN_CONTINUE
+.38738d					RAD_EFFECT_TABLE
+>38738d	ad 73				            .word <>RAD_EFFECT_NONE              ; 00
+>38738f	20 74				            .word <>RAD_EFFECT_NOTE_SLIDE_UP     ; 01
+>387391	20 74				            .word <>RAD_EFFECT_NOTE_SLIDE_DOWN   ; 02
+>387393	ad 73				            .word <>RAD_EFFECT_NOTE_SLIDE_TO     ; 03
+>387395	ad 73				            .word <>RAD_NOOP
+>387397	ad 73				            .word <>RAD_EFFECT_NOTE_SLIDE_VOLUME ; 05
+>387399	ad 73				            .word <>RAD_NOOP
+>38739b	ad 73				            .word <>RAD_NOOP
+>38739d	ad 73				            .word <>RAD_NOOP
+>38739f	ad 73				            .word <>RAD_NOOP
+>3873a1	ae 73				            .word <>RAD_EFFECT_VOLUME_SLIDE      ; 0A
+>3873a3	ad 73				            .word <>RAD_NOOP
+>3873a5	96 74				            .word <>RAD_EFFECT_SET_VOLUME        ; 0C
+>3873a7	05 74				            .word <>RAD_EFFECT_PATTERN_BREAK     ; 0D
+>3873a9	ad 73				            .word <>RAD_NOOP
+>3873ab	16 74				            .word <>RAD_EFFECT_SET_SPEED         ; 0F
+.3873ad					RAD_NOOP
+.3873ad					RAD_EFFECT_NONE
+.3873ad					RAD_EFFECT_NOTE_SLIDE_TO
+.3873ad					RAD_EFFECT_NOTE_SLIDE_VOLUME
+.3873ad	60		rts		            RTS
+.3873ae					RAD_EFFECT_VOLUME_SLIDE
+.3873ae	5a		phy		            PHY
+.3873af	b7 f4		lda [$f4],y	            LDA [RAD_PTN_DEST],Y ; store value of the effect in RAD_CHANNE_EFFCT
+.3873b1	85 4c		sta $4c		            STA RAD_CHANNE_EFFCT
+.3873b3	c2 20		rep #$20	                REP #$20        ; set A long
+.3873b5	a9 00 e7	lda #$e700	            LDA #<>OPL3_R_BASE
+.3873b8	85 2c		sta $2c		            STA OPL2_IND_ADDY_LL
+.3873ba	a9 af 00	lda #$00af	            LDA #`OPL3_R_BASE
+.3873bd	85 2e		sta $2e		            STA OPL2_IND_ADDY_LL + 2
+.3873bf	e2 30		sep #$30	                SEP #$30        ; set A&X short
+.3873c1	a5 27		lda $27		            LDA OPL2_CHANNEL
+.3873c3	aa		tax		            TAX
+.3873c4	bf 18 10 38	lda $381018,x	            LDA @lregisterOffsets_operator0,X
+.3873c8	18		clc		            CLC
+.3873c9	69 40		adc #$40	            ADC #$40
+.3873cb	a8		tay		            TAY
+.3873cc	b7 2c		lda [$2c],y	            LDA [OPL2_IND_ADDY_LL],Y ; volume
+.3873ce	48		pha		            PHA
+.3873cf	29 3f		and #$3f	            AND #$3F
+.3873d1	18		clc		            CLC
+.3873d2	65 4c		adc $4c		            ADC RAD_CHANNE_EFFCT ; check for values greater than 50
+.3873d4	c9 40		cmp #$40	            CMP #$40 ; if there's an overflow, use #$3F (low volume)
+.3873d6	90 02		bcc $3873da	            BCC NO_OVERFLOW_0
+.3873d8	a9 3f		lda #$3f	            LDA #$3F
+.3873da					    NO_OVERFLOW_0
+.3873da	29 3f		and #$3f	            AND #$3F
+.3873dc	85 4e		sta $4e		            STA RAD_TEMP
+.3873de	68		pla		            PLA
+.3873df	29 c0		and #$c0	            AND #$C0
+.3873e1	05 4e		ora $4e		            ORA RAD_TEMP
+.3873e3	97 2c		sta [$2c],y	            STA [OPL2_IND_ADDY_LL],Y
+.3873e5	c8		iny		            INY
+.3873e6	c8		iny		            INY
+.3873e7	c8		iny		            INY
+.3873e8	b7 2c		lda [$2c],y	            LDA [OPL2_IND_ADDY_LL],Y ; volume
+.3873ea	48		pha		            PHA
+.3873eb	29 3f		and #$3f	            AND #$3F
+.3873ed	18		clc		            CLC
+.3873ee	65 4c		adc $4c		            ADC RAD_CHANNE_EFFCT
+.3873f0	c9 40		cmp #$40	            CMP #$40 ; if there's an overflow, use #$3F (low volume)
+.3873f2	90 02		bcc $3873f6	            BCC NO_OVERFLOW_1
+.3873f4	a9 3f		lda #$3f	            LDA #$3F
+.3873f6					    NO_OVERFLOW_1
+.3873f6	29 3f		and #$3f	            AND #$3F
+.3873f8	85 4e		sta $4e		            STA RAD_TEMP
+.3873fa	68		pla		            PLA
+.3873fb	29 c0		and #$c0	            AND #$C0
+.3873fd	05 4e		ora $4e		            ORA RAD_TEMP
+.3873ff	97 2c		sta [$2c],y	            STA [OPL2_IND_ADDY_LL],Y
+.387401	c2 10		rep #$10	                REP #$10        ; set X long
+.387403	7a		ply		            PLY
+.387404	60		rts		            RTS
+.387405					RAD_EFFECT_PATTERN_BREAK
+.387405	b7 f4		lda [$f4],y	            LDA [RAD_PTN_DEST],Y  ; effect parameter
+.387407	3a		dec a		            DEC A ; DECREMENT by 1, because the next timer interrupt will increment at the beginning
+.387408	85 6c		sta $6c		            STA LINE_NUM_HEX
+.38740a	a9 00		lda #$00	            LDA #0 ; convert the effect to a decimal line number
+.38740c	8f 19 0f 38	sta $380f19	            STA @lLINE_NUM_DEC
+.387410	20 9e 6a	jsr $386a9e	            JSR INCREMENT_ORDER
+.387413	7a		ply		            PLY ; don't return to the calling method, return to the parent
+.387414	7a		ply		            PLY
+.387415	60		rts		            RTS
+.387416					RAD_EFFECT_SET_SPEED
+.387416	b7 f4		lda [$f4],y	            LDA [RAD_PTN_DEST],Y  ; effect parameter
+.387418	8f 69 70 38	sta $387069	            STA @lTuneInfo.InitialSpeed
+.38741c	20 af 60	jsr $3860af	            JSR DISPLAY_SPEED
+.38741f	60		rts		            RTS
+.387420					RAD_EFFECT_NOTE_SLIDE_UP
+.387420					RAD_EFFECT_NOTE_SLIDE_DOWN
+.387420	5a		phy		            PHY
+.387421	4a		lsr a		            LSR
+.387422	85 50		sta $50		            STA RAD_EFFECT ; 1 slide down, 2 slide up
+.387424	b7 f4		lda [$f4],y	            LDA [RAD_PTN_DEST],Y ; store value of the effect in RAD_CHANNE_EFFCT
+.387426	85 4c		sta $4c		            STA RAD_CHANNE_EFFCT
+.387428	c2 20		rep #$20	                REP #$20        ; set A long
+.38742a	a9 00 e7	lda #$e700	            LDA #<>OPL3_R_BASE
+.38742d	85 2c		sta $2c		            STA OPL2_IND_ADDY_LL
+.38742f	a9 af 00	lda #$00af	            LDA #`OPL3_R_BASE
+.387432	85 2e		sta $2e		            STA OPL2_IND_ADDY_LL + 2
+.387434	e2 30		sep #$30	                SEP #$30        ; set A&X short
+.387436	a5 27		lda $27		            LDA OPL2_CHANNEL
+.387438	18		clc		            CLC
+.387439	69 a0		adc #$a0	            ADC #$A0
+.38743b	a8		tay		            TAY
+.38743c	b7 2c		lda [$2c],y	            LDA [OPL2_IND_ADDY_LL],Y ; read low fnumber byte
+.38743e	c2 10		rep #$10	                REP #$10        ; set X long
+.387440	bb		tyx		            TYX
+.387441	a0 8a 00	ldy #$008a	            LDY #128 + 10
+.387444	20 b1 5d	jsr $385db1	            JSR WRITE_HEX
+.387447	9b		txy		            TXY
+.387448	e2 10		sep #$10	                SEP #$10        ; set X short
+.38744a	48		pha		        PHA ; store A on the stack
+.38744b	98		tya		            TYA
+.38744c	18		clc		            CLC
+.38744d	69 10		adc #$10	            ADC #$10
+.38744f	a8		tay		            TAY
+.387450	b7 2c		lda [$2c],y	            LDA [OPL2_IND_ADDY_LL],Y ; read bits 0,1 of high fnumber
+.387452	85 4e		sta $4e		            STA RAD_TEMP  ; store the entire value of $B0
+.387454	c2 10		rep #$10	                REP #$10        ; set X long
+.387456	bb		tyx		            TYX
+.387457	a0 08 01	ldy #$0108	            LDY #256 + 8
+.38745a	20 b1 5d	jsr $385db1	            JSR WRITE_HEX
+.38745d	29 03		and #$03	            AND #3
+.38745f	a0 88 00	ldy #$0088	            LDY #128 + 8
+.387462	20 b1 5d	jsr $385db1	            JSR WRITE_HEX
+.387465	9b		txy		            TXY
+.387466	eb		xba		            XBA
+.387467	68		pla		        PLA ; A is now the FNUMBER
+.387468	aa		tax		            TAX ; X is now the FNUMBER
+.387469	a5 50		lda $50		            LDA RAD_EFFECT
+.38746b	89 02		bit #$02	            BIT #2
+.38746d	f0 0a		beq $387479	            BEQ SLIDE_UP
+.38746f	c2 20		rep #$20	                REP #$20        ; set A long
+.387471	8a		txa		            TXA
+.387472	38		sec		            SEC
+.387473	e5 4c		sbc $4c		            SBC RAD_CHANNE_EFFCT  ; substract the effect parameter
+.387475	e2 20		sep #$20	                SEP #$20        ; set A short
+.387477	80 08		bra $387481	            BRA FINISH_SLIDE
+.387479					    SLIDE_UP
+.387479	c2 20		rep #$20	                REP #$20        ; set A long
+.38747b	8a		txa		            TXA
+.38747c	18		clc		            CLC
+.38747d	65 4c		adc $4c		            ADC RAD_CHANNE_EFFCT  ; substract the effect parameter
+.38747f	e2 20		sep #$20	                SEP #$20        ; set A short
+.387481					    FINISH_SLIDE
+.387481	e2 10		sep #$10	                SEP #$10        ; set X short
+.387483	eb		xba		            XBA
+.387484	29 03		and #$03	            AND #3
+.387486	05 4e		ora $4e		            ORA RAD_TEMP
+.387488	97 2c		sta [$2c],y	            STA [OPL2_IND_ADDY_LL],Y
+.38748a	98		tya		            TYA
+.38748b	38		sec		            SEC
+.38748c	e9 10		sbc #$10	            SBC #$10
+.38748e	a8		tay		            TAY
+.38748f	eb		xba		            XBA
+.387490	97 2c		sta [$2c],y	            STA [OPL2_IND_ADDY_LL],Y
+.387492	c2 10		rep #$10	                REP #$10        ; set X long
+.387494	7a		ply		            PLY
+.387495	60		rts		            RTS
+.387496					RAD_EFFECT_SET_VOLUME
+.387496	5a		phy		            PHY
+.387497	c2 20		rep #$20	                REP #$20        ; set A long
+.387499	a9 00 e7	lda #$e700	            LDA #<>OPL3_R_BASE
+.38749c	85 2c		sta $2c		            STA OPL2_IND_ADDY_LL
+.38749e	a9 af 00	lda #$00af	            LDA #`OPL3_R_BASE
+.3874a1	85 2e		sta $2e		            STA OPL2_IND_ADDY_LL + 2
+.3874a3	e2 20		sep #$20	                SEP #$20        ; set A short
+.3874a5	b7 f4		lda [$f4],y	            LDA [RAD_PTN_DEST],Y  ; effect parameter
+.3874a7	29 7f		and #$7f	            AND #$7F
+.3874a9	f0 01		beq $3874ac	            BEQ HANDLE_ZERO
+.3874ab	3a		dec a		            DEC A
+.3874ac					        HANDLE_ZERO
+.3874ac	49 3f		eor #$3f	            EOR #$3F ; complement
+.3874ae	85 4e		sta $4e		            STA RAD_TEMP
+.3874b0	e2 10		sep #$10	                SEP #$10        ; set X short
+.3874b2	a6 27		ldx $27		            LDX OPL2_CHANNEL
+.3874b4	bf 18 10 38	lda $381018,x	            LDA @lregisterOffsets_operator0,X
+.3874b8	18		clc		            CLC
+.3874b9	69 40		adc #$40	            ADC #$40
+.3874bb	a8		tay		            TAY
+.3874bc	b7 2c		lda [$2c],y	            LDA [OPL2_IND_ADDY_LL],Y
+.3874be	29 c0		and #$c0	            AND #$C0 ;
+.3874c0	18		clc		            CLC
+.3874c1	65 4e		adc $4e		            ADC RAD_TEMP
+.3874c3	97 2c		sta [$2c],y	            STA [OPL2_IND_ADDY_LL],Y
+.3874c5	c8		iny		            INY
+.3874c6	c8		iny		            INY
+.3874c7	c8		iny		            INY
+.3874c8	b7 2c		lda [$2c],y	            LDA [OPL2_IND_ADDY_LL],Y
+.3874ca	29 c0		and #$c0	            AND #$C0 ;
+.3874cc	18		clc		            CLC
+.3874cd	65 4e		adc $4e		            ADC RAD_TEMP
+.3874cf	97 2c		sta [$2c],y	            STA [OPL2_IND_ADDY_LL],Y
+.3874d1	c2 10		rep #$10	                REP #$10        ; set X long
+.3874d3	7a		ply		            PLY
+.3874d4	60		rts		            RTS
+.3874d5					RAD_WRITE_OCT_NOTE
+.3874d5	5a		phy		            PHY
+.3874d6	48		pha		            PHA
+.3874d7	48		pha		            PHA
+.3874d8	af 27 00 00	lda $000027	            LDA @lOPL2_CHANNEL
+.3874dc	0a		asl a		            ASL A ; multiply the channel by 2 for the screen position
+.3874dd	a8		tay		            TAY
+.3874de	68		pla		            PLA
+.3874df	f0 03		beq $3874e4	            BEQ DONT_DISPLAY_00
+.3874e1	20 b1 5d	jsr $385db1	            JSR WRITE_HEX
+.3874e4					    DONT_DISPLAY_00
+.3874e4	29 70		and #$70	            AND #$70 ; octave
+.3874e6	4a		lsr a		            LSR
+.3874e7	4a		lsr a		            LSR
+.3874e8	4a		lsr a		            LSR
+.3874e9	4a		lsr a		            LSR
+.3874ea	8f 31 00 00	sta $000031	            STA @lOPL2_OCTAVE
+.3874ee	68		pla		            PLA
+.3874ef	29 0f		and #$0f	            AND #$0F ; note
+.3874f1	8f 30 00 00	sta $000030	            STA @lOPL2_NOTE
+.3874f5	7a		ply		            PLY
+.3874f6	60		rts		            RTS
+.3874f7					RAD_SETINSTRUMENT
+.3874f7	5a		phy		              PHY
+.3874f8	e2 20		sep #$20	                SEP #$20        ; set A short
+.3874fa	a9 01		lda #$01	              LDA #$01
+.3874fc	85 26		sta $26		              STA OPL2_OPERATOR
+.3874fe	c2 20		rep #$20	                REP #$20        ; set A long
+.387500	a9 38 00	lda #$0038	              LDA #<`INSTRUMENT_ACCORDN
+.387503	85 0a		sta $0a		              STA OPL2_ADDY_PTR_HI
+.387505	a5 32		lda $32		              LDA OPL2_PARAMETER0
+.387507	29 ff 00	and #$00ff	              AND #$00FF
+.38750a	3a		dec a		              DEC A
+.38750b	0a		asl a		              ASL A
+.38750c	0a		asl a		              ASL A
+.38750d	0a		asl a		              ASL A
+.38750e	0a		asl a		              ASL A
+.38750f	18		clc		              CLC
+.387510	69 3b 10	adc #$103b	              ADC #<>INSTRUMENT_ACCORDN
+.387513	85 08		sta $08		              STA OPL2_ADDY_PTR_LO
+.387515	c2 20		rep #$20	                REP #$20        ; set A long
+.387517	a9 20 00	lda #$0020	              LDA #$0020
+.38751a	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
+.38751e	e2 20		sep #$20	                SEP #$20        ; set A short
+.387520	a0 00 00	ldy #$0000	              LDY #$0000
+.387523	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
+.387525	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
+.387527	c2 20		rep #$20	                REP #$20        ; set A long
+.387529	a9 40 00	lda #$0040	              LDA #$0040
+.38752c	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
+.387530	e2 20		sep #$20	                SEP #$20        ; set A short
+.387532	a0 02 00	ldy #$0002	              LDY #$0002
+.387535	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
+.387537	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
+.387539	c2 20		rep #$20	                REP #$20        ; set A long
+.38753b	a9 60 00	lda #$0060	              LDA #$0060
+.38753e	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
+.387542	e2 20		sep #$20	                SEP #$20        ; set A short
+.387544	a0 04 00	ldy #$0004	              LDY #$0004
+.387547	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
+.387549	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
+.38754b	c2 20		rep #$20	                REP #$20        ; set A long
+.38754d	a9 80 00	lda #$0080	              LDA #$0080
+.387550	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
+.387554	e2 20		sep #$20	                SEP #$20        ; set A short
+.387556	a0 06 00	ldy #$0006	              LDY #$0006
+.387559	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
+.38755b	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
+.38755d	c2 20		rep #$20	                REP #$20        ; set A long
+.38755f	a9 e0 00	lda #$00e0	              LDA #$00E0
+.387562	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
+.387566	e2 20		sep #$20	                SEP #$20        ; set A short
+.387568	a0 09 00	ldy #$0009	              LDY #$0009
+.38756b	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
+.38756d	29 0f		and #$0f	              AND #$0F
+.38756f	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
+.387571	a9 00		lda #$00	              LDA #$00
+.387573	85 26		sta $26		              STA OPL2_OPERATOR
+.387575	c2 20		rep #$20	                REP #$20        ; set A long
+.387577	a9 20 00	lda #$0020	              LDA #$0020
+.38757a	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
+.38757e	e2 20		sep #$20	                SEP #$20        ; set A short
+.387580	a0 01 00	ldy #$0001	              LDY #$0001
+.387583	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
+.387585	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
+.387587	c2 20		rep #$20	                REP #$20        ; set A long
+.387589	a9 40 00	lda #$0040	              LDA #$0040
+.38758c	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
+.387590	e2 20		sep #$20	                SEP #$20        ; set A short
+.387592	a0 03 00	ldy #$0003	              LDY #$0003
+.387595	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
+.387597	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
+.387599	c2 20		rep #$20	                REP #$20        ; set A long
+.38759b	a9 60 00	lda #$0060	              LDA #$0060
+.38759e	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
+.3875a2	e2 20		sep #$20	                SEP #$20        ; set A short
+.3875a4	a0 05 00	ldy #$0005	              LDY #$0005
+.3875a7	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
+.3875a9	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
+.3875ab	c2 20		rep #$20	                REP #$20        ; set A long
+.3875ad	a9 80 00	lda #$0080	              LDA #$0080
+.3875b0	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
+.3875b4	e2 20		sep #$20	                SEP #$20        ; set A short
+.3875b6	a0 71 00	ldy #$0071	              LDY #$00071
+.3875b9	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
+.3875bb	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
+.3875bd	c2 20		rep #$20	                REP #$20        ; set A long
+.3875bf	a9 e0 00	lda #$00e0	              LDA #$00E0
+.3875c2	22 f5 37 38	jsl $3837f5	              JSL OPL2_GET_REG_OFFSET
+.3875c6	e2 20		sep #$20	                SEP #$20        ; set A short
+.3875c8	a0 09 00	ldy #$0009	              LDY #$0009
+.3875cb	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
+.3875cd	29 f0		and #$f0	              AND #$F0
+.3875cf	4a		lsr a		              LSR A
+.3875d0	4a		lsr a		              LSR A
+.3875d1	4a		lsr a		              LSR A
+.3875d2	4a		lsr a		              LSR A
+.3875d3	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
+.3875d5	a5 27		lda $27		              LDA OPL2_CHANNEL
+.3875d7	18		clc		              CLC
+.3875d8	29 0f		and #$0f	              AND #$0F  ; This is just precaution, it should be between 0 to 8
+.3875da	69 c0		adc #$c0	              ADC #$C0
+.3875dc	85 2a		sta $2a		              STA OPL2_REG_OFFSET
+.3875de	a9 00		lda #$00	              LDA #$00
+.3875e0	85 2b		sta $2b		              STA OPL2_REG_OFFSET+1;
+.3875e2	c2 30		rep #$30	                REP #$30        ; set A&X long
+.3875e4	18		clc		              CLC
+.3875e5	a9 00 e7	lda #$e700	              LDA #<>OPL3_R_BASE
+.3875e8	65 2a		adc $2a		              ADC OPL2_REG_OFFSET
+.3875ea	85 2c		sta $2c		              STA OPL2_IND_ADDY_LL
+.3875ec	a9 af 00	lda #$00af	              LDA #`OPL3_R_BASE
+.3875ef	85 2e		sta $2e		              STA OPL2_IND_ADDY_HL
+.3875f1	e2 20		sep #$20	                SEP #$20        ; set A short
+.3875f3	a0 08 00	ldy #$0008	              LDY #$0008
+.3875f6	b7 08		lda [$08],y	              LDA [OPL2_ADDY_PTR_LO],Y
+.3875f8	87 2c		sta [$2c]	              STA [OPL2_IND_ADDY_LL]
+.3875fa	7a		ply		              PLY
+.3875fb	60		rts		              RTS
 
 ;******  Return to file: tracker.asm
 
