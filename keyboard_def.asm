@@ -1,4 +1,8 @@
-;
+;;;
+;;; Register address and constant definitions for the keyboard interface
+;;;
+
+; Register addresses
 STATUS_PORT           = $AF1064
 KBD_OUT_BUF           = $AF1060
 KBD_INPT_BUF          = $AF1060

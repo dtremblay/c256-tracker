@@ -76,10 +76,10 @@ SHOW_FILE_MENU
             STA CURSORPOS+2
             
             ; copy a 20 x 40 portion of the screen into memory
-            LDY #128 * 10 + 30
+            LDY #SCREEN_WIDTH * 10 + 30
             LDA #40 ; lines to copy
             STA LINE_COPY
-            LDX #128 * 11 + 31  ; initialize the cursor position for file display
+            LDX #SCREEN_WIDTH * 11 + 31  ; initialize the cursor position for file display
             STX CURSORX
             
             LDX #0
@@ -101,7 +101,7 @@ COPY_CHAR   LDA FILE_LOAD_SCREEN,X
             setal
             TYA
             CLC
-            ADC #108 ; skip to next line
+            ADC #SCREEN_WIDTH - 20 ; skip to next line
             TAY
             setas
             DEC LINE_COPY
@@ -129,8 +129,14 @@ POPULATE_FILES
             BEQ PF_DONE
             
             JSL DISPLAY_FAT_RECORD
-            JSL DISPLAY_NEXT_LINE  ; Print the character
+            
+            ;JSL DISPLAY_NEXT_LINE  ; Print the character
             setal
+            LDA CURSORX
+            CLC
+            ADC #SCREEN_WIDTH - 18
+            STA CURSORX
+            
             LDA SDOS_FILE_REC_PTR
             ADC #18
             STA SDOS_FILE_REC_PTR

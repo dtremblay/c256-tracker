@@ -495,7 +495,7 @@ RAD_PLAYNOTES
             setas
             LDA #<`PATTERNS
             STA RAD_PTN_DEST + 2
-            LDY #128 * 2
+            LDY #SCREEN_WIDTH * 2
             JSR DISPLAY_RAD_PTN_DEST ; display the address of the pattern
             setal
             
@@ -507,7 +507,7 @@ RAD_PLAYNOTES
             LDA @lUNSIGNED_MULT_RESULT
             INC A  ; skip the line number byte
 
-            LDY #128 + 2
+            LDY #SCREEN_WIDTH + 2
             JSR WRITE_A_LNG ; display the line offset from the pattern address
 
             TAY ; Y contains the line offset
@@ -748,7 +748,7 @@ RAD_EFFECT_NOTE_SLIDE_DOWN
             LDA [OPL2_IND_ADDY_LL],Y ; read low fnumber byte
             setxl
             TYX
-            LDY #128 + 10
+            LDY #SCREEN_WIDTH + 10
             JSR WRITE_HEX
             TXY
             setxs
@@ -762,11 +762,11 @@ RAD_EFFECT_NOTE_SLIDE_DOWN
             STA RAD_TEMP  ; store the entire value of $B0
             setxl
             TYX
-            LDY #256 + 8
+            LDY #SCREEN_WIDTH * 2 + 8
             JSR WRITE_HEX
             
             AND #3
-            LDY #128 + 8
+            LDY #SCREEN_WIDTH + 8
             JSR WRITE_HEX
             TXY
             

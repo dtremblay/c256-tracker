@@ -106,7 +106,7 @@ CLEAR_DISPLAY
                 .as
                 .xl
                 setal
-                LDA #128
+                LDA #SCREEN_WIDTH
                 STA COLS_PER_LINE
                 LDA #64
                 STA LINES_MAX

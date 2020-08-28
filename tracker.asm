@@ -30,8 +30,8 @@ LINE_NUM_DEC    .byte 1  ; line being display/played
 LINE_COPY       = $80
 CHAR_COPY       = $81
 
-ORDER_EDITOR_SCR = 128 * 7 + 53
-PTRN_EDITOR_SCR  = 128 * 27 + 4
+ORDER_EDITOR_SCR = SCREEN_WIDTH * 7 + 53
+PTRN_EDITOR_SCR  = SCREEN_WIDTH * 27 + 4
 
 * = HRESET
                 CLC
@@ -241,7 +241,7 @@ INCREMENT_ORDER
         LOAD_ORDER
                 STA @lRAD_ORDER_NUM
                 TAX
-                LDY #128 * 5
+                LDY #SCREEN_WIDTH * 5
                 JSR WRITE_HEX
                 
                 LDA @lORDERS,X  ; load the pattern from the order list
@@ -377,7 +377,7 @@ LOAD_INSTRUMENT
                 setas
                 ; Y still contains the instrument number
                 LDA @lINSTR_NUMBER
-                LDY #5 * 128 + 19
+                LDY #5 * SCREEN_WIDTH + 19
                 JSR WRITE_HEX
 
                 LDA [INSTR_ADDR]
@@ -434,7 +434,7 @@ LOAD_INSTRUMENT
                 STA INSTR_ADDR
                 setas
                 ;display instrument name
-                LDY #5 * 128 + 24
+                LDY #5 * SCREEN_WIDTH + 24
                 JSR WRITE_INSTRUMENT_NAME
                 
 DRUM_SET
@@ -449,27 +449,27 @@ LOAD_AM_VIB_MULT
                 PHA
                 STA @lOPL3_R_AM_VID_EG_KSR_MULT,X
                 AND #TREMOLO
-                LDY #7 * 128 + 13
+                LDY #7 * SCREEN_WIDTH + 13
                 JSR WRITE_OFF_ON
                 
                 PLA
                 AND #VIBRATO
-                LDY #8 * 128 + 13
+                LDY #8 * SCREEN_WIDTH + 13
                 JSR WRITE_OFF_ON
                 
                 PLA
                 AND #SUSTAINING
-                LDY #9 * 128 + 13
+                LDY #9 * SCREEN_WIDTH + 13
                 JSR WRITE_OFF_ON
                 
                 PLA
                 AND #KSR
-                LDY #10 * 128 + 13
+                LDY #10 * SCREEN_WIDTH + 13
                 JSR WRITE_OFF_ON
                 
                 PLA
                 AND #MULTIPLIER
-                LDY #11 * 128 + 14
+                LDY #11 * SCREEN_WIDTH + 14
                 JSR WRITE_HEX
                 
                 LDY #6
@@ -480,27 +480,27 @@ LOAD_AM_VIB_MULT
                 PHA
                 STA @lOPL3_R_AM_VID_EG_KSR_MULT + 3,X
                 AND #TREMOLO
-                LDY #7 * 128 + 39
+                LDY #7 * SCREEN_WIDTH + 39
                 JSR WRITE_OFF_ON
                 
                 PLA
                 AND #VIBRATO
-                LDY #8 * 128 + 39
+                LDY #8 * SCREEN_WIDTH + 39
                 JSR WRITE_OFF_ON
                 
                 PLA
                 AND #SUSTAINING
-                LDY #9 * 128 + 39
+                LDY #9 * SCREEN_WIDTH + 39
                 JSR WRITE_OFF_ON
                 
                 PLA
                 AND #KSR
-                LDY #10 * 128 + 39
+                LDY #10 * SCREEN_WIDTH + 39
                 JSR WRITE_OFF_ON
                 
                 PLA
                 AND #MULTIPLIER
-                LDY #11 * 128 + 40
+                LDY #11 * SCREEN_WIDTH + 40
                 JSR WRITE_HEX
                 
                 RTS
@@ -515,12 +515,12 @@ LOAD_KEY_OP_LVL
                 ROL A
                 ROL A
                 ROL A
-                LDY #12 * 128 + 14
+                LDY #12 * SCREEN_WIDTH + 14
                 JSR WRITE_HEX
                 
                 PLA 
                 AND #OP_LEVEL
-                LDY #13 * 128 + 14
+                LDY #13 * SCREEN_WIDTH + 14
                 JSR WRITE_HEX
                 
                 ; Operator 2
@@ -532,12 +532,12 @@ LOAD_KEY_OP_LVL
                 ROL A
                 ROL A
                 ROL A
-                LDY #12 * 128 + 40
+                LDY #12 * SCREEN_WIDTH + 40
                 JSR WRITE_HEX
                 
                 PLA 
                 AND #OP_LEVEL
-                LDY #13 * 128 + 40
+                LDY #13 * SCREEN_WIDTH + 40
                 JSR WRITE_HEX
                 
                 RTS
@@ -551,12 +551,12 @@ LOAD_ATT_DEC_RATE
                 LSR A
                 LSR A
                 LSR A
-                LDY #14 * 128 + 14
+                LDY #14 * SCREEN_WIDTH + 14
                 JSR WRITE_HEX
                 
                 PLA
                 AND #DECAY_RT
-                LDY #15 * 128 + 14
+                LDY #15 * SCREEN_WIDTH + 14
                 JSR WRITE_HEX
                 
                 LDY #6
@@ -568,12 +568,12 @@ LOAD_ATT_DEC_RATE
                 LSR A
                 LSR A
                 LSR A
-                LDY #14 * 128 + 40
+                LDY #14 * SCREEN_WIDTH + 40
                 JSR WRITE_HEX
                 
                 PLA
                 AND #DECAY_RT
-                LDY #15 * 128 + 40
+                LDY #15 * SCREEN_WIDTH + 40
                 JSR WRITE_HEX
                 RTS
                 
@@ -586,12 +586,12 @@ LOAD_SUSTAIN_RELEASE_RATE
                 LSR A
                 LSR A
                 LSR A
-                LDY #16 * 128 + 14
+                LDY #16 * SCREEN_WIDTH + 14
                 JSR WRITE_HEX
                 
                 PLA
                 AND #DECAY_RT
-                LDY #17 * 128 + 14
+                LDY #17 * SCREEN_WIDTH + 14
                 JSR WRITE_HEX
                 
                 LDY #6
@@ -603,12 +603,12 @@ LOAD_SUSTAIN_RELEASE_RATE
                 LSR A
                 LSR A
                 LSR A
-                LDY #16 * 128 + 40
+                LDY #16 * SCREEN_WIDTH + 40
                 JSR WRITE_HEX
                 
                 PLA
                 AND #DECAY_RT
-                LDY #17 * 128 + 40
+                LDY #17 * SCREEN_WIDTH + 40
                 JSR WRITE_HEX
                 RTS
                 
@@ -619,12 +619,12 @@ LOAD_FEEDBACK_ALGO
                 STA @lOPL3_R_FEEDBACK,X
                 AND #FEEDBACK
                 LSR A
-                LDY #20 * 128 + 40
+                LDY #20 * SCREEN_WIDTH + 40
                 JSR WRITE_HEX
                 
                 PLA
                 AND #ALGORITHM
-                LDY #21 * 128 + 40
+                LDY #21 * SCREEN_WIDTH + 40
                 JSR WRITE_HEX
                 
                 RTS
@@ -633,14 +633,14 @@ LOAD_WAVE
                 LDA [INSTR_ADDR]
                 STA @lOPL3_R_WAVE_SELECT,X
                 AND #$7
-                LDY #18 * 128 + 14
+                LDY #18 * SCREEN_WIDTH + 14
                 JSR WRITE_HEX
                 
                 LDY #5
                 LDA [INSTR_ADDR],Y
                 STA @lOPL3_R_WAVE_SELECT+3,X
                 AND #$7
-                LDY #18 * 128 + 40
+                LDY #18 * SCREEN_WIDTH + 40
                 JSR WRITE_HEX
                 RTS
 
@@ -869,7 +869,7 @@ PLAY_TRACKER_NOTE
                 LDA @lSCAN_TO_NOTE, X  
                 
                 setxl
-                LDY #128 + 70
+                LDY #SCREEN_WIDTH + 70
                 JSR WRITE_HEX
                 STA @lOPL2_NOTE
                 

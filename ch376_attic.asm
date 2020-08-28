@@ -119,7 +119,7 @@ CH376_READ_FILE
             ; Display the file name
             setxl
             LDX #0
-            LDY #128 * 23 + 50
+            LDY #SCREEN_WIDTH * 23 + 50
     LF_DISPLAY_FILE_NAME
             LDA @lSDOS_FILE_NAME,X
             INX

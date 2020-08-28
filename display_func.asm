@@ -3,7 +3,7 @@
 ; * 80 columns by 60 rows
 DRAW_DISPLAY
                 ; set the display size - 128 x 64
-                LDA #128
+                LDA #SCREEN_WIDTH
                 STA COLS_PER_LINE
                 LDA #64
                 STA LINES_MAX
@@ -44,7 +44,7 @@ DRAW_DISPLAY
 
                 ; copy screen data from TRACKER_SCREEN to CS_TEXT_MEM_PTR
                 setaxl
-                LDA #128*28-1
+                LDA #SCREEN_WIDTH*28-1
                 LDX #<>TRACKER_SCREEN
                 LDY #<>CS_TEXT_MEM_PTR
                 MVN #`TRACKER_SCREEN,#$AF
@@ -87,7 +87,7 @@ DRAW_DISPLAY
                 STA BG_CHAR_LUT_PTR + 22;
 
                 ; set the character bg and fg color
-                LDX #128*64
+                LDX #SCREEN_WIDTH*64
                 setas
                 LDA #$20
 SETTEXTCOLOR
@@ -95,7 +95,7 @@ SETTEXTCOLOR
                 DEX
                 BNE SETTEXTCOLOR
                 
-                LDY #38 * 128
+                LDY #38 * SCREEN_WIDTH
                 JSR REVERSE_LUT
                 
                 JSR HIGHLIGHT_MODE
@@ -248,7 +248,7 @@ DISPLAY_PATTERN
                 
                 LDA PATTERN_NUM ; this is a BCD value so it won't work once values are above 9
                 ; display the pattern number
-                LDY #23*128 + 19
+                LDY #23*SCREEN_WIDTH + 19
                 JSR WRITE_HEX
                 
                 ; find the starting address of the pattern and write it to the PTRN_ADDR
@@ -265,14 +265,14 @@ DISPLAY_PATTERN
                 ; Draw the line number in the heading
                 LDA LINE_NUM_DEC
                 ; display the line number at the 'Line:' field
-                LDY #23*128 + 7
+                LDY #23*SCREEN_WIDTH + 7
                 JSR WRITE_HEX
                 
                 ; Draw the pattern grid
                 LDA #32
                 STA REM_LINES
                 
-                LDY #<>CS_TEXT_MEM_PTR + 128 * 28 ; top of the pattern display
+                LDY #<>CS_TEXT_MEM_PTR + SCREEN_WIDTH * 28 ; top of the pattern display
                 LDA LINE_NUM_HEX
                 CMP #10
                 BCS DRAW_DATA ; if line# is greater than 10, skip blank lines and topline
@@ -286,7 +286,7 @@ DRAW_BLANK_LINES
                 STA TAB_COUNTER
 BLANKS_LOOP
             setal
-                LDA #127
+                LDA #SCREEN_WIDTH-1
                 LDX #<>blank_line
                 MVN #`blank_line,#$AF
             setas
@@ -296,7 +296,7 @@ BLANKS_LOOP
                 
 DRAW_TOP_LINE
             setal
-                LDA #127
+                LDA #SCREEN_WIDTH-1
                 LDX #<>top_line
                 MVN #`top_line,#$AF
             setas
@@ -334,7 +334,7 @@ TRIPLET
                 BEQ draw_tick_line
                 
             setal
-                LDA #127
+                LDA #SCREEN_WIDTH-1
                 LDX #<>untick_line
                 MVN #`untick_line,#$AF
             setas
@@ -344,7 +344,7 @@ TRIPLET
                 
 draw_tick_line
             setal
-                LDA #127
+                LDA #SCREEN_WIDTH-1
                 LDX #<>tick_line
                 MVN #`tick_line,#$AF
             setas
@@ -362,7 +362,7 @@ next_line
                 
 DRAW_BOTTOM_BAR
             setal
-                LDA #127
+                LDA #SCREEN_WIDTH-1
                 LDX #<>btm_line
                 MVN #`btm_line,#$AF
             setas
@@ -371,7 +371,7 @@ DRAW_BOTTOM_BAR
                 
 BLANKS_BTM_LOOP
             setal
-                LDA #127
+                LDA #SCREEN_WIDTH-1
                 LDX #<>blank_line
                 MVN #`blank_line,#$AF
             setas
@@ -387,7 +387,7 @@ DISPLAY_FILENAME
                 .as
                 .xl
                 LDY #0
-                LDX #23*128 + 51
+                LDX #23*SCREEN_WIDTH + 51
         DF_LOOP
                 LDA [SDOS_FILE_REC_PTR],Y
                 PHY
@@ -444,7 +444,7 @@ DRAW_LINE_DATA
                 setal
                 TYA ; copy Y into A
                 SEC
-                SBC #$A080
+                SBC #$A000 + SCREEN_WIDTH
                 TAX
                 setas
                 
@@ -702,21 +702,21 @@ REVERSE_LUT_TABS
 ; ***********************************************************************
 ; * Display Beats per minute
 ; ***********************************************************************
-INSTR_HL_SCR     = 128 * 5 + 6
-INSTR_NUM_HL_SCR = 128 * 6 + 4
-ORDER_HL_SCR     = 128 * 5 + 53
-PTTRN_HL_SCR     = 128 * 26 + 1
+INSTR_HL_SCR     = SCREEN_WIDTH * 5 + 6
+INSTR_NUM_HL_SCR = SCREEN_WIDTH * 6 + 4
+ORDER_HL_SCR     = SCREEN_WIDTH * 5 + 53
+PTTRN_HL_SCR     = SCREEN_WIDTH * 26 + 1
 
 DISPLAY_SPEED
                 .as
                 PHY
                 LDA @lTuneInfo.InitialSpeed
-                LDY #23*128 + 40
+                LDY #23*SCREEN_WIDTH + 40
                 JSR WRITE_HEX
                 LDA @lTuneInfo.hasSlowTimer
                 BEQ DS_DONE
                 LDA #'*'
-                LDY #23*128 + 39
+                LDY #23*SCREEN_WIDTH + 39
                 STA [SCREENBEGIN], Y
         DS_DONE
                 PLY
@@ -809,7 +809,7 @@ DISPLAY_ORDERS
         DO_DISPLAY_ORDERS
                 STA TAB_COUNTER
                 LDX #0
-                LDY #128 * 7 + 53
+                LDY #SCREEN_WIDTH * 7 + 53
                 
                 setal
                 LDA #<>ORDERS
@@ -836,7 +836,7 @@ DISPLAY_ORDERS
                 setal
                 TYA
                 CLC
-                ADC #128 - 3
+                ADC #SCREEN_WIDTH - 3
                 TAY
                 setas
                 DEC TAB_COUNTER
@@ -849,7 +849,7 @@ DISPLAY_ORDERS
 ; ************************************************************************
 DISPLAY_ACTIVE_CHANNELS
                 LDX #9
-                LDY #$2000 + 128 * 26 + 75
+                LDY #$2000 + SCREEN_WIDTH * 26 + 75
         DAC_LOOP
                 LDA CHANNELS-1,X
                 BEQ INACTIVE_CHANNEL
@@ -890,14 +890,14 @@ DISPLAY_CHAR
                 PLY
                 RTL
 
-DISPLAY_NEXT_LINE
+DISPLAY_NEXT_LINE_dep
                 .as
                 .xl
                 setal
                 LDA CURSORX
-                AND #$FF80   ; lines are $0, $80, etc
+                AND #$FFE0   ; lines are $0, 80, 160, etc
                 CLC
-                ADC #128+31     ; move to the next line and offset to the file box
+                ADC #SCREEN_WIDTH + 31    ; move to the next line and offset to the file box
                 STA CURSORX
                 setas
                 RTL
@@ -916,7 +916,7 @@ DISPLAY_MSG
                 JSL DISPLAY_CHAR
                 INX
                 BRA MSG_LOOP
-    MSG_DONE    JSL DISPLAY_NEXT_LINE
+    MSG_DONE    ;JSL DISPLAY_NEXT_LINE
                 
                 PLB
                 
@@ -996,11 +996,11 @@ TEXT_COLOUR_SELECTED
                 
                 LDA SDOS_LINE_SELECT
                 STA UNSIGNED_MULT_A
-                LDA #128
+                LDA #SCREEN_WIDTH
                 STA UNSIGNED_MULT_B
                 LDA UNSIGNED_MULT_RESULT
                 CLC
-                ADC #128 * 11 + 31
+                ADC #SCREEN_WIDTH * 11 + 31
                 TAY
                 setas
             
