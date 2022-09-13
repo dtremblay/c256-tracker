@@ -6,6 +6,12 @@
 .include "GABE_Control_Registers_def.asm"
 .include "ch376s_inc.asm"
 
+; pointers to data
+SD_DATA                 = $0080 ; 3 bytes - used indirect addressing
+SD_TMP_DATA             = $0083 ; 3 bytes - used indirect addressing
+SD_DATA_FAT_PAGE        = $0086 ; 2 bytes - last FAT page that was loaded
+SD_MULT_AREA            = $0088 ; 4 bytes
+
 ; File System Offsets
 SD_FIRST_SECTOR         = $5F00 ; 4 bytes
 SD_FAT_OFFSET           = $5F04 ; 4 bytes
@@ -13,21 +19,18 @@ SD_ROOT_OFFSET          = $5F08 ; 4 bytes
 SD_DATA_OFFSET          = $5F0C ; 4 bytes
 
 SD_RESERVED_SECTORS     = $5F10 ; 2 bytes
-SD_SECTORS_PER_FAT      = $5F12 ; 2 bytes
-SD_BYTES_PER_SECTOR     = $5F14 ; 2 bytes
-SD_FAT_COUNT            = $5F16 ; 2 bytes
-SD_SECTORS              = $5F18 ; 4 bytes
-SD_ROOT_ENTRIES         = $5F1C ; 2 bytes
+SD_SECTORS_PER_FAT      = $5F12 ; 4 bytes - changed to 4 to allow FAT32 partitons
+SD_BYTES_PER_SECTOR     = $5F16 ; 2 bytes
+SD_FAT_COUNT            = $5F18 ; 2 bytes
+SD_SECTORS              = $5F1A ; 4 bytes
+SD_ROOT_ENTRIES         = $5F1E ; 2 bytes
 SD_DIR_OFFSET           = $5F20 ; 2 bytes - use this to read the root directory
-SD_NEXT_CLUSTER         = $5F22 ; 2 bytes - use this to point to the next file cluster in the FAT
+SD_NEXT_CLUSTER_NU      = $5F22 ; 2 bytes - use this to point to the next file cluster in the FAT
 SD_SECTORS_PER_CLUSTER  = $5F24 ; 2 byte
-SD_FAT16                = $5F26 ; 1 byte - write 1 for FAT16, 0 for FAT12
+SD_FAT16_32             = $5F26 ; 1 byte - write 2 for FAT32, 1 for FAT16, 0 for FAT12
 CLUSTER_PTR             = $5F27 ; 2 bytes
 LOG_CLUSTER_PTR         = $5F29 ; 4 bytes
-SD_DATA                 = $0080 ; 3 bytes - used indirect addressing
-SD_TMP_DATA             = $0083 ; 3 bytes - used indirect addressing
-SD_DATA_FAT_PAGE        = $0086 ; 2 bytes - last FAT page that was loaded
-SD_MULT_AREA            = $0088 ; 4 bytes
+; store cluster data here
 SD_BLK_BEGIN            = $6000 ; 512 bytes
 SD_BTSCT_BEGIN          = $6200 ; 512 bytes
 SD_ROOT_BEGIN           = $6400 ; 512 bytes
@@ -73,7 +76,6 @@ ISDOS_INIT
                 setal
                 LDA #0
                 STA SD_ROOT_OFFSET
-                STA SD_NEXT_CLUSTER
                 setas
                 
                 ; SD Card is not present
@@ -134,7 +136,7 @@ CALC_OFFSET_BYTES
 ; Affects:
 ;   None
 ;******************************************************************************
-ISDOS_READ_MBR_BOOT
+ISDOS_READ_MBR_AND_BOOT_SECTOR
                 .as
                 LDA SDCARD_PRSNT_MNT ; this must be non-zero
                 BNE RMBR_CARD_PRESENT
@@ -190,7 +192,7 @@ ISDOS_READ_MBR_BOOT
                 LDA #0
                 STA SD_DATA + 2
                 
-        ; read the FAT Boot Sector - this overwrites the MBR record
+                ; read the Boot Sector
                 setas
                 JSL ISDOS_READ_BLOCK
                 
@@ -240,7 +242,7 @@ ISDOS_READ_MBR_BOOT
                 BCS SD_SMALL_SECTORS ; number of sectors is more than fat12 can handle
                 setas
                 LDA #0
-                STA SD_FAT16
+                STA SD_FAT16_32
                 setal
 
                 BRA SD_FAT12
@@ -250,17 +252,34 @@ ISDOS_READ_MBR_BOOT
                 STA SD_SECTORS
                 LDA SD_BTSCT_BEGIN,X + $22
                 STA SD_SECTORS + 2
+                LDA #$FFFF
+                STA SD_ROOT_ENTRIES
     SD_SMALL_SECTORS
                 setas
                 LDA #1
-                STA SD_FAT16
+                STA SD_FAT16_32
                 setal
     SD_FAT12
                 LDA SD_BTSCT_BEGIN,X + $E
                 STA SD_RESERVED_SECTORS
                 LDA SD_BTSCT_BEGIN,X + $16
+                BEQ SD_FAT32_SECTORS ; if sectors per FAT is 0, then this is a FAT32 partition
                 STA SD_SECTORS_PER_FAT
-                
+                LDA #0
+                STA SD_SECTORS_PER_FAT + 2
+                BRA SD_COMPUTE_OFFSETS
+    
+    SD_FAT32_SECTORS
+                setas
+                LDA #2              ; identify the FAT32 partition
+                STA SD_FAT16_32 
+                setal
+                LDA SD_BTSCT_BEGIN,X + $24
+                STA SD_SECTORS_PER_FAT
+                LDA SD_BTSCT_BEGIN,X + $26
+                STA SD_SECTORS_PER_FAT+2
+    
+    SD_COMPUTE_OFFSETS       
                 JSR COMPUTE_FAT_ROOT_DATA_OFFSETS
     RMBR_DONE
                 RTL
@@ -719,7 +738,7 @@ ISDOS_PARSE_ROOT_DIR
                 
 ; *****************************************************************************
 ; * Load the FAT table
-; * A must contain the sector to read
+; * 'A' must contain the sector to read
 ; *****************************************************************************
 ISDOS_READ_FAT_SECTOR
                 .al
@@ -769,8 +788,8 @@ ISDOS_READ_FAT_SECTOR
 
 ; *****************************************************************************
 ; * Load Data Cluster
-; * A must contain the cluster to read;
-; *   subsctract 2 and then multiplied by sectors by cluster.
+; * 'A' must contain the cluster to read
+; *   substract 2 and then multiplied by sectors by cluster.
 ; *****************************************************************************
 ISDOS_READ_DATA_CLUSTER
                 .al
@@ -783,10 +802,24 @@ ISDOS_READ_DATA_CLUSTER
                 RTL
                 
     SDR_CARD_PRESENT
+                ; if FAT32, then add 32 pages to the cluster
+                LDA SD_FAT16_32
+                AND #3
+                CMP #2
+                BEQ SDR_FAT32
+                
                 PLA
                 ; offset by 2 and multiply by sectors by cluster
                 SEC
                 SBC #2
+                BRA SDR_FAT_ADJ_CONTINUE
+                
+            SDR_FAT32
+                PLA
+                SEC
+                SBC #6
+                
+            SDR_FAT_ADJ_CONTINUE
                 STA UNSIGNED_MULT_A
                 LDA SD_SECTORS_PER_CLUSTER
                 STA UNSIGNED_MULT_B
@@ -853,7 +886,7 @@ ISDOS_READ_DATA_CLUSTER
 
                 
 ; *****************************************************************************
-; * A contains the cluster to start at.
+; * 'A' contains the cluster to start at.
 ; * SD_DATA must contain the pointer to write file data to.
 ; *****************************************************************************
 ISDOS_READ_FILE
@@ -874,18 +907,19 @@ ISDOS_READ_FILE
                 
                 JSL ISDOS_READ_DATA_CLUSTER
                 
-                LDA SD_FAT16
-                AND #$1
+                LDA SD_FAT16_32
+                AND #$3
                 ASL
                 TAX
                 JSR (READ_FAT_TABLE,X)
-                ; the last command is a compare
+                ; the last command in the subroutine is a compare
                 BNE SD_CLUSTER_LOOP
                 
                 RTL
                 
 READ_FAT_TABLE  .word <>FAT12_GET_NEXT_CLUSTER
                 .word <>FAT16_GET_NEXT_CLUSTER
+                .word <>FAT32_GET_NEXT_CLUSTER
                 
 ; *****************************************************************************
 ; * Read the FAT12 to determine the next cluster to read.
@@ -916,7 +950,7 @@ FAT12_GET_NEXT_CLUSTER
                 CMP #$FFF
                 RTS
                 
-                .comment
+                .comment - what is this???
                 ; maintain the location of file pointer
                 LDA SD_DATA
                 STA SD_TMP_DATA
@@ -939,14 +973,15 @@ FAT12_GET_NEXT_CLUSTER
                 LDA #$FFF
                 STA CLUSTER_PTR
                 
+                
                 RTS
-                .endc
+                .endc 
                 
 ; *****************************************************************************
 ; * Read the FAT16 to determine the next cluster to read.
 ; *****************************************************************************
 FAT16_GET_NEXT_CLUSTER
-                
+                .al
                 ; read the FAT page to read
                 LDA CLUSTER_PTR 
                 XBA
@@ -954,7 +989,7 @@ FAT16_GET_NEXT_CLUSTER
                 
                 ; avoid reloading the page
                 CMP SD_DATA_FAT_PAGE
-                BEQ SKIP_FAT_LOADING
+                BEQ SKIP_FAT16_LOADING
                 
                 PHA
                 ; **************************************
@@ -982,7 +1017,7 @@ FAT16_GET_NEXT_CLUSTER
                 STA SD_DATA + 2
                 ; ***************************************
                 
-        SKIP_FAT_LOADING
+        SKIP_FAT16_LOADING
                 ; now read the 16-bit value
                 LDA CLUSTER_PTR
                 AND #$FF
@@ -990,8 +1025,64 @@ FAT16_GET_NEXT_CLUSTER
                 TAY
                 LDA FAT_DATA,Y
                 STA CLUSTER_PTR
-                CMP #$FFFF
+                CMP #$FFFF   ; the branch instruction occurs upon return
                 RTS
+                
+; *****************************************************************************
+; * Read the FAT32 to determine the next cluster to read.
+; * The Foenix machine allows maximum 2GB SD Cards - so only the first two byes\
+; *  of the FAT table need to be read.  But one still needs to increase the 
+; *  CLUSTER_PTR by 4 instead of 2.
+; *****************************************************************************
+FAT32_GET_NEXT_CLUSTER
+                .al
+                ; read the FAT page to read
+                LDA CLUSTER_PTR 
+                XBA
+                AND #$FF
+                
+                ; avoid reloading the page
+                CMP SD_DATA_FAT_PAGE
+                BEQ SKIP_FAT32_LOADING
+                
+                PHA
+                ; **************************************
+                ; maintain the location of file pointer
+                LDA SD_DATA
+                STA SD_TMP_DATA
+                LDA SD_DATA + 2
+                STA SD_TMP_DATA + 2
+                
+                ; TODO load the FAT table
+                ; TODO find the next sector
+                LDA #FAT_DATA
+                STA SD_DATA
+                LDA #0
+                STA SD_DATA + 2
+                
+                ; load the FAT page
+                PLA
+                STA SD_DATA_FAT_PAGE
+                JSL ISDOS_READ_FAT_SECTOR
+                
+                LDA SD_TMP_DATA
+                STA SD_DATA
+                LDA SD_TMP_DATA + 2
+                STA SD_DATA + 2
+                ; ***************************************
+                
+        SKIP_FAT32_LOADING
+                ; now read the 16-bit value
+                LDA CLUSTER_PTR
+                AND #$FF
+                ASL A ; multiply by 4
+                ASL A
+                TAY
+                LDA FAT_DATA,Y   ; check for end of file
+                STA CLUSTER_PTR
+                CMP #$FFFF ; the branch instruction occurs upon return
+                RTS
+                
               
 ; *****************************************************************************
 ; * Add MBR offset and Reserved Sectors
@@ -1014,7 +1105,7 @@ COMPUTE_FAT_ROOT_DATA_OFFSETS
                 LDA SD_FIRST_SECTOR + 2
                 STA ADDER_B + 2
                 
-                ; result is 32 bites
+                ; result is 32 bytes
                 LDA ADDER_R
                 STA SD_FAT_OFFSET
                 LDA ADDER_R + 2
@@ -1025,6 +1116,7 @@ COMPUTE_FAT_ROOT_DATA_OFFSETS
                 STA UNSIGNED_MULT_A
                 LDA SD_SECTORS_PER_FAT
                 STA UNSIGNED_MULT_B
+                
                 LDA UNSIGNED_MULT_RESULT
                 STA SD_MULT_AREA
                 LDA UNSIGNED_MULT_RESULT + 2

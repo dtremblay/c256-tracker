@@ -2,17 +2,17 @@
 ; * Initialize display
 ; * 80 columns by 60 rows
 DRAW_DISPLAY
-                ; set the display size - 128 x 64
-                LDA #SCREEN_WIDTH
-                STA COLS_PER_LINE
-                LDA #64
-                STA LINES_MAX
+                ; set the display size - 128 x 64 - RevB only
+                ;LDA #SCREEN_WIDTH
+                ;STA COLS_PER_LINE
+                ;LDA #64
+                ;STA LINES_MAX
 
-                ; set the visible display size - 80 x 60
-                LDA #80
-                STA COLS_VISIBLE
-                LDA #60
-                STA LINES_VISIBLE
+                ; set the visible display size - 80 x 60 - RevB only
+                ;LDA #80
+                ;STA COLS_VISIBLE
+                ;LDA #60
+                ;STA LINES_VISIBLE
                 LDA #0
                 STA BORDER_X_SIZE
                 STA BORDER_Y_SIZE
@@ -25,10 +25,11 @@ DRAW_DISPLAY
                 LDA #0
                 STA BORDER_COLOR_G
 
-                ; enable the border
-                LDA #Border_Ctrl_Enable
+                ; disable the border
                 STA BORDER_CTRL_REG
-
+                ; disable pixel doubling and hi-res
+                STA MASTER_CTRL_REG_H
+                
                 ; enable text display
                 LDA #Mstr_Ctrl_Text_Mode_En
                 STA MASTER_CTRL_REG_L
@@ -354,7 +355,7 @@ draw_tick_line
 next_line 
                 INC TAB_COUNTER
                 LDA TAB_COUNTER
-                CMP #65
+                CMP #MUSICAL_LINES_PER_BAR + 1
                 BEQ DRAW_BOTTOM_BAR
                 LDA REM_LINES
                 BNE TRIPLET

@@ -1,7 +1,8 @@
 ; each line is 80 characters
 SCREEN_WIDTH = 80
-TRACKER_SCREEN
+MUSICAL_LINES_PER_BAR = 64
 
+TRACKER_SCREEN
 line1     .byte $D5
           .fill SCREEN_WIDTH - 2, $C3
           .byte $C9
@@ -16,7 +17,7 @@ line3     .byte $c2
           .fill (SCREEN_WIDTH - 40) / 2, 0
           .text 'C256 Foenix Tracker' ; 19 characters
           .fill 4, 0
-          .text '[Version 0.3.1]' ; 15 characters
+          .text '[Version 0.4.0]' ; 15 characters
           .fill (SCREEN_WIDTH - 40) / 2, 0
           .byte $c2
           ;.fill UNUSED_SCR, 0
@@ -51,7 +52,7 @@ line6     .byte $c2
           .byte $c2
           .fill 1,0
           .text 'MIDI'
-          .fill 14,0
+          .fill SCREEN_WIDTH -66,0
           .byte $c2
           ;.fill UNUSED_SCR, 0
 
@@ -452,7 +453,7 @@ line24
           .byte $c2
           .fill 2, 0
           .text 'File:            ' ; 17 chars
-          .fill 17, 0
+          .fill SCREEN_WIDTH - 63, 0
           .byte $c2
           ;.fill UNUSED_SCR, 0
 
@@ -467,7 +468,7 @@ line25    .byte $ca
           .byte $b1
           .fill 8, $C3
           .byte $c3
-          .fill 27, $C3
+          .fill SCREEN_WIDTH - 53, $C3
           .byte $cb
           ;.fill UNUSED_SCR, 0
 
@@ -476,25 +477,25 @@ top_line  .rept 8 ; 8 * 9
           .byte $b2
           .next
           .fill 8,$c3
-          ;.fill UNUSED_SCR, 0
+          .fill SCREEN_WIDTH - 80, 0
 
 line27    .for col = '1', col <= '8', col += 1
           .text ' - ',col,'  - '
           .byte $c2
           .next
           .text ' - 9  - '
-          ;.fill UNUSED_SCR-1, 0
+          .fill SCREEN_WIDTH - 80, 0
 
 btm_line  .rept 8
           .fill 8,$c3
           .byte $b1
           .next
           .fill 8,$c3
-          ;.fill UNUSED_SCR-1, 0
+          .fill SCREEN_WIDTH - 80, 0
 
 blank_line
           .fill 80, $20
-          ;.fill 48, 0
+          .fill SCREEN_WIDTH - 80, 0
           
 tick_line
           .rept 8
@@ -502,7 +503,7 @@ tick_line
           .byte $db
           .next
           .text '--- ----'
-          ;.fill UNUSED_SCR-1, 0
+          .fill SCREEN_WIDTH - 80, 0
       
 untick_line
           .rept 8
@@ -510,14 +511,14 @@ untick_line
           .byte $c2
           .next
           .text '--- ----'
-          ;.fill UNUSED_SCR-1, 0
+          .fill SCREEN_WIDTH - 80, 0
       
 line60    .rept 8
           .fill 8,$c3
           .byte $b1
           .next
           .fill 8,$c3
-          ;.fill UNUSED_SCR-1, 0
+          .fill SCREEN_WIDTH - 80, 0
 
 FNXFONT
           .binary "Font/FOENIX-CHARACTER-ASCII-2.bin", 0, 2048

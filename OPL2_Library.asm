@@ -58,7 +58,7 @@ OPL2_TONE_TESTING_L2
 
                 RTL
 
-OPL2_INIT
+OPL3_INIT
                 .as
                 setal
                 ; Just Making sure all the necessary variables are cleared before doing anything

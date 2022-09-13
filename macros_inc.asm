@@ -59,8 +59,8 @@ setdbr          .macro          ; Set the B (Data bank) register
                 .databank \1
                 PLP
                 PLA             ; end setdbr macro 
-                .endm
-                
+                .endm 
+
 TURN_ON_SD_LED  .macro
                 ; turn on the LED
                 LDA GABE_MSTR_CTRL
@@ -75,3 +75,23 @@ TURN_OFF_SD_LED .macro
                 AND #~GABE_CTRL_SDC_LED
                 STA GABE_MSTR_CTRL
                 .endm
+                
+LOAD_KBD_STATUS_PORT .macro
+                LDA @lGABE_SYS_STAT
+                AND #$7
+                BNE LKSP_U
+                LDA @lSTATUS_PORT_FMX
+                BRA +
+        LKSP_U
+                LDA @lSTATUS_PORT_U
+        +       .endm
+                
+LOAD_KBD_INPT_BUF .macro
+                LDA @lGABE_SYS_STAT
+                AND #$7
+                BNE LKIB_U
+                LDA @lKBD_INPT_BUF_FMX
+                BRA +
+        LKIB_U
+                LDA @lKBD_INPT_BUF_U
+        +       .endm

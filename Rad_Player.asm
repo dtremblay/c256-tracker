@@ -30,7 +30,7 @@ TuneInfo .dstruct SongData
 ; We are assuming that the RAD File is already Loaded Somewhere
 ; ************************************************************************************************
 RAD_INIT_PLAYER
-            JSL OPL2_INIT   ; Init OPL2
+            JSL OPL3_INIT   ; Init OPL3
             JSR RAD_ALL_NOTES_OFF
             
             ; zero the pattern memory

@@ -8,7 +8,7 @@ INT_PENDING_REG3 = $000143 ; FMX Model
 INT_POL_REG0     = $000144 ;
 INT_POL_REG1     = $000145 ;
 INT_POL_REG2     = $000146 ;
-INT_POL_REG7     = $000147 ; FMX Model
+INT_POL_REG3     = $000147 ; FMX Model
 
 ; Edge Detection Enable
 INT_EDGE_REG0    = $000148 ;
@@ -41,7 +41,7 @@ FNX1_INT03_COM2   = $08  ;Serial Port 2
 FNX1_INT04_COM1   = $10  ;Serial Port 1
 FNX1_INT05_MPU401 = $20  ;Midi Controller Interrupt
 FNX1_INT06_LPT    = $40  ;Parallel Port
-FNX1_INT07_SDCARD = $80  ;SD Card Controller Interrupt (CH376S)
+FNX1_INT07_SDCARD     = $80  ;SD Card Controller Interrupt (CH376S)
 
 ; Register Block 2
 FNX2_INT00_OPL3       = $01  ;OPl3

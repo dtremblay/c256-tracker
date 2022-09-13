@@ -44,7 +44,7 @@ LOAD_SDCARD_DATA
             BEQ LOAD_SDCARD_DATA_DONE ; if SD not present, exit
             
             ; show files from the SDRAM
-            JSL ISDOS_READ_MBR_BOOT
+            JSL ISDOS_READ_MBR_AND_BOOT_SECTOR
             ; read the root directory
             JSL ISDOS_PARSE_ROOT_DIR
             
@@ -183,7 +183,7 @@ READ_FILE
             
             setas
             
-            JSL OPL2_INIT
+            JSL OPL3_INIT
             
             ; load the song
             JSL RAD_INIT_PLAYER

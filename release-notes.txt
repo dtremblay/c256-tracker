@@ -1,7 +1,12 @@
+Version 0.4.0
+-------------
+Vicky II version
+Added FAT32 support for SD Cards.
+
 Version 0.3.0
 -------------
-Added FAT16 support for SD Card.
-Added RAD File Version: v1 or v2.
+Added FAT16 support for SD Cards.
+Added RAD File Version display: v1 or v2.
 Added Slow Timer indicator: * in front of the speed value.
 
 Version 0.2.0
